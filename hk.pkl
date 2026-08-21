@@ -1,0 +1,49 @@
+amends "package://github.com/jdx/hk/releases/download/v1.55.0/hk@1.55.0#/Config.pkl"
+
+import "package://github.com/jdx/hk/releases/download/v1.55.0/hk@1.55.0#/Builtins.pkl"
+
+local linters = new Mapping<String, Step> {
+  ["betterleaks"] = Builtins.betterleaks
+  ["ls-lint"] {
+    check = "ls-lint ."
+    batch = false
+  }
+  ["mise"] = Builtins.mise
+  ["pkl-format"] = Builtins.pkl_format
+  ["prettier"] = Builtins.prettier
+  ["rumdl"] = Builtins.rumdl
+  ["rumdl-format"] = Builtins.rumdl_format
+  ["sort-package-json"] = Builtins.sort_package_json
+  ["tombi"] = Builtins.tombi
+  ["typos"] = Builtins.typos
+  ["yamlfix"] {
+    types = List("yaml")
+    check = "yamlfix --check {{files}}"
+    fix = "yamlfix {{files}}"
+    depends = List("prettier")
+  }
+  ["yamllint"] = (Builtins.yamllint) {
+    depends = List("yamlfix")
+  }
+}
+
+hooks {
+  ["check"] {
+    steps = linters
+  }
+  ["commit-msg"] {
+    steps {
+      ["conventional-commit"] = Builtins.cocogitto_commit_msg
+      ["typos"] = Builtins.typos
+    }
+  }
+  ["fix"] {
+    fix = true
+    steps = linters
+  }
+  ["pre-commit"] {
+    fix = true
+    stash = "git"
+    steps = linters
+  }
+}
