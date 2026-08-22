@@ -1,0 +1,10 @@
+[[IgnoredVulns]]
+id = "GHSA-w5hq-g745-h8pq"
+reason = """
+uuid@7.0.3 is pulled in transitively via expo -> @expo/config-plugins ->
+xcode. xcode is only used at build time (generating native iOS project
+files during `expo prebuild`), not shipped in the app bundle, so this is
+low risk. Fixing it requires expo to bump its xcode/uuid dependency;
+forcing it locally (`npm audit fix --force`) would downgrade expo to v46,
+breaking the project. Remove this entry once expo updates upstream.
+"""
