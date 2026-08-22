@@ -11,6 +11,16 @@ DISABLE_LINTERS:
 IGNORE_GITIGNORED_FILES: true
 JAVASCRIPT_DEFAULT_STYLE: prettier
 MARKDOWN_DEFAULT_STYLE: rumdl
+# Install npm devDependencies (prettier-plugin-toml) and dependencies
+# (expo, needed to resolve tsconfig.json's "expo/tsconfig.base") before
+# linters that need them run
+PRE_COMMANDS:
+  - command: npm ci
+    cwd: workspace
 PYTHON_DEFAULT_STYLE: ruff
 SHOW_ELAPSED_TIME: true
+# package-lock.json contains npm funding URLs (opencollective.com,
+# patreon.com) that block automated requests and return 403, causing
+# false-positive broken-link errors
+SPELL_LYCHEE_FILTER_REGEX_EXCLUDE: package-lock\.json
 TYPESCRIPT_DEFAULT_STYLE: prettier

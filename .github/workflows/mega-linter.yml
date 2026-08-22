@@ -47,6 +47,14 @@ jobs:
           #   - Push another commit on the branch to trigger workflows again.
           # Only define `secrets.PAT` if you fully understand the trade-off.
           token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
+      # Free up disk space on the runner: security scanners (trivy, grype,
+      # osv-scanner) need to download a vulnerability database and were
+      # failing with "no space left on device" without this
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force
       # MegaLinter
       # All available variables are described in documentation
       # https://megalinter.io/latest/config-file/
