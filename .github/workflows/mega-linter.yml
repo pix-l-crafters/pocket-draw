@@ -33,6 +33,11 @@ jobs:
           # If you use VALIDATE_ALL_CODEBASE = true, you can remove this line to
           # improve performance
           fetch-depth: 0
+          # On pull_request events, check out the actual PR branch instead of
+          # the default detached-HEAD merge commit. Needed so the "Create
+          # Pull Request with applied fixes" step below has a real branch to
+          # target (it errors with "base input must be supplied" otherwise).
+          ref: ${{ github.head_ref || github.ref }}
           # Comment this line and uncomment the next one if you use APPLY_FIXES
           # persist-credentials: false
           persist-credentials: true
