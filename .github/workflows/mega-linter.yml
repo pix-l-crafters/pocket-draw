@@ -14,7 +14,12 @@ env:
   APPLY_FIXES_EVENT: pull_request
   # If APPLY_FIXES is used, defines if the fixes are directly committed (commit)
   # or posted in a PR (pull_request)
-  APPLY_FIXES_MODE: pull_request
+  #
+  # Using "commit" here instead of "pull_request" because opening a PR
+  # requires the "Allow GitHub Actions to create and approve pull requests"
+  # org/repo setting, which isn't enabled — commit mode just pushes fixes
+  # straight to the current branch instead.
+  APPLY_FIXES_MODE: commit
 jobs:
   megalinter:
     name: MegaLinter
