@@ -29,21 +29,22 @@ This starts the Metro bundler and prints a QR code in your terminal.
 
 ### 4. View it on your iPhone
 
-This project uses **`expo-dev-client`** instead of the plain Expo Go app. That means you can't just scan the QR code with the regular Expo Go app from the App Store — Expo Go only supports Expo's built-in native modules, and we may add third-party native modules (drawing/gesture libraries etc.) that Expo Go can't run.
+This project targets **Expo SDK 54** and uses the plain **Expo Go** app — no custom dev client or Apple Developer account needed.
 
-Instead, everyone needs our own custom-built "dev client" installed once:
+1. Install **Expo Go** from the App Store on your iPhone.
+2. Run `npx expo start`.
+3. Scan the QR code printed in your terminal with your iPhone's camera (it'll prompt to open in Expo Go).
 
-1. Install the **EAS CLI**: `npm install -g eas-cli`
-2. `eas login` with the team's Expo account (ask in the group chat if you don't have the login).
-3. Build the dev client for iOS: `eas build --profile development --platform ios`
-4. Once the build finishes, EAS gives you an install link/QR code — open it on your iPhone to install the dev client app (this is a one-time setup, not needed again unless a native dependency changes).
-
-> ⚠️ Installing on a **physical iPhone** requires the device to be registered with an Apple Developer account (EAS will prompt you through this on first build). If nobody on the team has an Apple Developer account yet, that needs to be sorted out first — ping the team about this.
-
-After the dev client is installed once, day-to-day development is the same as before:
-
-1. Run `npx expo start`
-2. Open the **dev client app** on your iPhone (not Expo Go) and scan the QR code from the terminal
-3. It hot-reloads as the code changes, same as Expo Go did
-
-> Note: your iPhone and your computer need to be on the same Wi-Fi network for the QR code to connect.
+> ⚠️ **Why SDK 54, not the latest one:** Expo Go on the App Store only supports one SDK
+> version at a time, and Apple's review process means it regularly lags behind the newest
+> Expo SDK release by several versions. As of writing, Expo Go on the App Store only
+> supports SDK 54, so this project is pinned there deliberately — do **not** bump `expo`
+> past what the current App Store Expo Go supports without checking first (`npx expo
+start` will say "project is incompatible with this version of Expo Go" if you do). If
+> we later need a native module Expo Go doesn't include, we'll revisit using
+> `expo-dev-client` + EAS builds instead.
+>
+> Note: your iPhone and your computer need to be on the same Wi-Fi network for the QR
+> code to connect. On restrictive networks (e.g. university wifi with client isolation),
+> run `npx expo start --tunnel` instead — it routes the connection over the internet so
+> it works even when your phone and laptop can't see each other on the LAN.
