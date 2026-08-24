@@ -39,3 +39,7 @@ node_modules/
 report/
 target/
 # keep-sorted end
+
+#build
+android/
+ios/
