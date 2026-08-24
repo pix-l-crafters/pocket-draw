@@ -1,9 +1,14 @@
-amends "package://github.com/jdx/hk/releases/download/v1.55.0/hk@1.55.0#/Config.pkl"
+amends "package://github.com/jdx/hk/releases/download/v1.56.1/hk@1.56.1#/Config.pkl"
 
-import "package://github.com/jdx/hk/releases/download/v1.55.0/hk@1.55.0#/Builtins.pkl"
+import "package://github.com/jdx/hk/releases/download/v1.56.1/hk@1.56.1#/Builtins.pkl"
 
 local linters = new Mapping<String, Step> {
   ["betterleaks"] = Builtins.betterleaks
+  ["gitignore-tidy"] {
+    glob = List("**/.*ignore", ".*ignore")
+    check = "uvx git+https://github.com/lorenzwalthert/gitignore-tidy {{files}}"
+    fix = "uvx git+https://github.com/lorenzwalthert/gitignore-tidy {{files}}"
+  }
   ["ls-lint"] {
     check = "ls-lint ."
     batch = false
@@ -11,11 +16,22 @@ local linters = new Mapping<String, Step> {
   ["mise"] = Builtins.mise
   ["pkl-format"] = Builtins.pkl_format
   ["prettier"] = Builtins.prettier
-  ["rumdl"] = Builtins.rumdl
+  ["ruff-format"] = Builtins.ruff_format
+  ["ruff"] = (Builtins.ruff) {
+    depends = List("ruff-format")
+  }
   ["rumdl-format"] = Builtins.rumdl_format
+  ["rumdl"] = (Builtins.rumdl) {
+    depends = List("rumdl-format")
+  }
   ["sort-package-json"] = Builtins.sort_package_json
   ["tombi"] = Builtins.tombi
   ["typos"] = Builtins.typos
+  ["typstyle"] {
+    glob = List("*.typ", "**/*.typ")
+    check = "typstyle -c {{files}}"
+    fix = "typstyle -i {{files}}"
+  }
   ["yamlfix"] {
     types = List("yaml")
     check = "yamlfix --check {{files}}"

@@ -2,23 +2,6 @@
 
 allow-missing-formatter = true
 
-[formatter.cspell-sort]
-command = "yq"
-# tombi: format.rules.array-values-order = "ascending"
-includes = [
-  "**/.cSpell*",
-  "**/.cspell*",
-  "**/cSpell*",
-  "**/cspell*",
-  ".cSpell*",
-  ".cspell*",
-  "cSpell*",
-  "cspell*"
-]
-no-positional-arg-support = true
-options = ["-i", ".words|= sort_by(downcase)|.ignorePaths|=sort_by(downcase)"]
-priority = 9
-
 [formatter.ignore-files-formatter]
 command = "uvx"
 # tombi: format.rules.array-values-order = "ascending"
@@ -86,29 +69,11 @@ includes = ["*.py"]
 options = ["ruff", "check", "--fix"]
 priority = 8
 
-[formatter.sort-markdown-tables]
-command = "smt"
-includes = ["*.md"]
-options = ["-i"]
-priority = 2
-
 [formatter.sort-package-json]
 command = "bunx"
 includes = ["package.json"]
 options = ["sort-package-json"]
 priority = 10
-
-[formatter.tombi-format]
-command = "uvx"
-includes = ["*.toml"]
-options = ["tombi", "format"]
-priority = 11
-
-[formatter.toml-sort]
-command = "uvx"
-includes = ["*.toml"]
-options = ["toml-sort", "-i", "--sort-table-keys", "--sort-inline-tables"]
-priority = 0
 
 [formatter.typstyle]
 command = "typstyle"
@@ -122,11 +87,3 @@ command = "uvx"
 includes = ["*.yaml", "*.yml"]
 options = ["yamlfix"]
 priority = 8
-
-[formatter.yq-key-sort]
-command = "yq"
-# tombi: format.rules.array-values-order = "ascending"
-includes = ["*.json", "*.yaml", "*.yml"]
-no-positional-arg-support = true
-options = ["-i", "-P", "sort_keys(..)"]
-priority = 0

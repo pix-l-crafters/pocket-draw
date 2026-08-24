@@ -7,8 +7,11 @@ postinstall = ["hk install --mise"]
 
 [tasks]
 ai-setup = "apm install"
+check = ["hk check --all"]
 cspell = "cspell ."
+fmt = ["hk fix --all", "treefmt"]
 pre-commit = "hk run pre-commit"
+prepare = ["bun install"]
 
 [tools]
 apm = { postinstall = "apm install", version = "latest" }
@@ -25,9 +28,11 @@ npm = { postinstall = "npm install", version = "latest" }
 "pipx:yamlfix" = "latest"
 pkl = "latest"
 prettier = "latest"
+ruff = "latest"
 rumdl = "latest"
 tombi = "latest"
 typos = "latest"
+typstyle = "latest"
 uv = "latest"
 yamllint = "latest"
 yq = "latest"

@@ -4,12 +4,19 @@ ACTION_ZIZMOR_UNSECURED_ENV_VARIABLES:
   - GITHUB_TOKEN
 ADDITIONAL_EXCLUDED_DIRECTORIES:
   - apm_modules
+  - node_modules
 APPLY_FIXES: all
 CLEAR_REPORT_FOLDER: true
 DISABLE_LINTERS:
   - REPOSITORY_DEVSKIM
 IGNORE_GITIGNORED_FILES: true
 JAVASCRIPT_DEFAULT_STYLE: prettier
+JSON_PRETTIER_PRE_COMMANDS:
+  - command: npm ci
+    continue_if_failed: true
+    cwd: workspace
+    secured_env: true
+    tag: default
 MARKDOWN_DEFAULT_STYLE: rumdl
 # Install npm devDependencies (prettier-plugin-toml) and dependencies
 # (expo, needed to resolve tsconfig.json's "expo/tsconfig.base") before
@@ -18,9 +25,16 @@ PRE_COMMANDS:
   - command: npm ci
     cwd: workspace
 PYTHON_DEFAULT_STYLE: ruff
+REPOSITORY_KINGFISHER_ARGUMENTS: --exclude node_modules --exclude apm_modules
 SHOW_ELAPSED_TIME: true
 # package-lock.json contains npm funding URLs (opencollective.com,
 # patreon.com) that block automated requests and return 403, causing
 # false-positive broken-link errors
 SPELL_LYCHEE_FILTER_REGEX_EXCLUDE: package-lock\.json
 TYPESCRIPT_DEFAULT_STYLE: prettier
+YAML_PRETTIER_PRE_COMMANDS:
+  - command: npm ci
+    continue_if_failed: true
+    cwd: workspace
+    secured_env: true
+    tag: default

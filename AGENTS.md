@@ -72,7 +72,7 @@ Configuration lives in `apm.yml`. Do not skip this when skills or MCP tools are 
 ## Project Context
 
 - **Project Type**: Project scaffolded from [copier-mr-mise](https://github.com/MRDGH2821/copier-mr-mise)
-- **Key Technologies**: mise, hk, MegaLinter, treefmt, cspell, APM
+- **Key Technologies**: mise, hk, MegaLinter, cspell, APM
 - **Purpose**: Standardized starting point with tool management, git hooks, and quality checks
 - **Template updates**: `copier update` (review scripts in the template's `copier.yml`)
 
@@ -178,10 +178,10 @@ MCP clients should use `inspect_project`, `plan`, safe run tools, paged output, 
 - Don't disable spell checking without good reason
 - Run with `mise run cspell`
 
-### treefmt
+### Formatting and Hooks (hk)
 
-- Run `treefmt -vv` before every commit to format all supported file types
-- This is separate from hk: hk formats staged files on commit; treefmt formats the tree
+- Run `hk run fix` or `mise run fmt` before committing to format all supported file types
+- `hk` integrates formatters and linters in `hk.pkl` for staged files and hook checks
 
 ## Commit Messages
 
@@ -210,7 +210,7 @@ Version bumps use cocogitto (`cog bump`); pre-bump hooks update `package.json`, 
 
 - Read the error message — it usually points directly to the fix
 - Try to fix the issue and retry the commit; do not skip hooks
-- Fix formatting first (`treefmt -vv` or `hk run fix`)
+- Fix formatting first (`hk run fix` or `mise run fmt`)
 - Then address spell checking and linting
 
 **Spell check failures:**
