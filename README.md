@@ -39,9 +39,9 @@ This project targets **Expo SDK 54** and uses the plain **Expo Go** app — no c
 > version at a time, and Apple's review process means it regularly lags behind the newest
 > Expo SDK release by several versions. As of writing, Expo Go on the App Store only
 > supports SDK 54, so this project is pinned there deliberately — do **not** bump `expo`
-> past what the current App Store Expo Go supports without checking first (`npx expo
-start` will say "project is incompatible with this version of Expo Go" if you do). If
-> we later need a native module Expo Go doesn't include, we'll revisit using
+> past what the current App Store Expo Go supports without checking first — running
+> `npx expo start` will say "project is incompatible with this version of Expo Go" if
+> you do. If we later need a native module Expo Go doesn't include, we'll revisit using
 > `expo-dev-client` + EAS builds instead.
 >
 > Note: your iPhone and your computer need to be on the same Wi-Fi network for the QR
