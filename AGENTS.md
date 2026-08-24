@@ -17,7 +17,7 @@ Co-authored-by: <Model Name> via <Tool> <noreply@provider-domain>
 <!-- smt -->
 
 | Provider                | noreply address          |
-|-------------------------|--------------------------|
+| ----------------------- | ------------------------ |
 | Anthropic (Claude)      | `noreply@anthropic.com`  |
 | Cursor                  | `cursoragent@cursor.com` |
 | Google (Gemini)         | `noreply@google.com`     |
@@ -79,7 +79,7 @@ Configuration lives in `apm.yml`. Do not skip this when skills or MCP tools are 
 ## Layout
 
 | Path               | Purpose                                             |
-|--------------------|-----------------------------------------------------|
+| ------------------ | --------------------------------------------------- |
 | `mise.toml`        | Tools, tasks, `hk install --mise` postinstall hook  |
 | `hk.pkl`           | hk hook config (pre-commit, commit-msg, fix, check) |
 | `apm.yml`          | APM skills and MCP servers                          |

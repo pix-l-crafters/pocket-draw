@@ -30,6 +30,7 @@ web-build/
 .git
 .pre-commit-config.yaml
 .svn
+.trivycache/
 .venv/
 __MACOSX
 __pycache__
