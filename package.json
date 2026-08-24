@@ -1,8 +1,23 @@
 {
   "name": "pocket-draw",
   "version": "0.0.0",
+  "main": "index.ts",
+  "scripts": {
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "start": "expo start",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "expo": "54",
+    "expo-status-bar": "~3.0.9",
+    "react": "19.1.0",
+    "react-native": "0.81.5"
+  },
   "devDependencies": {
+    "@types/react": "~19.1.10",
     "prettier": "^3.9.6",
-    "prettier-plugin-toml": "^2.0.6"
+    "prettier-plugin-toml": "^2.0.6",
+    "typescript": "~5.9.2"
   }
 }

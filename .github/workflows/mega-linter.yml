@@ -14,7 +14,12 @@ env:
   APPLY_FIXES_EVENT: pull_request
   # If APPLY_FIXES is used, defines if the fixes are directly committed (commit)
   # or posted in a PR (pull_request)
-  APPLY_FIXES_MODE: pull_request
+  #
+  # Using "commit" here instead of "pull_request" because opening a PR
+  # requires the "Allow GitHub Actions to create and approve pull requests"
+  # org/repo setting, which isn't enabled — commit mode just pushes fixes
+  # straight to the current branch instead.
+  APPLY_FIXES_MODE: commit
 jobs:
   megalinter:
     name: MegaLinter
@@ -33,6 +38,11 @@ jobs:
           # If you use VALIDATE_ALL_CODEBASE = true, you can remove this line to
           # improve performance
           fetch-depth: 0
+          # On pull_request events, check out the actual PR branch instead of
+          # the default detached-HEAD merge commit. Needed so the "Create
+          # Pull Request with applied fixes" step below has a real branch to
+          # target (it errors with "base input must be supplied" otherwise).
+          ref: ${{ github.head_ref || github.ref }}
           # Comment this line and uncomment the next one if you use APPLY_FIXES
           # persist-credentials: false
           persist-credentials: true
@@ -47,11 +57,41 @@ jobs:
           #   - Push another commit on the branch to trigger workflows again.
           # Only define `secrets.PAT` if you fully understand the trade-off.
           token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
+      # Free up disk space on the runner: security scanners (trivy, grype,
+      # osv-scanner) need to download a vulnerability database and were
+      # failing with "no space left on device" without this
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force
+      # Trivy's vulnerability database is currently getting rate-limited
+      # (TOOMANYREQUESTS) on its default mirror because of how much CI
+      # traffic worldwide hits it — see
+      # https://github.com/aquasecurity/trivy/discussions/8009. Caching the
+      # DB between runs means we only re-download it once a day instead of
+      # on every run, which avoids tripping the limit. TRIVY_CACHE_DIR below
+      # points trivy at a path inside the checkout so this cache step (which
+      # runs on the runner, not inside the MegaLinter container) can see it.
+      - name: Get date for Trivy DB cache key
+        id: trivy-cache-date
+        run: echo "date=$(date -u +'%Y-%m-%d')" >> "$GITHUB_OUTPUT"
+      - name: Cache Trivy vulnerability database
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .trivycache
+          key: trivy-db-${{ steps.trivy-cache-date.outputs.date }}
+          restore-keys: |
+            trivy-db-
       # MegaLinter
       # All available variables are described in documentation
       # https://megalinter.io/latest/config-file/
       - env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Points trivy at the cache directory restored by the "Cache Trivy
+          # vulnerability database" step above, so it reuses the DB instead
+          # of re-downloading it (and hitting the rate limit) every run.
+          TRIVY_CACHE_DIR: /github/workspace/.trivycache
           # Uncomment to use ApiReporter (Grafana)
           # API_REPORTER: true
           # API_REPORTER_URL: ${{ secrets.API_REPORTER_URL }}

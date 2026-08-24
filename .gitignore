@@ -16,6 +16,11 @@ opencode.json
 .env.*
 !.env.sample
 
+# expo
+.expo/
+expo-env.d.ts
+web-build/
+
 # others
 # keep-sorted start
 *.local
@@ -25,6 +30,7 @@ opencode.json
 .git
 .pre-commit-config.yaml
 .svn
+.trivycache/
 .venv/
 __MACOSX
 __pycache__
