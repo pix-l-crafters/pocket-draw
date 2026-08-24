@@ -5,3 +5,17 @@
 # forcing it locally (`npm audit fix --force`) would downgrade expo to
 # v46, breaking the project. Remove this line once expo updates upstream.
 CVE-2026-41907
+
+# postcss and image-size are pulled in transitively via expo ->
+# @expo/metro-config -> metro. Both are only used by Metro (the bundler)
+# at local dev/build time — to process CSS modules and read image
+# dimensions for asset resolution — and are never shipped in the app
+# bundle or exposed to untrusted network input in this project. Fixing
+# these requires an expo major version bump (see the SDK 54 pin note in
+# README.md). Remove these lines once expo updates upstream.
+CVE-2025-71330
+CVE-2025-71329
+CVE-2026-41305
+CVE-2026-45623
+CVE-2026-69153
+GHSA-r28c-9q8g-f849
