@@ -18,6 +18,7 @@ ignore:
   - apm_modules
   - build
   - dist
+  - megalinter-reports
   - node_modules
   - result # Nix build result symlink
   - target # Rust/Java build output
