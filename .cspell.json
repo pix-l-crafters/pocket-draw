@@ -29,6 +29,7 @@
     "GHSA",
     "misconfig",
     "MRDGH",
+    "nixfmt",
     "nixpkgs",
     "numtide",
     "otbs",
@@ -37,6 +38,7 @@
     "pycache",
     "pytest",
     "qvqq",
+    "rignore",
     "rqcc",
     "RSSI",
     "rumdl",
@@ -49,7 +51,6 @@
     "venv",
     "Vulns",
     "yamlfix",
-    "zizmor",
-    "rignore"
+    "zizmor"
   ]
 }

@@ -38,14 +38,14 @@ jobs:
           # If you use VALIDATE_ALL_CODEBASE = true, you can remove this line to
           # improve performance
           fetch-depth: 0
+          # Comment this line and uncomment the next one if you use APPLY_FIXES
+          # persist-credentials: false
+          persist-credentials: true
           # On pull_request events, check out the actual PR branch instead of
           # the default detached-HEAD merge commit. Needed so the "Create
           # Pull Request with applied fixes" step below has a real branch to
           # target (it errors with "base input must be supplied" otherwise).
           ref: ${{ github.head_ref || github.ref }}
-          # Comment this line and uncomment the next one if you use APPLY_FIXES
-          # persist-credentials: false
-          persist-credentials: true
           # zizmor: ignore[artipacked]
           # SECURITY NOTE: Using a Personal Access Token (PAT) is NOT
           # recommended. Open-source projects have been heavily targeted by
@@ -73,14 +73,14 @@ jobs:
       # on every run, which avoids tripping the limit. TRIVY_CACHE_DIR below
       # points trivy at a path inside the checkout so this cache step (which
       # runs on the runner, not inside the MegaLinter container) can see it.
-      - name: Get date for Trivy DB cache key
-        id: trivy-cache-date
+      - id: trivy-cache-date
+        name: Get date for Trivy DB cache key
         run: echo "date=$(date -u +'%Y-%m-%d')" >> "$GITHUB_OUTPUT"
       - name: Cache Trivy vulnerability database
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: .trivycache
           key: trivy-db-${{ steps.trivy-cache-date.outputs.date }}
+          path: .trivycache
           restore-keys: |
             trivy-db-
       # MegaLinter
@@ -88,6 +88,19 @@ jobs:
       # https://megalinter.io/latest/config-file/
       - env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # ADD YOUR CUSTOM ENV VARIABLES HERE TO OVERRIDE VALUES OF
+          # .mega-linter.yml AT THE ROOT OF YOUR REPOSITORY
+
+          # Disable LLM Advisor for bot PRs (dependabot, renovate, etc.)
+          LLM_ADVISOR_ENABLED: |-
+            ${{
+              github.event_name != 'pull_request' ||
+              (github.event.pull_request.user.login != 'dependabot[bot]' &&
+               github.event.pull_request.user.login != 'renovate[bot]' &&
+               github.event.pull_request.user.login != 'github-actions[bot]' &&
+               !startsWith(github.event.pull_request.user.login, 'dependabot') &&
+               !startsWith(github.event.pull_request.user.login, 'renovate'))
+            }}
           # Points trivy at the cache directory restored by the "Cache Trivy
           # vulnerability database" step above, so it reuses the DB instead
           # of re-downloading it (and hitting the rate limit) every run.
@@ -102,19 +115,6 @@ jobs:
           # API_REPORTER_METRICS_BASIC_AUTH_PASSWORD: ${{ secrets.API_REPORTER_METRICS_BASIC_AUTH_PASSWORD }}
           # API_REPORTER_DEBUG: false
 
-          # ADD YOUR CUSTOM ENV VARIABLES HERE TO OVERRIDE VALUES OF
-          # .mega-linter.yml AT THE ROOT OF YOUR REPOSITORY
-
-          # Disable LLM Advisor for bot PRs (dependabot, renovate, etc.)
-          LLM_ADVISOR_ENABLED: |-
-            ${{
-              github.event_name != 'pull_request' ||
-              (github.event.pull_request.user.login != 'dependabot[bot]' &&
-               github.event.pull_request.user.login != 'renovate[bot]' &&
-               github.event.pull_request.user.login != 'github-actions[bot]' &&
-               !startsWith(github.event.pull_request.user.login, 'dependabot') &&
-               !startsWith(github.event.pull_request.user.login, 'renovate'))
-            }}
           # Validates all source when push on main, else just the git diff with
           # main. Override with true if you always want to lint all sources
           #
