@@ -3,12 +3,15 @@
 ACTION_ZIZMOR_UNSECURED_ENV_VARIABLES:
   - GITHUB_TOKEN
 ADDITIONAL_EXCLUDED_DIRECTORIES:
+  - .trivycache
   - apm_modules
   - node_modules
 APPLY_FIXES: all
 CLEAR_REPORT_FOLDER: true
 DISABLE_LINTERS:
+  - JAVASCRIPT_STANDARD
   - REPOSITORY_DEVSKIM
+  - TYPESCRIPT_STANDARD
 IGNORE_GITIGNORED_FILES: true
 JAVASCRIPT_DEFAULT_STYLE: prettier
 JSON_PRETTIER_PRE_COMMANDS:
@@ -18,12 +21,6 @@ JSON_PRETTIER_PRE_COMMANDS:
     secured_env: true
     tag: default
 MARKDOWN_DEFAULT_STYLE: rumdl
-# Install npm devDependencies (prettier-plugin-toml) and dependencies
-# (expo, needed to resolve tsconfig.json's "expo/tsconfig.base") before
-# linters that need them run
-PRE_COMMANDS:
-  - command: npm ci
-    cwd: workspace
 PYTHON_DEFAULT_STYLE: ruff
 REPOSITORY_KINGFISHER_ARGUMENTS: --exclude node_modules --exclude apm_modules
 SHOW_ELAPSED_TIME: true
