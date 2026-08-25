@@ -1,6 +1,13 @@
 ---
 apm_version: 0.28.0
 dependencies:
+  - content_hash: sha256:6a9ecefc9d8d3fbae6e2c1403d101072f3e03c6a22db07a6af2f649cf255dbe6
+    host: github.com
+    name: skills
+    package_type: marketplace_plugin
+    repo_url: expo/skills
+    resolved_commit: 472d040092900dc8bbf84dc7efb0c90abff77a0d
+    version: 472d040
   - content_hash: sha256:1b69742e9409feeb340ef9d61671e84ae266631b98b27143928b84b926d8e091
     declared_license: MIT
     deployed_file_hashes:
@@ -1963,6 +1970,15 @@ deployments:
     runtime: antigravity
     scope: project
     target: mcp
+    value: Expo
+  - active_owner: .
+    content_hash:
+    kind: uri
+    owners:
+      - .
+    runtime: antigravity
+    scope: project
+    target: mcp
     value: hk
   - active_owner: .
     content_hash:
@@ -1981,6 +1997,15 @@ deployments:
     runtime: cursor
     scope: project
     target: mcp
+    value: Expo
+  - active_owner: .
+    content_hash:
+    kind: uri
+    owners:
+      - .
+    runtime: cursor
+    scope: project
+    target: mcp
     value: hk
   - active_owner: .
     content_hash:
@@ -1999,6 +2024,15 @@ deployments:
     runtime: opencode
     scope: project
     target: mcp
+    value: Expo
+  - active_owner: .
+    content_hash:
+    kind: uri
+    owners:
+      - .
+    runtime: opencode
+    scope: project
+    target: mcp
     value: hk
   - active_owner: .
     content_hash:
@@ -2017,6 +2051,15 @@ deployments:
     runtime: vscode
     scope: project
     target: mcp
+    value: Expo
+  - active_owner: .
+    content_hash:
+    kind: uri
+    owners:
+      - .
+    runtime: vscode
+    scope: project
+    target: mcp
     value: hk
   - active_owner: .
     content_hash:
@@ -2027,12 +2070,17 @@ deployments:
     scope: project
     target: mcp
     value: mise
-generated_at: "2026-08-25T03:28:59.940112+00:00"
+generated_at: "2026-08-25T03:53:55.213069+00:00"
 lockfile_version: "1"
 mcp_config_provenance:
   hk: copier-mr-mise
   mise: copier-mr-mise
 mcp_configs:
+  Expo:
+    name: Expo
+    registry: false
+    transport: streamable-http
+    url: https://mcp.expo.dev/mcp
   hk:
     args:
       - mcp
@@ -2050,18 +2098,23 @@ mcp_configs:
     registry: false
     transport: stdio
 mcp_servers:
+  - Expo
   - hk
   - mise
 mcp_target_servers:
   antigravity:
+    - Expo
     - hk
     - mise
   cursor:
+    - Expo
     - hk
     - mise
   opencode:
+    - Expo
     - hk
     - mise
   vscode:
+    - Expo
     - hk
     - mise
