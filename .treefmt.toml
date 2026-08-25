@@ -58,6 +58,8 @@ excludes = [
   "*.jinja",
   "*.jpg",
   "*.lock",
+  "*.lock.*",
+  "*.lock.yaml",
   "*.mp4",
   "*.nix",
   "*.pdf",
@@ -69,7 +71,9 @@ excludes = [
   "*.typ",
   "LICENCE",
   "LICENSE",
-  "justfile"
+  "apm.lock.yaml",
+  "justfile",
+  "package-lock.json"
 ]
 includes = ["*"]
 options = ["prettier", "--log-level", "error", "--write"]
