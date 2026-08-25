@@ -9,6 +9,11 @@ local linters = new Mapping<String, Step> {
     check = "uvx git+https://github.com/lorenzwalthert/gitignore-tidy {{files}}"
     fix = "uvx git+https://github.com/lorenzwalthert/gitignore-tidy {{files}}"
   }
+  ["keep-sorted"] {
+    glob = "*"
+    check = "keep-sorted --mode lint {{files}}"
+    fix = "keep-sorted --mode fix {{files}}"
+  }
   ["ls-lint"] {
     check = "ls-lint ."
     batch = false
