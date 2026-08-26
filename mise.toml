@@ -23,6 +23,7 @@ cocogitto = "latest"
 cspell = "latest"
 git-cliff = "latest"
 hk = "latest"
+java = "21"
 ls-lint = "latest"
 node = "24"
 npm = { postinstall = "npm install", version = "latest" }
