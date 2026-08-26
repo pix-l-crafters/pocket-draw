@@ -16,6 +16,7 @@ scripts: {}
 targets:
   - agent-skills
   - antigravity
+  - claude
   - copilot
   - cursor
   - opencode
