@@ -1,13 +1,13 @@
 ---
 apm_version: 0.28.0
 dependencies:
-  - content_hash: sha256:6a9ecefc9d8d3fbae6e2c1403d101072f3e03c6a22db07a6af2f649cf255dbe6
+  - content_hash: sha256:4465cd762ba977db6e63afda7d3e5a8de506af3efb4997c34a045ac27ae287e9
     host: github.com
     name: skills
     package_type: marketplace_plugin
     repo_url: expo/skills
-    resolved_commit: 472d040092900dc8bbf84dc7efb0c90abff77a0d
-    version: 472d040
+    resolved_commit: 50f59f837ddb7595d8c6683c693207e265d58c43
+    version: 50f59f8
   - content_hash: sha256:1b69742e9409feeb340ef9d61671e84ae266631b98b27143928b84b926d8e091
     declared_license: MIT
     deployed_file_hashes:
@@ -101,15 +101,15 @@ dependencies:
     repo_url: leonxlnx/taste-skill
     resolved_commit: ccbc15639c97057cbfcf32ecebc38ef716e4bb37
     version: 1.0.0
-  - content_hash: sha256:3780e5152b86f4be3b059e4649f5c815e8d4ef8d1195fe7ea7890216a117f9a7
+  - content_hash: sha256:5aa28d2ba23929ac3d896bc8f8b6f8023a03580a7c0cdca9b6118853be682a48
     host: github.com
     materialization_repo_url: MRDGH2821/copier-mr-mise
     name: copier-mr-mise
     package_type: apm_package
     repo_url: mrdgh2821/copier-mr-mise
-    resolved_commit: c4f2000e4151cc2e7af7782cca690a6107ab085b
+    resolved_commit: 1c9eeb4476e8ea92883aaa246d32667ce87a1faf
     version: 0.8.0
-  - content_hash: sha256:6f8f5cc61a0b6cc182e231b81137981cb49db3fc1a53d5ebb40901ade50b5c1f
+  - content_hash: sha256:bc3e7a60d1b38f5a1ba24d27cb7278fb561e613405f58a99868f98402d3d862f
     deployed_file_hashes:
       .agents/skills/git-commit/SKILL.md: sha256:554d1a3c6d95f15bc1170160659ecdc9a9958b64f377f3988941b672c249b13f
       .claude/skills/git-commit/SKILL.md: sha256:554d1a3c6d95f15bc1170160659ecdc9a9958b64f377f3988941b672c249b13f
@@ -124,7 +124,7 @@ dependencies:
     package_type: skill_bundle
     repo_url: github/awesome-copilot
     resolved_by: MRDGH2821/copier-mr-mise
-    resolved_commit: 54aac3e53f60bf85400071dea542d44bc4aa6334
+    resolved_commit: 71f7c9b1dc5044287b62fc700efc034da4065f87
     skill_subset:
       - git-commit
     version: unknown
@@ -3992,7 +3992,7 @@ deployments:
     scope: project
     target: mcp
     value: mise
-generated_at: "2026-08-26T11:06:38.423207+00:00"
+generated_at: "2026-08-26T21:17:41.126891+00:00"
 lockfile_version: "1"
 mcp_config_provenance:
   hk: copier-mr-mise
