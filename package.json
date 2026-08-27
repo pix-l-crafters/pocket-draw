@@ -6,6 +6,8 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "start": "expo start",
+    "start:dev-client": "expo start --dev-client",
+    "start:tunnel": "expo start --dev-client --tunnel",
     "web": "expo start --web"
   },
   "overrides": {
@@ -22,7 +24,7 @@
     "react-native-ble-manager": "^12.5.1"
   },
   "devDependencies": {
-    "@types/react": "~19.2.2",
+    "@types/react": "~19.1.10",
     "expo-mcp": "~0.2.1",
     "prettier": "^3.9.6",
     "prettier-plugin-toml": "^2.0.6",
