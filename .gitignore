@@ -19,7 +19,9 @@ opencode.json
 
 # expo
 .expo/
+android/
 expo-env.d.ts
+ios/
 web-build/
 
 # others
