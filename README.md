@@ -29,11 +29,11 @@ This starts the Metro bundler and prints a QR code in your terminal.
 
 ### 4. View it on your iPhone
 
-This project targets **Expo SDK 54** and uses the plain **Expo Go** app — no custom dev client or Apple Developer account needed.
+This project targets **Expo SDK 54** and uses `react-native-ble-manager`, so it must run in an Expo development build. Expo Go does not include the native Bluetooth module.
 
-1. Install **Expo Go** from the App Store on your iPhone.
-2. Run `npx expo start`.
-3. Scan the QR code printed in your terminal with your iPhone's camera (it'll prompt to open in Expo Go).
+1. Build and install the development client on your iPhone with `npx expo run:ios --device`.
+2. Start Metro with `npm run start:dev-client`.
+3. Open the Pocket Draw development client and connect to the displayed server.
 
 > ⚠️ **Why SDK 54, not the latest one:** Expo Go on the App Store only supports one SDK
 > version at a time, and Apple's review process means it regularly lags behind the newest
@@ -41,10 +41,9 @@ This project targets **Expo SDK 54** and uses the plain **Expo Go** app — no c
 > supports SDK 54, so this project is pinned there deliberately — do **not** bump `expo`
 > past what the current App Store Expo Go supports without checking first — running
 > `npx expo start` will say "project is incompatible with this version of Expo Go" if
-> you do. If we later need a native module Expo Go doesn't include, we'll revisit using
-> `expo-dev-client` + EAS builds instead.
+> you do. The native Bluetooth module requires the development build described above.
 >
 > Note: your iPhone and your computer need to be on the same Wi-Fi network for the QR
 > code to connect. On restrictive networks (e.g. university wifi with client isolation),
-> run `npx expo start --tunnel` instead — it routes the connection over the internet so
+> run `npm run start:tunnel` instead — it routes the connection over the internet so
 > it works even when your phone and laptop can't see each other on the LAN.

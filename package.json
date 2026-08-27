@@ -6,6 +6,8 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "start": "expo start",
+    "start:dev-client": "expo start --dev-client",
+    "start:tunnel": "expo start --dev-client --tunnel",
     "web": "expo start --web"
   },
   "overrides": {
@@ -15,10 +17,10 @@
     "@react-native-async-storage/async-storage": "2.2.0",
     "expo": "54",
     "expo-dev-client": "~6.0.21",
-    "expo-status-bar": "~57.0.1",
+    "expo-status-bar": "~3.0.9",
     "firebase": "^12.18.0",
-    "react": "19.2.3",
-    "react-native": "0.86.2",
+    "react": "19.1.0",
+    "react-native": "0.81.5",
     "react-native-ble-manager": "^12.5.1"
   },
   "devDependencies": {
