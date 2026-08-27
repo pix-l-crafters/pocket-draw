@@ -14,10 +14,12 @@ includes: auto
 name: Pocket Draw
 scripts: {}
 targets:
+  # keep-sorted start
   - agent-skills
   - antigravity
   - claude
   - copilot
   - cursor
   - opencode
+  # keep-sorted end
 version: 0.0.0

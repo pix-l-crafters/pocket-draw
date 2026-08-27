@@ -101,15 +101,15 @@ dependencies:
     repo_url: leonxlnx/taste-skill
     resolved_commit: ccbc15639c97057cbfcf32ecebc38ef716e4bb37
     version: 1.0.0
-  - content_hash: sha256:5aa28d2ba23929ac3d896bc8f8b6f8023a03580a7c0cdca9b6118853be682a48
+  - content_hash: sha256:f4605ade08b87d4c5074d49ec5a86082e87e8efbd898fbdc00217474114ecf8d
     host: github.com
     materialization_repo_url: MRDGH2821/copier-mr-mise
     name: copier-mr-mise
     package_type: apm_package
     repo_url: mrdgh2821/copier-mr-mise
-    resolved_commit: 1c9eeb4476e8ea92883aaa246d32667ce87a1faf
-    version: 0.8.0
-  - content_hash: sha256:bc3e7a60d1b38f5a1ba24d27cb7278fb561e613405f58a99868f98402d3d862f
+    resolved_commit: fc43af756efc4912bd2b579306c73ebdefda5562
+    version: 0.9.0
+  - content_hash: sha256:74aa71d0706bee4688b4cc187759cd45d965687577ff0b4944f3c28a81aeb37d
     deployed_file_hashes:
       .agents/skills/git-commit/SKILL.md: sha256:554d1a3c6d95f15bc1170160659ecdc9a9958b64f377f3988941b672c249b13f
       .claude/skills/git-commit/SKILL.md: sha256:554d1a3c6d95f15bc1170160659ecdc9a9958b64f377f3988941b672c249b13f
@@ -124,7 +124,7 @@ dependencies:
     package_type: skill_bundle
     repo_url: github/awesome-copilot
     resolved_by: MRDGH2821/copier-mr-mise
-    resolved_commit: 71f7c9b1dc5044287b62fc700efc034da4065f87
+    resolved_commit: 634b92f887487fc61cddc2f61d77830e09e8f589
     skill_subset:
       - git-commit
     version: unknown
@@ -3992,7 +3992,7 @@ deployments:
     scope: project
     target: mcp
     value: mise
-generated_at: "2026-08-26T21:17:41.126891+00:00"
+generated_at: "2026-08-27T08:47:59.693695+00:00"
 lockfile_version: "1"
 mcp_config_provenance:
   hk: copier-mr-mise
