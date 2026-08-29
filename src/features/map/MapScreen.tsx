@@ -8,11 +8,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LocationStatusCard } from "./components/LocationStatusCard";
 import { MapStatusCard } from "./components/MapStatusCard";
 import { PlayerMarker } from "./components/PlayerMarker";
+import { PresenceStatusSnackbar } from "./components/PresenceStatusSnackbar";
 import { RecenterButton } from "./components/RecenterButton";
-import {
-  type Coordinates,
-  useForegroundLocation
-} from "./hooks/useForegroundLocation";
+import { useForegroundLocation } from "./hooks/useForegroundLocation";
+import { usePresencePublisher } from "./hooks/usePresencePublisher";
+import type { Coordinates, CurrentUser } from "./types/map.types";
 
 const INITIAL_REGION: Region = {
   latitude: -33.8688,
@@ -55,13 +55,22 @@ function getRegionForCoordinate(coordinate: Coordinates): Region {
   };
 }
 
-export function MapScreen() {
+type MapScreenProps = {
+  currentUser: CurrentUser | null;
+};
+
+export function MapScreen({ currentUser }: MapScreenProps) {
   const mapRef = useRef<MapView>(null);
   const hasCenteredOnUserRef = useRef(false);
   const [isMapReady, setIsMapReady] = useState(false);
   const { locationState, retry } = useForegroundLocation();
   const userCoordinate =
     locationState.status === "granted" ? locationState.position : null;
+  const {
+    dismissError: dismissPresenceError,
+    presenceState,
+    retry: retryPresence
+  } = usePresencePublisher({ currentUser, position: userCoordinate });
 
   useEffect(() => {
     if (!isMapReady || !userCoordinate || hasCenteredOnUserRef.current) {
@@ -124,7 +133,11 @@ export function MapScreen() {
 
       <SafeAreaView pointerEvents="box-none" style={styles.overlay}>
         <View pointerEvents="none">
-          <MapStatusCard locationState={locationState} />
+          <MapStatusCard
+            isAuthenticated={currentUser !== null}
+            locationState={locationState}
+            presenceState={presenceState}
+          />
         </View>
 
         <LocationStatusCard
@@ -137,6 +150,12 @@ export function MapScreen() {
           <RecenterButton disabled={!userCoordinate} onPress={handleRecenter} />
         </View>
       </SafeAreaView>
+
+      <PresenceStatusSnackbar
+        onDismiss={dismissPresenceError}
+        onRetry={retryPresence}
+        presenceState={presenceState}
+      />
 
       {!isMapReady ? (
         <View accessibilityLiveRegion="polite" style={styles.loadingOverlay}>

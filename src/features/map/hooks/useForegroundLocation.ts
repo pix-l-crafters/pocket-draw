@@ -7,10 +7,7 @@ import {
 } from "expo-location";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-export type Coordinates = {
-  latitude: number;
-  longitude: number;
-};
+import type { Coordinates } from "../types/map.types";
 
 export type LocationState =
   | { status: "loading" }

@@ -8,7 +8,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <PaperProvider theme={appTheme}>
-        <MapScreen />
+        <MapScreen currentUser={null} />
       </PaperProvider>
     </SafeAreaProvider>
   );
