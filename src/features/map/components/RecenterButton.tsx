@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text } from "react-native";
+import { FAB } from "react-native-paper";
 
 type RecenterButtonProps = {
   disabled?: boolean;
@@ -10,48 +10,16 @@ export function RecenterButton({
   onPress
 }: RecenterButtonProps) {
   return (
-    <Pressable
+    <FAB
       accessibilityHint="Moves the map back to your location"
       accessibilityLabel="Recenter map"
-      accessibilityRole="button"
-      accessibilityState={{ disabled }}
       disabled={disabled}
+      icon="crosshairs-gps"
+      label="Recenter"
+      mode="elevated"
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.button,
-        disabled ? styles.buttonDisabled : undefined,
-        pressed ? styles.buttonPressed : undefined
-      ]}
-    >
-      <Text style={styles.label}>Recenter</Text>
-    </Pressable>
+      size="medium"
+      variant="primary"
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  button: {
-    minHeight: 48,
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 24,
-    backgroundColor: "#101828",
-    paddingHorizontal: 18,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 5
-  },
-  buttonPressed: {
-    backgroundColor: "#344054",
-    transform: [{ scale: 0.98 }]
-  },
-  buttonDisabled: {
-    opacity: 0.55
-  },
-  label: {
-    color: "#FFFFFF",
-    fontSize: 15,
-    fontWeight: "700"
-  }
-});

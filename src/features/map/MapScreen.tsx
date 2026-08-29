@@ -1,21 +1,16 @@
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  ActivityIndicator,
-  Linking,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  View
-} from "react-native";
+import { Linking, StyleSheet, View } from "react-native";
 import MapView, { type LatLng, type Region } from "react-native-maps";
+import { ActivityIndicator, Surface, Text } from "react-native-paper";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { LocationStatusCard } from "./components/LocationStatusCard";
+import { MapStatusCard } from "./components/MapStatusCard";
 import { PlayerMarker } from "./components/PlayerMarker";
 import { RecenterButton } from "./components/RecenterButton";
 import {
   type Coordinates,
-  type LocationState,
   useForegroundLocation
 } from "./hooks/useForegroundLocation";
 
@@ -58,19 +53,6 @@ function getRegionForCoordinate(coordinate: Coordinates): Region {
     latitudeDelta: 0.012,
     longitudeDelta: 0.012
   };
-}
-
-function getLocationSummary(locationState: LocationState) {
-  switch (locationState.status) {
-    case "loading":
-      return "Finding your location...";
-    case "granted":
-      return "Your location and 3 mock players";
-    case "denied":
-      return "Location permission is required to show you";
-    case "error":
-      return "Map available without your location";
-  }
 }
 
 export function MapScreen() {
@@ -141,12 +123,8 @@ export function MapScreen() {
       </MapView>
 
       <SafeAreaView pointerEvents="box-none" style={styles.overlay}>
-        <View pointerEvents="none" style={styles.statusCard}>
-          <Text style={styles.eyebrow}>MAP PREVIEW</Text>
-          <Text style={styles.title}>Players nearby</Text>
-          <Text style={styles.subtitle}>
-            {getLocationSummary(locationState)}
-          </Text>
+        <View pointerEvents="none">
+          <MapStatusCard locationState={locationState} />
         </View>
 
         <LocationStatusCard
@@ -162,10 +140,10 @@ export function MapScreen() {
 
       {!isMapReady ? (
         <View accessibilityLiveRegion="polite" style={styles.loadingOverlay}>
-          <View style={styles.loadingCard}>
-            <ActivityIndicator color="#7F56D9" size="large" />
-            <Text style={styles.loadingText}>Loading map...</Text>
-          </View>
+          <Surface elevation={4} style={styles.loadingCard}>
+            <ActivityIndicator size="large" />
+            <Text variant="titleSmall">Loading map...</Text>
+          </Surface>
         </View>
       ) : null}
     </View>
@@ -179,37 +157,6 @@ const styles = StyleSheet.create({
   },
   overlay: {
     flex: 1
-  },
-  statusCard: {
-    alignSelf: "flex-start",
-    marginHorizontal: 16,
-    marginTop: 12,
-    borderRadius: 16,
-    backgroundColor: "rgba(255, 255, 255, 0.94)",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 4
-  },
-  eyebrow: {
-    color: "#6941C6",
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 1.2
-  },
-  title: {
-    marginTop: 2,
-    color: "#101828",
-    fontSize: 20,
-    fontWeight: "800"
-  },
-  subtitle: {
-    marginTop: 2,
-    color: "#475467",
-    fontSize: 13
   },
   recenterButton: {
     position: "absolute",
@@ -225,19 +172,8 @@ const styles = StyleSheet.create({
   loadingCard: {
     alignItems: "center",
     gap: 12,
-    borderRadius: 18,
-    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
     paddingHorizontal: 28,
-    paddingVertical: 22,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    elevation: 4
-  },
-  loadingText: {
-    color: "#344054",
-    fontSize: 15,
-    fontWeight: "600"
+    paddingVertical: 22
   }
 });
