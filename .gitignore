@@ -41,7 +41,3 @@ megalinter-reports/
 node_modules/
 report/
 target/
-
-#build
-android/
-ios/
