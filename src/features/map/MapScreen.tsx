@@ -1,7 +1,8 @@
 import { StatusBar } from "expo-status-bar";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Linking,
   SafeAreaView,
   StyleSheet,
   Text,
@@ -9,8 +10,14 @@ import {
 } from "react-native";
 import MapView, { type LatLng, type Region } from "react-native-maps";
 
+import { LocationStatusCard } from "./components/LocationStatusCard";
 import { PlayerMarker } from "./components/PlayerMarker";
 import { RecenterButton } from "./components/RecenterButton";
+import {
+  type Coordinates,
+  type LocationState,
+  useForegroundLocation
+} from "./hooks/useForegroundLocation";
 
 const INITIAL_REGION: Region = {
   latitude: -33.8688,
@@ -45,16 +52,64 @@ const MOCK_PLAYERS: ReadonlyArray<{
   }
 ];
 
+function getRegionForCoordinate(coordinate: Coordinates): Region {
+  return {
+    ...coordinate,
+    latitudeDelta: 0.012,
+    longitudeDelta: 0.012
+  };
+}
+
+function getLocationSummary(locationState: LocationState) {
+  switch (locationState.status) {
+    case "loading":
+      return "Finding your location...";
+    case "granted":
+      return "Your location and 3 mock players";
+    case "denied":
+      return "Location permission is required to show you";
+    case "error":
+      return "Map available without your location";
+  }
+}
+
 export function MapScreen() {
   const mapRef = useRef<MapView>(null);
+  const hasCenteredOnUserRef = useRef(false);
   const [isMapReady, setIsMapReady] = useState(false);
+  const { locationState, retry } = useForegroundLocation();
+  const userCoordinate =
+    locationState.status === "granted" ? locationState.position : null;
+
+  useEffect(() => {
+    if (!isMapReady || !userCoordinate || hasCenteredOnUserRef.current) {
+      return;
+    }
+
+    hasCenteredOnUserRef.current = true;
+    mapRef.current?.animateToRegion(
+      getRegionForCoordinate(userCoordinate),
+      650
+    );
+  }, [isMapReady, userCoordinate]);
 
   const handleMapReady = useCallback(() => {
     setIsMapReady(true);
   }, []);
 
   const handleRecenter = useCallback(() => {
-    mapRef.current?.animateToRegion(INITIAL_REGION, 450);
+    if (!userCoordinate) {
+      return;
+    }
+
+    mapRef.current?.animateToRegion(
+      getRegionForCoordinate(userCoordinate),
+      450
+    );
+  }, [userCoordinate]);
+
+  const handleOpenSettings = useCallback(() => {
+    void Linking.openSettings();
   }, []);
 
   return (
@@ -75,17 +130,33 @@ export function MapScreen() {
             pinColor={player.pinColor}
           />
         ))}
+        {userCoordinate ? (
+          <PlayerMarker
+            coordinate={userCoordinate}
+            description="Your current location"
+            name="You"
+            pinColor="#2E90FA"
+          />
+        ) : null}
       </MapView>
 
       <SafeAreaView pointerEvents="box-none" style={styles.overlay}>
         <View pointerEvents="none" style={styles.statusCard}>
           <Text style={styles.eyebrow}>MAP PREVIEW</Text>
           <Text style={styles.title}>Players nearby</Text>
-          <Text style={styles.subtitle}>3 mock players in the demo area</Text>
+          <Text style={styles.subtitle}>
+            {getLocationSummary(locationState)}
+          </Text>
         </View>
 
+        <LocationStatusCard
+          locationState={locationState}
+          onOpenSettings={handleOpenSettings}
+          onRetry={retry}
+        />
+
         <View style={styles.recenterButton}>
-          <RecenterButton onPress={handleRecenter} />
+          <RecenterButton disabled={!userCoordinate} onPress={handleRecenter} />
         </View>
       </SafeAreaView>
 

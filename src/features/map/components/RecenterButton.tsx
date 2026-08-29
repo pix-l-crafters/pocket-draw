@@ -1,18 +1,25 @@
 import { Pressable, StyleSheet, Text } from "react-native";
 
 type RecenterButtonProps = {
+  disabled?: boolean;
   onPress: () => void;
 };
 
-export function RecenterButton({ onPress }: RecenterButtonProps) {
+export function RecenterButton({
+  disabled = false,
+  onPress
+}: RecenterButtonProps) {
   return (
     <Pressable
-      accessibilityHint="Moves the map back to the demo area"
+      accessibilityHint="Moves the map back to your location"
       accessibilityLabel="Recenter map"
       accessibilityRole="button"
+      accessibilityState={{ disabled }}
+      disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
+        disabled ? styles.buttonDisabled : undefined,
         pressed ? styles.buttonPressed : undefined
       ]}
     >
@@ -38,6 +45,9 @@ const styles = StyleSheet.create({
   buttonPressed: {
     backgroundColor: "#344054",
     transform: [{ scale: 0.98 }]
+  },
+  buttonDisabled: {
+    opacity: 0.55
   },
   label: {
     color: "#FFFFFF",

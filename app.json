@@ -6,6 +6,14 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow Pocket Draw to use your location while you use the app so you can see yourself on the map."
+        }
+      ]
+    ],
     "ios": {
       "supportsTablet": true
     },
