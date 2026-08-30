@@ -9,10 +9,32 @@ ignore_merge_commits = false
 post_bump_hooks = []
 post_package_bump_hooks = []
 pre = "alpha.*"
-pre_bump_hooks = ["echo 'bumping from {{latest_tag|0.0.0}} to {{version_tag|0.0.1}}'", "bun pm version {{version}} --no-git-tag-version", "yq -i '.version = \"{{version}}\"' apm.yml", "yq -i '.expo.version = \"{{version}}\"' app.json", "bunx git-cliff -o CHANGELOG.md --tag {{version_tag}}", "hk fix CHANGELOG.md apm.yml"]
+pre_bump_hooks = [
+  "echo 'bumping from {{latest_tag|0.0.0}} to {{version_tag|0.0.1}}'",
+  "bun pm version {{version}} --no-git-tag-version",
+  "yq -i '.version = \"{{version}}\"' apm.yml",
+  "yq -i '.expo.version = \"{{version}}\"' app.json",
+  "bunx git-cliff -o CHANGELOG.md --tag {{version_tag}}",
+  "hk fix CHANGELOG.md apm.yml"
+]
 pre_package_bump_hooks = []
 # tombi: format.rules.array-values-order = "ascending"
-scopes = ["cocogitto", "copier", "cspell", "github", "hk", "jscpd", "megalinter", "mise", "pre-commit", "prettier", "treefmt", "version", "vscode", "zed"]
+scopes = [
+  "cocogitto",
+  "copier",
+  "cspell",
+  "github",
+  "hk",
+  "jscpd",
+  "megalinter",
+  "mise",
+  "pre-commit",
+  "prettier",
+  "treefmt",
+  "version",
+  "vscode",
+  "zed"
+]
 skip_ci = "[skip ci]"
 skip_untracked = false
 tag_prefix = "v"

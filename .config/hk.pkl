@@ -32,6 +32,9 @@ local linters = new Mapping<String, Step> {
   ["rumdl"] = (Builtins.rumdl) {
     depends = List("rumdl-format")
   }
+  ["ryl"] = (Builtins.ryl) {
+    depends = List("yamlfix")
+  }
   ["sort-package-json"] = Builtins.sort_package_json
   ["tombi"] = Builtins.tombi
   ["tombi-format"] = Builtins.tombi_format
@@ -46,9 +49,6 @@ local linters = new Mapping<String, Step> {
     check = "yamlfix --check {{files}}"
     fix = "yamlfix {{files}}"
     depends = List("prettier")
-  }
-  ["yamllint"] = (Builtins.yamllint) {
-    depends = List("yamlfix")
   }
 }
 

@@ -18,6 +18,7 @@ android-sdk = "latest"
 apm = { postinstall = "apm install", version = "latest" }
 "aqua:google/keep-sorted" = "latest"
 "aqua:numtide/treefmt" = "latest"
+"aqua:owenlamont/ryl" = "latest"
 betterleaks = "latest"
 cocogitto = "latest"
 cspell = "latest"
@@ -37,7 +38,6 @@ tombi = "latest"
 typos = "latest"
 typstyle = "latest"
 uv = "latest"
-yamllint = "latest"
 yq = "latest"
 
 [[watch_files]]

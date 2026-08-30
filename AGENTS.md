@@ -78,16 +78,33 @@ Configuration lives in `apm.yml`. Do not skip this when skills or MCP tools are 
 
 ## Layout
 
-| Path               | Purpose                                             |
-| ------------------ | --------------------------------------------------- |
-| `mise.toml`        | Tools, tasks, `hk install --mise` postinstall hook  |
-| `hk.pkl`           | hk hook config (pre-commit, commit-msg, fix, check) |
-| `apm.yml`          | APM skills and MCP servers                          |
-| `cog.toml`         | Conventional-commit scopes and version bump hooks   |
-| `.mega-linter.yml` | MegaLinter config                                   |
-| `.treefmt.toml`    | Full-tree formatter                                 |
-| `.cspell.json`     | Spell-check dictionary                              |
-| `.agents/logs/`    | AI-assisted work logs                               |
+| Path                  | Purpose                                             |
+| --------------------- | --------------------------------------------------- |
+| `mise.toml`           | Tools, tasks, `hk install --mise` postinstall hook  |
+| `.config/hk.pkl`      | hk hook config (pre-commit, commit-msg, fix, check) |
+| `apm.yml`             | APM skills and MCP servers                          |
+| `cog.toml`            | Conventional-commit scopes and version bump hooks   |
+| `.mega-linter.yml`    | MegaLinter config                                   |
+| `.treefmt.toml`       | Full-tree formatter                                 |
+| `.config/cspell.json` | Spell-check dictionary                              |
+| `.agents/logs/`       | AI-assisted work logs                               |
+
+## Recommendations
+
+### Configuration directory
+
+If this project is a tool, CLI, or library that reads its own configuration,
+make it resolve that configuration from a project-level `.config/` directory
+(e.g. `.config/<project-name>.toml`) in addition to any other supported
+locations. This template already keeps its own tool configs there
+(`.config/cspell.json`, `.config/rumdl.toml`, `.config/cliff.toml`); extending
+the same convention to what this project ships keeps consumers' repo roots tidy.
+
+References:
+
+- <https://github.com/numtide/prj-spec> — project directory specification
+- <https://dot-config.github.io/> — the `.config/` directory convention
+- <https://github.com/pi0/config-dir> — reference implementation for resolving it
 
 ## Branch naming strategy
 
@@ -173,7 +190,7 @@ MCP clients should use `inspect_project`, `plan`, safe run tools, paged output, 
 
 ### CSpell
 
-- Config: `.cspell.json`
+- Config: `.config/cspell.json`
 - Add project-specific words to the `words` array
 - Don't disable spell checking without good reason
 - Run with `mise run cspell`
@@ -181,7 +198,7 @@ MCP clients should use `inspect_project`, `plan`, safe run tools, paged output, 
 ### Formatting and Hooks (hk)
 
 - Run `hk run fix` or `mise run fmt` before committing to format all supported file types
-- `hk` integrates formatters and linters in `hk.pkl` for staged files and hook checks
+- `hk` integrates formatters and linters in `.config/hk.pkl` for staged files and hook checks
 
 ## Commit Messages
 
@@ -215,7 +232,7 @@ Version bumps use cocogitto (`cog bump`); pre-bump hooks update `package.json`, 
 
 **Spell check failures:**
 
-- Add legitimate technical terms to `.cspell.json` `words` array
+- Add legitimate technical terms to `.config/cspell.json` `words` array
 - Use proper capitalization for proper nouns
 - Don't add obvious typos to the dictionary
 
