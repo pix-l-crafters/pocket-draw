@@ -1,60 +1,37 @@
-import { StatusBar } from "expo-status-bar";
-import { useEffect, useState } from "react";
-import BleManager, { type Peripheral } from "react-native-ble-manager";
-import {
-  Button,
-  FlatList,
-  PermissionsAndroid,
-  Platform,
-  StyleSheet,
-  Text,
-  View
-} from "react-native";
+import { useState } from "react";
+import { StyleSheet, View } from "react-native";
+import { PaperProvider, SegmentedButtons } from "react-native-paper";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
-import { PaperProvider } from "react-native-paper";
-import { SafeAreaProvider } from "react-native-safe-area-context";
-
+import { BleScreen } from "./src/features/ble/BleScreen";
 import { MapScreen } from "./src/features/map/MapScreen";
 import { appTheme } from "./src/theme/appTheme";
 
 export default function App() {
+  const [activeTab, setActiveTab] = useState<"map" | "ble">("map");
+
   return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <Text>Mobark was here from ios</Text>
-      <StatusBar style="auto" />
-      <Text style={styles.title}>BLE Demo (react-native-ble-manager)</Text>
-      <Text style={styles.status}>{status}</Text>
-      <Button
-        title={isScanning ? "Scanning..." : "Scan for 5 seconds"}
-        onPress={() => void startScan()}
-        disabled={!isReady || isScanning}
-      />
-      <FlatList
-        data={devices}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>
-            {isScanning ? "Looking for devices..." : "No devices found yet"}
-          </Text>
-        }
-        renderItem={({ item }) => (
-          <View style={styles.deviceRow}>
-            <Text style={styles.deviceName}>
-              {item.name ?? item.advertising.localName ?? "Unnamed device"}
-            </Text>
-            <Text style={styles.deviceMeta}>
-              {item.id} | RSSI: {item.rssi}
-            </Text>
-          </View>
-        )}
-      />
-      <StatusBar style="auto" />
-    </View>
     <SafeAreaProvider>
       <PaperProvider theme={appTheme}>
-        <MapScreen currentUser={null} />
+        <SafeAreaView edges={["top"]} style={styles.container}>
+          <View style={styles.switcherContainer}>
+            <SegmentedButtons
+              buttons={[
+                { value: "map", label: "Map" },
+                { value: "ble", label: "BLE Scanner" }
+              ]}
+              onValueChange={(val) => setActiveTab(val as "map" | "ble")}
+              value={activeTab}
+            />
+          </View>
+          <View style={styles.screenContainer}>
+            {activeTab === "map" ? (
+              <MapScreen currentUser={null} />
+            ) : (
+              <BleScreen />
+            )}
+          </View>
+        </SafeAreaView>
       </PaperProvider>
     </SafeAreaProvider>
   );
@@ -63,38 +40,14 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingTop: 56,
-    paddingHorizontal: 16
+    backgroundColor: "#fff"
   },
-  title: {
-    fontSize: 20,
-    fontWeight: "600",
-    marginBottom: 8
-  },
-  status: {
-    marginBottom: 16
-  },
-  list: {
-    paddingTop: 16,
-    paddingBottom: 24
-  },
-  emptyText: {
-    color: "#666"
-  },
-  deviceRow: {
+  switcherContainer: {
+    paddingHorizontal: 16,
     paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee"
+    backgroundColor: "#fff"
   },
-  deviceName: {
-    fontSize: 16,
-    fontWeight: "500"
-  },
-  deviceMeta: {
-    color: "#444",
-    marginTop: 2
+  screenContainer: {
+    flex: 1
   }
 });
