@@ -68,6 +68,7 @@ excludes = [
   "*.png",
   "*.pptx",
   "*.py",
+  "*.toml",
   "*.txt",
   "*.typ",
   "LICENCE",
