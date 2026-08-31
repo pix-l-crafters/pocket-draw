@@ -1,12 +1,45 @@
 {
   "expo": {
-    "name": "Pocket Draw",
-    "slug": "pocket-draw",
-    "version": "1.0.0",
-    "orientation": "portrait",
+    
+    
+    
+    
+    
+ 
+    
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "package": "com.anonymous.pocketdraw",
+      "permissions": [
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.BLUETOOTH_CONNECT",
+        "android.permission.BLUETOOTH_SCAN",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ],
+      "predictiveBackGestureEnabled": false
+    },
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "ios": {
+      "bundleIdentifier": "com.anonymous.pocketdraw",
+      "supportsTablet": true
+    },
+    "name": "Pocket Draw",
+    "orientation": "portrait",
     "plugins": [
+      [
+        "react-native-ble-manager",
+        {
+          "bluetoothAlwaysPermission": "This app requires Bluetooth access.",
+          "isBleRequired": true,
+          "neverForLocation": true
+        }
+      ],
       [
         "expo-location",
         {
@@ -14,18 +47,9 @@
         }
       ]
     ],
-    "ios": {
-      "supportsTablet": true
-    },
-    "android": {
-      "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
-      },
-      "predictiveBackGestureEnabled": false
-    },
+    "slug": "pocket-draw",
+    "userInterfaceStyle": "light",
+    "version": "0.0.0",
     "web": {
       "favicon": "./assets/favicon.png"
     }

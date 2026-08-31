@@ -4,14 +4,22 @@ dependencies:
   apm:
     - git: https://github.com/MRDGH2821/copier-mr-mise
     - git: https://github.com/Leonxlnx/taste-skill
-  mcp: []
+    - git: https://github.com/expo/skills
+  mcp:
+    - name: Expo
+      registry: false
+      transport: streamable-http
+      url: https://mcp.expo.dev/mcp
 includes: auto
 name: Pocket Draw
 scripts: {}
 targets:
+  # keep-sorted start
   - agent-skills
   - antigravity
+  - claude
   - copilot
   - cursor
   - opencode
+  # keep-sorted end
 version: 0.0.0
