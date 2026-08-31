@@ -3,8 +3,8 @@
 *.lock.*
 *.lock.yaml
 apm.lock.yaml
-package-lock.json
 firestore.rules
+package-lock.json
 
 # build outputs & caches
 .expo/
