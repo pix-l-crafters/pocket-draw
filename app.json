@@ -1,23 +1,48 @@
 {
   "expo": {
-    "name": "Pocket Draw",
-    "slug": "pocket-draw",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "ios": {
-      "supportsTablet": true
-    },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
+        "foregroundImage": "./assets/android-icon-foreground.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
+      "package": "com.anonymous.pocketdraw",
+      "permissions": [
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.BLUETOOTH_CONNECT",
+        "android.permission.BLUETOOTH_SCAN",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ],
       "predictiveBackGestureEnabled": false
     },
+    "icon": "./assets/icon.png",
+    "ios": {
+      "bundleIdentifier": "com.anonymous.pocketdraw",
+      "supportsTablet": true
+    },
+    "name": "Pocket Draw",
+    "orientation": "portrait",
+    "plugins": [
+      [
+        "react-native-ble-manager",
+        {
+          "bluetoothAlwaysPermission": "This app requires Bluetooth access.",
+          "isBleRequired": true,
+          "neverForLocation": true
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow Pocket Draw to use your location while you use the app so you can see yourself on the map."
+        }
+      ]
+    ],
+    "slug": "pocket-draw",
+    "userInterfaceStyle": "light",
+    "version": "0.0.0",
     "web": {
       "favicon": "./assets/favicon.png"
     }

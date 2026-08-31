@@ -1,6 +1,13 @@
 # :schema https://gist.githubusercontent.com/MRDGH2821/d61a45f6d91c94d1c9d3d1307036d361/raw/fe5c99a3237fa12ee6e0c247999832857d97d353/treefmt-schema.json
 
 allow-missing-formatter = true
+excludes = ["package-lock.json"]
+
+[formatter.alejandra]
+command = "alejandra"
+includes = ["*.nix"]
+options = ["-q"]
+priority = 10
 
 [formatter.cspell-sort]
 command = "yq"
@@ -26,6 +33,16 @@ includes = ["**/.*ignore", ".*ignore"]
 options = ["git+https://github.com/lorenzwalthert/gitignore-tidy"]
 priority = 1
 
+[formatter.keep-sorted]
+command = "keep-sorted"
+includes = ["*"]
+priority = 10
+
+[formatter.nixfmt]
+command = "nixfmt"
+includes = ["*.nix"]
+priority = 1
+
 [formatter.pkl]
 command = "pkl"
 includes = ["*.pkl"]
@@ -38,9 +55,12 @@ excludes = [
   "*.*ignore",
   "*.aac",
   "*.docx",
+  "*.gitkeep",
   "*.jinja",
   "*.jpg",
   "*.lock",
+  "*.lock.*",
+  "*.lock.yaml",
   "*.mp4",
   "*.nix",
   "*.pdf",
@@ -48,11 +68,14 @@ excludes = [
   "*.png",
   "*.pptx",
   "*.py",
+  "*.toml",
   "*.txt",
   "*.typ",
   "LICENCE",
   "LICENSE",
-  "justfile"
+  "apm.lock.yaml",
+  "justfile",
+  "package-lock.json"
 ]
 includes = ["*"]
 options = ["prettier", "--log-level", "error", "--write"]

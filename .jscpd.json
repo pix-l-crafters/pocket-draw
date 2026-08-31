@@ -11,7 +11,8 @@
     "**/node_modules/**",
     "**/package-lock.json",
     "**/report/**",
-    "template/**"
+    "template/**",
+    "docs/superpowers/**"
   ],
   "reporters": ["html", "markdown"],
   "threshold": 0
