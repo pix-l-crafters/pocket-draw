@@ -22,6 +22,7 @@ apm = { postinstall = "apm install", version = "latest" }
 betterleaks = "latest"
 cocogitto = "latest"
 cspell = "latest"
+fnox = "latest"
 git-cliff = "latest"
 hk = "latest"
 java = "21"
