@@ -12,6 +12,18 @@ export type QrInvitePayload = {
     discoveryToken: string;
    };
 };
+
+/** Reasons a QR invite payload can fail validation, reported back to the caller. */
+export type QrValidationErrorCode =
+    | "TOO_LARGE"
+    | "MALFORMED_JSON"
+    | "INVALID_PAYLOAD"
+    | "UNSUPPORTED_VERSION"
+    | "UNSUPPORTED_TRANSPORT"
+    | "EXPIRED"
+    | "INVALID_TIME"
+    | "SELF_INVITE";
+
 //Parsing succeeded
 const now = Date.now();
 const exampleInvite: QrInvitePayload = {

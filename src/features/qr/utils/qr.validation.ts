@@ -161,3 +161,58 @@ console.log(hasValidMatchId({ matchId: "d970d475-0992-5e92-86df-b44c1f8115a9" })
 console.log(hasValidMatchId({ matchId: 123 }));
 console.log(hasValidMatchId({}));
 console.log(hasValidMatchId(null));
+
+
+/** Check timestamp number formats only; lifetime and expiry are checked separately. */
+export function hasValidTimestampFields(value: unknown): boolean {
+    if (!isRecord(value)) {
+        return false;
+    }
+    return Number.isSafeInteger(value.issuedAt) &&
+        Number.isSafeInteger(value.expiresAt);
+}
+
+// Fixed values keep these examples repeatable without depending on the current time.
+// Expected: true, then eight false results.
+console.log(hasValidTimestampFields({ issuedAt: 1_000_000, expiresAt: 1_120_000 }));
+console.log(hasValidTimestampFields({ issuedAt: "1000000", expiresAt: 1_120_000 }));
+console.log(hasValidTimestampFields({ issuedAt: 1_000_000, expiresAt: 1.5 }));
+console.log(hasValidTimestampFields({ issuedAt: NaN, expiresAt: 1_120_000 }));
+console.log(hasValidTimestampFields({ issuedAt: 1_000_000, expiresAt: Infinity }));
+console.log(hasValidTimestampFields({ issuedAt: 1_000_000, expiresAt: Number.MAX_SAFE_INTEGER + 1 }));
+console.log(hasValidTimestampFields({ issuedAt: 1_000_000 }));
+console.log(hasValidTimestampFields({}));
+console.log(hasValidTimestampFields(null));
+
+/** Require the invite's issued/expiry gap to be exactly the fixed two-minute lifetime. */
+export function hasValidLifetime(
+    issuedAt: number,
+    expiresAt: number
+): boolean {
+    // Return whether the lifetime is exactly two minutes.
+    return expiresAt - issuedAt === 120_000;
+}
+
+/** Check whether an invite has passed its expiry time relative to the given clock reading. */
+export function isInviteExpired(
+    expiresAt: number,
+    now: number
+): boolean {
+    // An invite is expired at or after its expiry time.
+    return now >= expiresAt;
+}
+console.log(isInviteExpired(1_120_000, 1_119_999)); // false: before expiry
+console.log(isInviteExpired(1_120_000, 1_120_000)); // true: exactly at expiry
+console.log(isInviteExpired(1_120_000, 1_120_001)); // true: after expiry
+
+/** Guard against clock-skewed or forged invites issued more than 30 seconds ahead of now. */
+export function isIssuedTooFarInFuture(
+    issuedAt: number,
+    now: number
+): boolean {
+    // Reject issue times more than 30 seconds ahead of the local clock.
+    return issuedAt - now > 30_000;
+}
+console.log(isIssuedTooFarInFuture(1_029_999, 1_000_000)); // false
+console.log(isIssuedTooFarInFuture(1_030_000, 1_000_000)); // false
+console.log(isIssuedTooFarInFuture(1_030_001, 1_000_000)); // true
