@@ -97,7 +97,7 @@ export function hasValidChallengeToken(value: unknown): boolean {
     return typeof value.challengeToken === "string" && /^[0-9a-f]{32}$/.test(value.challengeToken)
 }
 // Expected: true, then seven false results (length, characters, type and missing data).
-console.log(hasValidChallengeToken({ challengeToken: "9f08bc127e44a031b69307dc84f2a658" }));
+console.log(hasValidChallengeToken({ challengeToken: "9f08bc127e44a031b69307dc84f2a658" })); // gitleaks:allow fixed example token, not a real secret
 console.log(hasValidChallengeToken({ challengeToken: "a".repeat(31) }));
 console.log(hasValidChallengeToken({ challengeToken: "a".repeat(33) }));
 console.log(hasValidChallengeToken({ challengeToken: "g".repeat(32) }));

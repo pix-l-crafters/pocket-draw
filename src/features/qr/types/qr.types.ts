@@ -32,7 +32,7 @@ const exampleInvite: QrInvitePayload = {
     matchId: "test-match-001",
     hostPlayerId:"test-host-002",
     hostPlayerName: "hostName",
-    challengeToken:"9f08bc127e44a031b69307dc84f2a658",
+    challengeToken:"9f08bc127e44a031b69307dc84f2a658", // gitleaks:allow fixed example token, not a real secret
     issuedAt: now,
     expiresAt: now + 120_000,
     transport: "ble",
@@ -52,5 +52,5 @@ try {
     JSON.parse('{"version": 1}');
     console.log("Parsing succeeded");
 } catch (error) {
-    console.log("Parsing failed; error caugth");
+    console.log("Parsing failed; error caught");
 }
