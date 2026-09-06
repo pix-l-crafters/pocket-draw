@@ -1,6 +1,6 @@
 # Quickdraw Design System Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Extract a reusable component library from the "Quickdraw Showdown" mockup's dark,
 tactical-HUD visual language and apply it consistently to Login, Register, Map, and BLE —
@@ -43,7 +43,7 @@ dev-client, so it would force a rebuild before anything using it would render.
   `displayBold`, `mono` — all `string`, exact `expo-font` family names), `cutCornerSize`
   (object: `small`, `medium`, `large` — all `number`, pixel values)
 
-- [ ] **Step 1: Install the new dependencies**
+- [x] **Step 1: Install the new dependencies**
 
 Run:
 
@@ -57,7 +57,7 @@ current dev-client — confirmed via `ios/Podfile.lock`, present there as a tran
 dependency of `@expo/vector-icons` — so this doesn't force a rebuild. The three font
 packages are pure JS/asset data.)
 
-- [ ] **Step 2: Write `src/theme/tokens.ts`**
+- [x] **Step 2: Write `src/theme/tokens.ts`**
 
 ```ts
 export const colors = {
@@ -89,12 +89,12 @@ export const cutCornerSize = {
 } as const;
 ```
 
-- [ ] **Step 3: Verify it type-checks**
+- [x] **Step 3: Verify it type-checks**
 
 Run: `npx tsc --noEmit`
 Expected: no new errors (this file has no dependents yet, so it should be silent).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add package.json package-lock.json src/theme/tokens.ts
@@ -130,7 +130,7 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
   `corner?: keyof typeof cutCornerSize`, `fill?: string`, `maskColor?: string`,
   `style?: StyleProp<ViewStyle>`), `CutCornerButton` (props: `disabled?: boolean`,
   `label: string`, `onPress: () => void`)
-- [ ] **Step 1: Write `src/components/CutCornerSurface.tsx`**
+- [x] **Step 1: Write `src/components/CutCornerSurface.tsx`**
 
 React Native has no native `clip-path`, and `react-native-svg` isn't available without a
 rebuild (see Task 1). Instead: paint a small square, rotated 45°, colored to match whatever
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
 });
 ```
 
-- [ ] **Step 2: Write `src/components/CutCornerButton.tsx`**
+- [x] **Step 2: Write `src/components/CutCornerButton.tsx`**
 
 ```tsx
 import { Pressable, StyleSheet, Text } from "react-native";
@@ -268,12 +268,12 @@ const styles = StyleSheet.create({
 });
 ```
 
-- [ ] **Step 3: Verify it type-checks**
+- [x] **Step 3: Verify it type-checks**
 
 Run: `npx tsc --noEmit`
 Expected: no new errors.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/components/CutCornerSurface.tsx src/components/CutCornerButton.tsx
@@ -304,7 +304,7 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
   `style?: StyleProp<TextStyle>`), `DisplayHeading` (props: `children: string`,
   `size?: number`, `style?: StyleProp<TextStyle>`), `ScreenHeader` (props:
   `kicker: string`, `subtitle?: string`, `title: string`)
-- [ ] **Step 1: Write `src/components/KickerLabel.tsx`**
+- [x] **Step 1: Write `src/components/KickerLabel.tsx`**
 
 ```tsx
 import { StyleSheet, Text, type StyleProp, type TextStyle } from "react-native";
@@ -335,7 +335,7 @@ const styles = StyleSheet.create({
 });
 ```
 
-- [ ] **Step 2: Write `src/components/DisplayHeading.tsx`**
+- [x] **Step 2: Write `src/components/DisplayHeading.tsx`**
 
 ```tsx
 import { StyleSheet, Text, type StyleProp, type TextStyle } from "react-native";
@@ -375,7 +375,7 @@ const styles = StyleSheet.create({
 });
 ```
 
-- [ ] **Step 3: Write `src/components/ScreenHeader.tsx`**
+- [x] **Step 3: Write `src/components/ScreenHeader.tsx`**
 
 ```tsx
 import { StyleSheet, Text, View } from "react-native";
@@ -419,12 +419,12 @@ const styles = StyleSheet.create({
 });
 ```
 
-- [ ] **Step 4: Verify it type-checks**
+- [x] **Step 4: Verify it type-checks**
 
 Run: `npx tsc --noEmit`
 Expected: no new errors.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/components/KickerLabel.tsx src/components/DisplayHeading.tsx src/components/ScreenHeader.tsx
@@ -453,7 +453,7 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 - Produces: `StatTile` (props: `label: string`, `tint?: string`, `unit?: string`,
   `value: string`), `StatusTag` (props: `children: string`,
   `tone?: "muted" | "success" | "warning"`)
-- [ ] **Step 1: Write `src/components/StatTile.tsx`**
+- [x] **Step 1: Write `src/components/StatTile.tsx`**
 
 ```tsx
 import { StyleSheet, Text, View } from "react-native";
@@ -510,7 +510,7 @@ const styles = StyleSheet.create({
 });
 ```
 
-- [ ] **Step 2: Write `src/components/StatusTag.tsx`**
+- [x] **Step 2: Write `src/components/StatusTag.tsx`**
 
 ```tsx
 import { StyleSheet, Text } from "react-native";
@@ -544,12 +544,12 @@ const styles = StyleSheet.create({
 });
 ```
 
-- [ ] **Step 3: Verify it type-checks**
+- [x] **Step 3: Verify it type-checks**
 
 Run: `npx tsc --noEmit`
 Expected: no new errors.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/components/StatTile.tsx src/components/StatusTag.tsx
@@ -608,7 +608,7 @@ export const appTheme: MD3Theme = {
 - Consumes: `colors` from `./tokens` (Task 1)
 - Produces: `appTheme: MD3Theme` (same export name/type as before — every existing import
   of `appTheme` keeps working unchanged)
-- [ ] **Step 1: Replace the whole file**
+- [x] **Step 1: Replace the whole file**
 
 ```ts
 import { MD3DarkTheme, type MD3Theme } from "react-native-paper";
@@ -643,12 +643,12 @@ export const appTheme: MD3Theme = {
 };
 ```
 
-- [ ] **Step 2: Verify it type-checks**
+- [x] **Step 2: Verify it type-checks**
 
 Run: `npx tsc --noEmit`
 Expected: no new errors.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/theme/appTheme.ts
@@ -864,7 +864,7 @@ const styles = StyleSheet.create({
   `./src/theme/appTheme` (Task 5, same export signature)
 - Produces: `App` default export (unchanged signature — no props, used only as the Expo
   entrypoint via `index.ts`)
-- [ ] **Step 1: Replace the whole file**
+- [x] **Step 1: Replace the whole file**
 
 ```tsx
 import { useEffect, useState } from "react";
@@ -1066,12 +1066,12 @@ read Paper's theme in a few places, and are used inside Login/Register in Tasks 
 correctly there too. The loading condition now also waits on all three font hooks, not just
 Firebase auth state.
 
-- [ ] **Step 2: Verify it type-checks**
+- [x] **Step 2: Verify it type-checks**
 
 Run: `npx tsc --noEmit`
 Expected: no new errors.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add App.tsx
@@ -1101,7 +1101,7 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 - Consumes: `loginUser` from `../lib/auth` (existing, unchanged), `CutCornerButton` (Task 2),
   `ScreenHeader` (Task 3), `colors`/`fonts` from `../theme/tokens` (Task 1)
 - Produces: `LoginScreen` default export (unchanged signature — no props)
-- [ ] **Step 1: Replace the whole file**
+- [x] **Step 1: Replace the whole file**
 
 ```tsx
 import { useState } from "react";
@@ -1184,12 +1184,12 @@ const styles = StyleSheet.create({
 });
 ```
 
-- [ ] **Step 2: Verify it type-checks**
+- [x] **Step 2: Verify it type-checks**
 
 Run: `npx tsc --noEmit`
 Expected: no new errors.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/screens/LoginScreen.tsx
@@ -1215,7 +1215,7 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 - Consumes: `registerUser` from `../lib/auth` (existing, unchanged), `CutCornerButton`
   (Task 2), `ScreenHeader` (Task 3), `colors`/`fonts` from `../theme/tokens` (Task 1)
 - Produces: `RegisterScreen` default export (unchanged signature — no props)
-- [ ] **Step 1: Replace the whole file**
+- [x] **Step 1: Replace the whole file**
 
 ```tsx
 import { useState } from "react";
@@ -1313,12 +1313,12 @@ const styles = StyleSheet.create({
 });
 ```
 
-- [ ] **Step 2: Verify it type-checks**
+- [x] **Step 2: Verify it type-checks**
 
 Run: `npx tsc --noEmit`
 Expected: no new errors.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/screens/RegisterScreen.tsx
@@ -1352,7 +1352,7 @@ They read colors entirely from Paper's active theme, so Task 5's dark `appTheme`
 them automatically with zero code changes. `PlayerMarker`'s `pinColor` prop is per-marker
 map-pin styling handled by the native Maps SDK, not part of this token system — left as-is.
 
-- [ ] **Step 1: Update `MapScreen.tsx`'s hardcoded colors**
+- [x] **Step 1: Update `MapScreen.tsx`'s hardcoded colors**
 
 In `src/features/map/MapScreen.tsx`, add the import (alongside the existing imports):
 
@@ -1395,7 +1395,7 @@ const styles = StyleSheet.create({
 });
 ```
 
-- [ ] **Step 2: Update `BleScreen.tsx`'s hardcoded colors**
+- [x] **Step 2: Update `BleScreen.tsx`'s hardcoded colors**
 
 In `src/features/ble/BleScreen.tsx`, add the import (alongside the existing imports):
 
@@ -1444,12 +1444,12 @@ so add `style={styles.title}` there too if it doesn't already — check the curr
 it only has `style={styles.title} variant="titleMedium"` already (it does, per the file
 already read), no JSX change is needed, only the `styles` object above.
 
-- [ ] **Step 3: Verify it type-checks**
+- [x] **Step 3: Verify it type-checks**
 
 Run: `npx tsc --noEmit`
 Expected: no new errors.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/features/map/MapScreen.tsx src/features/ble/BleScreen.tsx
@@ -1470,19 +1470,19 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 
 **Files:** none (verification only)
 
-- [ ] **Step 1: Full type-check**
+- [x] **Step 1: Full type-check**
 
 Run: `npx tsc --noEmit`
 Expected: clean, zero errors, across every file touched by Tasks 1-9.
 
-- [ ] **Step 2: Full Metro bundle smoke test**
+- [x] **Step 2: Full Metro bundle smoke test**
 
 Run: `npx expo export --platform ios --output-dir /tmp/design-system-export-test`
 Expected: bundles successfully with zero errors (this catches real import/runtime issues
 `tsc` alone can't, per the same method used earlier this session to verify the App.tsx
 merge-conflict fix).
 
-- [ ] **Step 3: Confirm no other screens/files were missed**
+- [x] **Step 3: Confirm no other screens/files were missed**
 
 Run: `git diff --stat mobark/chore/eas-project-init..HEAD` (or the equivalent range for
 this branch's design-system commits) and confirm the full file list matches: `package.json`,
@@ -1491,7 +1491,7 @@ this branch's design-system commits) and confirm the full file list matches: `pa
 `src/features/map/MapScreen.tsx`, `src/features/ble/BleScreen.tsx`. No other file should
 appear.
 
-- [ ] **Step 4: Leave a clear summary**
+- [x] **Step 4: Leave a clear summary**
 
 No commit needed for this task — it's verification only. If Steps 1-2 fail, return to the
 task that introduced the failure (per `superpowers:systematic-debugging` — find root cause
