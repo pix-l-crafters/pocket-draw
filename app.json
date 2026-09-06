@@ -42,7 +42,8 @@
         {
           "locationWhenInUsePermission": "Allow Pocket Draw to use your location while you use the app so you can see yourself on the map."
         }
-      ]
+      ],
+      "expo-font"
     ],
     "slug": "pocket-draw",
     "userInterfaceStyle": "light",
