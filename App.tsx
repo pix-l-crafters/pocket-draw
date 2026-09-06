@@ -2,6 +2,18 @@ import { useEffect, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { onAuthStateChanged, User } from "firebase/auth";
+import {
+  Barlow_400Regular,
+  useFonts as useBarlowFonts
+} from "@expo-google-fonts/barlow";
+import {
+  BarlowCondensed_700Bold,
+  useFonts as useBarlowCondensedFonts
+} from "@expo-google-fonts/barlow-condensed";
+import {
+  IBMPlexMono_400Regular,
+  useFonts as useIBMPlexMonoFonts
+} from "@expo-google-fonts/ibm-plex-mono";
 import { PaperProvider, SegmentedButtons } from "react-native-paper";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
@@ -13,6 +25,7 @@ import type { CurrentUser } from "./src/features/map/types/map.types";
 import LoginScreen from "./src/screens/LoginScreen";
 import RegisterScreen from "./src/screens/RegisterScreen";
 import { appTheme } from "./src/theme/appTheme";
+import { colors } from "./src/theme/tokens";
 
 function toCurrentUser(user: User): CurrentUser {
   return {
@@ -23,94 +36,98 @@ function toCurrentUser(user: User): CurrentUser {
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
   const [showRegister, setShowRegister] = useState(false);
   const [activeTab, setActiveTab] = useState<"map" | "ble">("map");
+  const [barlowLoaded] = useBarlowFonts({ Barlow_400Regular });
+  const [barlowCondensedLoaded] = useBarlowCondensedFonts({
+    BarlowCondensed_700Bold
+  });
+  const [ibmPlexMonoLoaded] = useIBMPlexMonoFonts({ IBMPlexMono_400Regular });
+  const fontsLoaded =
+    barlowLoaded && barlowCondensedLoaded && ibmPlexMonoLoaded;
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      setLoading(false);
+      setAuthLoading(false);
     });
 
     return unsubscribe;
   }, []);
 
-  if (loading) {
-    return (
-      <View style={styles.authScreen}>
-        <StatusBar style="light" />
-        <Text style={styles.loadingText}>Loading...</Text>
-      </View>
-    );
-  }
-
-  if (!user) {
-    if (showRegister) {
-      return (
-        <View style={styles.authScreen}>
-          <StatusBar style="light" />
-
-          <RegisterScreen />
-
-          <TouchableOpacity
-            style={styles.switchButton}
-            onPress={() => setShowRegister(false)}
-          >
-            <Text style={styles.switchText}>
-              Already have an account?{" "}
-              <Text style={styles.switchHighlight}>Login</Text>
-            </Text>
-          </TouchableOpacity>
-        </View>
-      );
-    }
-
-    return (
-      <View style={styles.authScreen}>
-        <StatusBar style="light" />
-
-        <LoginScreen />
-
-        <TouchableOpacity
-          style={styles.switchButton}
-          onPress={() => setShowRegister(true)}
-        >
-          <Text style={styles.switchText}>
-            Don&apos;t have an account?{" "}
-            <Text style={styles.switchHighlight}>Register</Text>
-          </Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
+  const loading = authLoading || !fontsLoaded;
 
   return (
     <SafeAreaProvider>
       <PaperProvider theme={appTheme}>
-        <SafeAreaView edges={["top"]} style={styles.container}>
-          <View style={styles.switcherContainer}>
-            <SegmentedButtons
-              buttons={[
-                { value: "map", label: "Map" },
-                { value: "ble", label: "BLE Scanner" }
-              ]}
-              onValueChange={(val) => setActiveTab(val as "map" | "ble")}
-              style={styles.switcher}
-              value={activeTab}
-            />
-            <TouchableOpacity onPress={logoutUser} style={styles.logoutButton}>
-              <Text style={styles.logoutButtonText}>Logout</Text>
-            </TouchableOpacity>
+        {loading ? (
+          <View style={styles.authScreen}>
+            <StatusBar style="light" />
+            <Text style={styles.loadingText}>Loading...</Text>
           </View>
-          <View style={styles.screenContainer}>
-            {activeTab === "map" ? (
-              <MapScreen currentUser={toCurrentUser(user)} />
-            ) : (
-              <BleScreen />
-            )}
-          </View>
-        </SafeAreaView>
+        ) : !user ? (
+          showRegister ? (
+            <View style={styles.authScreen}>
+              <StatusBar style="light" />
+
+              <RegisterScreen />
+
+              <TouchableOpacity
+                onPress={() => setShowRegister(false)}
+                style={styles.switchButton}
+              >
+                <Text style={styles.switchText}>
+                  Already have an account?{" "}
+                  <Text style={styles.switchHighlight}>Login</Text>
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.authScreen}>
+              <StatusBar style="light" />
+
+              <LoginScreen />
+
+              <TouchableOpacity
+                onPress={() => setShowRegister(true)}
+                style={styles.switchButton}
+              >
+                <Text style={styles.switchText}>
+                  Don&apos;t have an account?{" "}
+                  <Text style={styles.switchHighlight}>Register</Text>
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )
+        ) : (
+          <SafeAreaView edges={["top"]} style={styles.container}>
+            <View style={styles.switcherContainer}>
+              <SegmentedButtons
+                buttons={[
+                  { value: "map", label: "Map" },
+                  { value: "ble", label: "BLE Scanner" }
+                ]}
+                onValueChange={(val) => setActiveTab(val as "map" | "ble")}
+                style={styles.switcher}
+                value={activeTab}
+              />
+              <TouchableOpacity
+                onPress={logoutUser}
+                style={styles.logoutButton}
+              >
+                <Text style={styles.logoutButtonText}>Logout</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.screenContainer}>
+              {activeTab === "map" ? (
+                <MapScreen currentUser={toCurrentUser(user)} />
+              ) : (
+                <BleScreen />
+              )}
+            </View>
+          </SafeAreaView>
+        )}
       </PaperProvider>
     </SafeAreaProvider>
   );
@@ -118,65 +135,55 @@ export default function App() {
 
 const styles = StyleSheet.create({
   authScreen: {
-    flex: 1,
-    backgroundColor: "#0F0F14",
     alignItems: "center",
+    backgroundColor: colors.background,
+    flex: 1,
     justifyContent: "center",
     paddingHorizontal: 28
   },
-
   loadingText: {
-    color: "#FFFFFF",
+    color: colors.text,
     fontSize: 18,
     fontWeight: "600"
   },
-
   switchButton: {
     marginTop: 24,
-    paddingVertical: 12,
-    paddingHorizontal: 10
+    paddingHorizontal: 10,
+    paddingVertical: 12
   },
-
   switchText: {
-    color: "#A7A7B2",
+    color: colors.textMuted60,
     fontSize: 15,
     textAlign: "center"
   },
-
   switchHighlight: {
-    color: "#9A83FF",
+    color: colors.accent,
     fontWeight: "700"
   },
-
   container: {
-    flex: 1,
-    backgroundColor: "#fff"
+    backgroundColor: colors.background,
+    flex: 1
   },
-
   switcherContainer: {
-    flexDirection: "row",
     alignItems: "center",
+    backgroundColor: colors.background,
+    flexDirection: "row",
     gap: 8,
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: "#fff"
+    paddingVertical: 8
   },
-
   switcher: {
     flex: 1
   },
-
   logoutButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12
+    paddingHorizontal: 12,
+    paddingVertical: 8
   },
-
   logoutButtonText: {
-    color: "#B42318",
+    color: colors.accent,
     fontSize: 14,
     fontWeight: "600"
   },
-
   screenContainer: {
     flex: 1
   }
