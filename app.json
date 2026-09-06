@@ -21,7 +21,10 @@
     "icon": "./assets/icon.png",
     "ios": {
       "bundleIdentifier": "com.anonymous.pocketdraw",
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "name": "Pocket Draw",
     "orientation": "portrait",
