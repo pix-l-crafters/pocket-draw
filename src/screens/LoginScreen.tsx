@@ -1,14 +1,10 @@
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-} from "react-native";
+import { useState } from "react";
+import { Alert, StyleSheet, TextInput, View } from "react-native";
 
 import { loginUser } from "../lib/auth";
+import { CutCornerButton } from "../components/CutCornerButton";
+import { ScreenHeader } from "../components/ScreenHeader";
+import { colors, fonts } from "../theme/tokens";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -16,7 +12,10 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert("Missing information", "Please enter your email and password.");
+      Alert.alert(
+        "Missing information",
+        "Please enter your email and password."
+      );
       return;
     }
 
@@ -29,93 +28,51 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.card}>
-      <Text style={styles.logo}>⚡</Text>
-
-      <Text style={styles.title}>Pocket Draw</Text>
-
-      <Text style={styles.subtitle}>
-        Sign in and get ready for your next duel
-      </Text>
+      <ScreenHeader
+        kicker="Pocket Draw"
+        subtitle="Sign in and get ready for your next duel"
+        title="Login"
+      />
 
       <TextInput
-        style={styles.input}
-        placeholder="Email"
-        placeholderTextColor="#8B8B95"
-        value={email}
-        onChangeText={setEmail}
         autoCapitalize="none"
         keyboardType="email-address"
+        onChangeText={setEmail}
+        placeholder="Email"
+        placeholderTextColor={colors.textMuted45}
+        style={styles.input}
+        value={email}
       />
 
       <TextInput
-        style={styles.input}
-        placeholder="Password"
-        placeholderTextColor="#8B8B95"
-        value={password}
         onChangeText={setPassword}
+        placeholder="Password"
+        placeholderTextColor={colors.textMuted45}
         secureTextEntry
+        style={styles.input}
+        value={password}
       />
 
-      <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>Login</Text>
-      </TouchableOpacity>
+      <CutCornerButton label="Login" onPress={() => void handleLogin()} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    width: "100%",
     maxWidth: 380,
+    width: "100%"
   },
-
-  logo: {
-    fontSize: 46,
-    textAlign: "center",
-    marginBottom: 10,
-  },
-
-  title: {
-    color: "#FFFFFF",
-    fontSize: 32,
-    fontWeight: "700",
-    textAlign: "center",
-    marginBottom: 8,
-  },
-
-  subtitle: {
-    color: "#A7A7B2",
-    fontSize: 15,
-    textAlign: "center",
-    marginBottom: 32,
-  },
-
   input: {
-    width: "100%",
-    height: 54,
-    backgroundColor: "#1C1C24",
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
     borderWidth: 1,
-    borderColor: "#32323D",
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    color: "#FFFFFF",
+    color: colors.text,
+    fontFamily: fonts.body,
     fontSize: 16,
-    marginBottom: 14,
-  },
-
-  button: {
-    width: "100%",
     height: 54,
-    backgroundColor: "#7C5CFC",
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 8,
-  },
-
-  buttonText: {
-    color: "#FFFFFF",
-    fontSize: 17,
-    fontWeight: "700",
-  },
+    marginBottom: 14,
+    paddingHorizontal: 16,
+    width: "100%"
+  }
 });
