@@ -1,22 +1,31 @@
 import { useEffect, useState } from "react";
-import {
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { onAuthStateChanged, User } from "firebase/auth";
+import { PaperProvider, SegmentedButtons } from "react-native-paper";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
 import { auth } from "./src/lib/firebase";
 import { logoutUser } from "./src/lib/auth";
+import { BleScreen } from "./src/features/ble/BleScreen";
+import { MapScreen } from "./src/features/map/MapScreen";
+import type { CurrentUser } from "./src/features/map/types/map.types";
 import LoginScreen from "./src/screens/LoginScreen";
 import RegisterScreen from "./src/screens/RegisterScreen";
+import { appTheme } from "./src/theme/appTheme";
+
+function toCurrentUser(user: User): CurrentUser {
+  return {
+    uid: user.uid,
+    displayName: user.displayName ?? user.email ?? "Player"
+  };
+}
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [showRegister, setShowRegister] = useState(false);
+  const [activeTab, setActiveTab] = useState<"map" | "ble">("map");
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -29,7 +38,7 @@ export default function App() {
 
   if (loading) {
     return (
-      <View style={styles.container}>
+      <View style={styles.authScreen}>
         <StatusBar style="light" />
         <Text style={styles.loadingText}>Loading...</Text>
       </View>
@@ -39,7 +48,7 @@ export default function App() {
   if (!user) {
     if (showRegister) {
       return (
-        <View style={styles.container}>
+        <View style={styles.authScreen}>
           <StatusBar style="light" />
 
           <RegisterScreen />
@@ -58,7 +67,7 @@ export default function App() {
     }
 
     return (
-      <View style={styles.container}>
+      <View style={styles.authScreen}>
         <StatusBar style="light" />
 
         <LoginScreen />
@@ -77,130 +86,98 @@ export default function App() {
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar style="light" />
-
-      <View style={styles.welcomeCard}>
-        <Text style={styles.logo}>⚡</Text>
-
-        <Text style={styles.welcomeTitle}>Welcome to Pocket Draw</Text>
-
-        <Text style={styles.welcomeSubtitle}>
-          You&apos;re ready for your next duel.
-        </Text>
-
-        <View style={styles.userBox}>
-          <Text style={styles.userLabel}>Signed in as</Text>
-          <Text style={styles.userEmail}>{user.email}</Text>
-        </View>
-
-        <TouchableOpacity
-          style={styles.logoutButton}
-          onPress={logoutUser}
-        >
-          <Text style={styles.logoutButtonText}>Logout</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+    <SafeAreaProvider>
+      <PaperProvider theme={appTheme}>
+        <SafeAreaView edges={["top"]} style={styles.container}>
+          <View style={styles.switcherContainer}>
+            <SegmentedButtons
+              buttons={[
+                { value: "map", label: "Map" },
+                { value: "ble", label: "BLE Scanner" }
+              ]}
+              onValueChange={(val) => setActiveTab(val as "map" | "ble")}
+              style={styles.switcher}
+              value={activeTab}
+            />
+            <TouchableOpacity onPress={logoutUser} style={styles.logoutButton}>
+              <Text style={styles.logoutButtonText}>Logout</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.screenContainer}>
+            {activeTab === "map" ? (
+              <MapScreen currentUser={toCurrentUser(user)} />
+            ) : (
+              <BleScreen />
+            )}
+          </View>
+        </SafeAreaView>
+      </PaperProvider>
+    </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  authScreen: {
     flex: 1,
     backgroundColor: "#0F0F14",
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 28,
+    paddingHorizontal: 28
   },
 
   loadingText: {
     color: "#FFFFFF",
     fontSize: 18,
-    fontWeight: "600",
+    fontWeight: "600"
   },
 
   switchButton: {
     marginTop: 24,
     paddingVertical: 12,
-    paddingHorizontal: 10,
+    paddingHorizontal: 10
   },
 
   switchText: {
     color: "#A7A7B2",
     fontSize: 15,
-    textAlign: "center",
+    textAlign: "center"
   },
 
   switchHighlight: {
     color: "#9A83FF",
-    fontWeight: "700",
+    fontWeight: "700"
   },
 
-  welcomeCard: {
-    width: "100%",
-    maxWidth: 380,
-    backgroundColor: "#17171F",
-    borderRadius: 24,
-    padding: 28,
-    borderWidth: 1,
-    borderColor: "#2C2C38",
+  container: {
+    flex: 1,
+    backgroundColor: "#fff"
+  },
+
+  switcherContainer: {
+    flexDirection: "row",
     alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: "#fff"
   },
 
-  logo: {
-    fontSize: 48,
-    marginBottom: 12,
-  },
-
-  welcomeTitle: {
-    color: "#FFFFFF",
-    fontSize: 28,
-    fontWeight: "700",
-    textAlign: "center",
-    marginBottom: 8,
-  },
-
-  welcomeSubtitle: {
-    color: "#A7A7B2",
-    fontSize: 15,
-    textAlign: "center",
-    marginBottom: 28,
-  },
-
-  userBox: {
-    width: "100%",
-    backgroundColor: "#1F1F29",
-    borderRadius: 14,
-    paddingVertical: 16,
-    paddingHorizontal: 18,
-    marginBottom: 18,
-  },
-
-  userLabel: {
-    color: "#8B8B95",
-    fontSize: 13,
-    marginBottom: 5,
-  },
-
-  userEmail: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "600",
+  switcher: {
+    flex: 1
   },
 
   logoutButton: {
-    width: "100%",
-    height: 54,
-    backgroundColor: "#7C5CFC",
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 12
   },
 
   logoutButtonText: {
-    color: "#FFFFFF",
-    fontSize: 17,
-    fontWeight: "700",
+    color: "#B42318",
+    fontSize: 14,
+    fontWeight: "600"
   },
+
+  screenContainer: {
+    flex: 1
+  }
 });
