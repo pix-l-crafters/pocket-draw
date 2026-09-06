@@ -9,6 +9,8 @@ import {
 import BleManager, { type Peripheral } from "react-native-ble-manager";
 import { Button, Card, Text } from "react-native-paper";
 
+import { colors } from "../../theme/tokens";
+
 export function BleScreen() {
   const [status, setStatus] = useState("Initializing Bluetooth...");
   const [isScanning, setIsScanning] = useState(false);
@@ -139,29 +141,30 @@ export function BleScreen() {
 
 const styles = StyleSheet.create({
   container: {
+    backgroundColor: colors.background,
     flex: 1,
-    padding: 16,
-    backgroundColor: "#F2F4F7"
+    padding: 16
   },
   title: {
+    color: colors.text,
     fontWeight: "600",
     marginBottom: 4
   },
   status: {
-    marginBottom: 12,
-    color: "#475467"
+    color: colors.textMuted60,
+    marginBottom: 12
   },
   scanButton: {
     marginBottom: 12
   },
   list: {
-    paddingBottom: 24,
-    gap: 8
+    gap: 8,
+    paddingBottom: 24
   },
   emptyText: {
-    textAlign: "center",
-    color: "#666",
-    marginTop: 24
+    color: colors.textMuted45,
+    marginTop: 24,
+    textAlign: "center"
   },
   card: {
     marginBottom: 8
