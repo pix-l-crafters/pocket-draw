@@ -11,25 +11,35 @@ post_package_bump_hooks = []
 pre = "alpha.*"
 pre_bump_hooks = [
   "echo 'bumping from {{latest_tag|0.0.0}} to {{version_tag|0.0.1}}'",
-  "bun pm version {{version}} --no-git-tag-version",
+  "npm version {{version}} --no-git-tag-version --allow-same-version",
   "yq -i '.version = \"{{version}}\"' apm.yml",
   "yq -i '.expo.version = \"{{version}}\"' app.json",
-  "bunx git-cliff -o CHANGELOG.md --tag {{version_tag}}",
+  "git-cliff -c .config/cliff.toml -o CHANGELOG.md --tag {{version_tag}}",
   "hk fix CHANGELOG.md apm.yml"
 ]
 pre_package_bump_hooks = []
 # tombi: format.rules.array-values-order = "ascending"
 scopes = [
+  "app",
+  "auth",
+  "ble",
+  "ci",
   "cocogitto",
   "copier",
   "cspell",
+  "duel",
+  "expo",
+  "firebase",
   "github",
   "hk",
   "jscpd",
+  "map",
   "megalinter",
   "mise",
   "pre-commit",
+  "presence",
   "prettier",
+  "qr",
   "treefmt",
   "version",
   "vscode",
