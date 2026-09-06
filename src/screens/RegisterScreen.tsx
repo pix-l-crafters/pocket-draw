@@ -1,14 +1,10 @@
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-} from "react-native";
+import { useState } from "react";
+import { Alert, StyleSheet, TextInput, View } from "react-native";
 
 import { registerUser } from "../lib/auth";
+import { CutCornerButton } from "../components/CutCornerButton";
+import { ScreenHeader } from "../components/ScreenHeader";
+import { colors, fonts } from "../theme/tokens";
 
 export default function RegisterScreen() {
   const [email, setEmail] = useState("");
@@ -35,102 +31,63 @@ export default function RegisterScreen() {
 
   return (
     <View style={styles.card}>
-      <Text style={styles.logo}>⚡</Text>
-
-      <Text style={styles.title}>Create Account</Text>
-
-      <Text style={styles.subtitle}>
-        Join Pocket Draw and challenge nearby players
-      </Text>
+      <ScreenHeader
+        kicker="Pocket Draw"
+        subtitle="Join Pocket Draw and challenge nearby players"
+        title="Create Account"
+      />
 
       <TextInput
-        style={styles.input}
-        placeholder="Email"
-        placeholderTextColor="#8B8B95"
-        value={email}
-        onChangeText={setEmail}
         autoCapitalize="none"
         keyboardType="email-address"
+        onChangeText={setEmail}
+        placeholder="Email"
+        placeholderTextColor={colors.textMuted45}
+        style={styles.input}
+        value={email}
       />
 
       <TextInput
-        style={styles.input}
-        placeholder="Password"
-        placeholderTextColor="#8B8B95"
-        value={password}
         onChangeText={setPassword}
+        placeholder="Password"
+        placeholderTextColor={colors.textMuted45}
         secureTextEntry
+        style={styles.input}
+        value={password}
       />
 
       <TextInput
-        style={styles.input}
-        placeholder="Confirm password"
-        placeholderTextColor="#8B8B95"
-        value={confirmPassword}
         onChangeText={setConfirmPassword}
+        placeholder="Confirm password"
+        placeholderTextColor={colors.textMuted45}
         secureTextEntry
+        style={styles.input}
+        value={confirmPassword}
       />
 
-      <TouchableOpacity style={styles.button} onPress={handleRegister}>
-        <Text style={styles.buttonText}>Create Account</Text>
-      </TouchableOpacity>
+      <CutCornerButton
+        label="Create Account"
+        onPress={() => void handleRegister()}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    width: "100%",
     maxWidth: 380,
+    width: "100%"
   },
-
-  logo: {
-    fontSize: 46,
-    textAlign: "center",
-    marginBottom: 10,
-  },
-
-  title: {
-    color: "#FFFFFF",
-    fontSize: 30,
-    fontWeight: "700",
-    textAlign: "center",
-    marginBottom: 8,
-  },
-
-  subtitle: {
-    color: "#A7A7B2",
-    fontSize: 15,
-    textAlign: "center",
-    marginBottom: 28,
-  },
-
   input: {
-    width: "100%",
-    height: 54,
-    backgroundColor: "#1C1C24",
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
     borderWidth: 1,
-    borderColor: "#32323D",
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    color: "#FFFFFF",
+    color: colors.text,
+    fontFamily: fonts.body,
     fontSize: 16,
-    marginBottom: 14,
-  },
-
-  button: {
-    width: "100%",
     height: 54,
-    backgroundColor: "#7C5CFC",
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 8,
-  },
-
-  buttonText: {
-    color: "#FFFFFF",
-    fontSize: 17,
-    fontWeight: "700",
-  },
+    marginBottom: 14,
+    paddingHorizontal: 16,
+    width: "100%"
+  }
 });
