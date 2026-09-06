@@ -2,7 +2,10 @@
 .agent/skills
 .agents/mcp_config.json
 .agents/skills
+.claude/settings.json
+.claude/settings.local.json
 .claude/skills
+.codex/config.toml
 .cursor/mcp.json
 .cursor/skills
 .github/skills
@@ -23,6 +26,9 @@ android/
 expo-env.d.ts
 ios/
 web-build/
+
+# design references (local scratch, not shipped app source)
+Quickdraw Showdown.html
 
 # others
 *.local
