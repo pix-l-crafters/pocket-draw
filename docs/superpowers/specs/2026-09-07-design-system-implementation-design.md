@@ -49,15 +49,15 @@ New file: `src/theme/tokens.ts` — the single source of truth every other piece
 
 ## 4. New shared components (`src/components/`)
 
-| Component          | Responsibility                                                                              |
-| ------------------ | ------------------------------------------------------------------------------------------- |
-| `ScreenHeader`     | Kicker label + big display heading (+ optional subtitle) — the pattern topping most screens |
-| `KickerLabel`      | Small uppercase mono label, accent-colored                                                  |
-| `DisplayHeading`   | Big bold condensed uppercase title                                                          |
-| `CutCornerSurface` | The clip-path cut-corner card/panel background, via `react-native-svg`                      |
-| `CutCornerButton`  | Primary CTA — cut corner, accent fill, press feedback (mobile has no hover, only press)     |
-| `StatTile`         | Label + big value (+ optional unit suffix, + optional tint color)                           |
-| `StatusTag`        | Small colored mono tag (e.g. GRANTED / PENDING / ONLINE / STABLE)                           |
+| Component          | Responsibility                                                                                      |
+| ------------------ | --------------------------------------------------------------------------------------------------- |
+| `ScreenHeader`     | Kicker label + big display heading (+ optional subtitle) — the pattern topping most screens         |
+| `KickerLabel`      | Small uppercase mono label, accent-colored                                                          |
+| `DisplayHeading`   | Big bold condensed uppercase title                                                                  |
+| `CutCornerSurface` | The clip-path cut-corner card/panel background, via a rotated masking `View` (no native dependency) |
+| `CutCornerButton`  | Primary CTA — cut corner, accent fill, press feedback (mobile has no hover, only press)             |
+| `StatTile`         | Label + big value (+ optional unit suffix, + optional tint color)                                   |
+| `StatusTag`        | Small colored mono tag (e.g. GRANTED / PENDING / ONLINE / STABLE)                                   |
 
 Each component takes plain props (no dependency on app-specific state) so it's independently
 usable from any screen, including future Duel screens.
@@ -67,9 +67,13 @@ usable from any screen, including future Duel screens.
 ## 5. Fonts
 
 New dependencies: `@expo-google-fonts/barlow`, `@expo-google-fonts/barlow-condensed`,
-`@expo-google-fonts/ibm-plex-mono`, plus `expo-font` and `react-native-svg` (for
-`CutCornerSurface`/`CutCornerButton`). All are JS/asset-only — no native rebuild required,
-so the current dev-client build still works.
+`@expo-google-fonts/ibm-plex-mono`, plus `expo-font`. `expo-font` itself has native code, but
+it's already compiled into the current dev-client as a transitive dependency of
+`@expo/vector-icons` (confirmed via `ios/Podfile.lock`) — so despite that, no rebuild is
+needed. The three font packages are pure JS/font-asset data. `react-native-svg` was
+considered for `CutCornerSurface` but dropped — it has real native code and is _not_
+already in the current build, so it would have forced a rebuild; a rotated masking `View`
+achieves the same shape with no native dependency at all.
 
 Fonts load via `expo-font`'s `useFonts` hook at the `App` root. The existing loading-spinner
 branch in `App.tsx` (currently gating only on Firebase auth state) extends to also wait on
