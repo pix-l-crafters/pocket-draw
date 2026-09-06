@@ -1,0 +1,53 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isPresenceOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function hasValidPresenceFields(data) {
+      return data.keys().hasAll([
+        'displayName',
+        'latitude',
+        'longitude',
+        'isVisible',
+        'lastSeen'
+      ]) && data.keys().hasOnly([
+        'displayName',
+        'latitude',
+        'longitude',
+        'isVisible',
+        'lastSeen'
+      ]);
+    }
+
+    function hasValidPresenceValues(data) {
+      return data.displayName is string
+        && data.displayName.size() > 0
+        && data.displayName.size() <= 100
+        && data.latitude is number
+        && data.latitude >= -90
+        && data.latitude <= 90
+        && data.longitude is number
+        && data.longitude >= -180
+        && data.longitude <= 180
+        && data.isVisible == true
+        && data.lastSeen is timestamp
+        && data.lastSeen == request.time;
+    }
+
+    match /presence/{uid} {
+      allow read: if isSignedIn()
+        && (request.auth.uid == uid || resource.data.isVisible == true);
+      allow create, update: if isPresenceOwner(uid)
+        && hasValidPresenceFields(request.resource.data)
+        && hasValidPresenceValues(request.resource.data);
+      allow delete: if isPresenceOwner(uid);
+    }
+  }
+}

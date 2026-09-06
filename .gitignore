@@ -2,6 +2,7 @@
 .agent/skills
 .agents/mcp_config.json
 .agents/skills
+.claude/skills
 .cursor/mcp.json
 .cursor/skills
 .github/skills
@@ -18,11 +19,12 @@ opencode.json
 
 # expo
 .expo/
+android/
 expo-env.d.ts
+ios/
 web-build/
 
 # others
-# keep-sorted start
 *.local
 .DS_Store
 .devenv
@@ -39,4 +41,3 @@ megalinter-reports/
 node_modules/
 report/
 target/
-# keep-sorted end

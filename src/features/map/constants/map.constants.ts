@@ -1,0 +1,1 @@
+export const PUBLIC_LOCATION_DECIMAL_PLACES = 3;

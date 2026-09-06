@@ -18,6 +18,7 @@ ignore:
   - apm_modules
   - build
   - dist
+  - megalinter-reports
   - node_modules
   - result # Nix build result symlink
   - target # Rust/Java build output
@@ -25,11 +26,11 @@ ignore:
   # keep-sorted end
 ls:
   .cjs: kebab-case
-  .d.ts: snake_case
+  .d.ts: kebab-case
   .java: PascalCase
   .js: kebab-case
   .mjs: kebab-case
   .nix: kebab-case
   .py: snake_case
   .rs: snake_case
-  .ts: snake_case
+  .ts: kebab-case

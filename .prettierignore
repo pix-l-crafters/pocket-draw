@@ -1,0 +1,17 @@
+# package managers / lockfiles
+*.lock
+*.lock.*
+*.lock.yaml
+apm.lock.yaml
+firestore.rules
+package-lock.json
+
+# build outputs & caches
+.expo/
+.trivycache/
+android/
+dist/
+ios/
+megalinter-reports/
+node_modules/
+web-build/
