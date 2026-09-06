@@ -38,12 +38,12 @@ Quickdraw Showdown.html
 .git
 .pre-commit-config.yaml
 .svn
-firebase-debug.log
 .trivycache/
 .venv/
 __MACOSX
 __pycache__
 dist/
+firebase-debug.log
 megalinter-reports/
 node_modules/
 report/
