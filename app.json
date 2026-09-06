@@ -13,7 +13,8 @@
         "android.permission.BLUETOOTH_ADMIN",
         "android.permission.BLUETOOTH_CONNECT",
         "android.permission.BLUETOOTH_SCAN",
-        "android.permission.ACCESS_FINE_LOCATION"
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION"
       ],
       "predictiveBackGestureEnabled": false
     },
@@ -45,6 +46,12 @@
     "version": "0.0.0",
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "31082e1b-5705-43e2-b580-01bfc70699ed"
+      }
+    },
+    "owner": "pix-l-crafters"
   }
 }
