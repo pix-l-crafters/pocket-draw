@@ -38,6 +38,7 @@ Quickdraw Showdown.html
 .git
 .pre-commit-config.yaml
 .svn
+firebase-debug.log
 .trivycache/
 .venv/
 __MACOSX
