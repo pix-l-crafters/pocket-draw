@@ -1,28 +1,30 @@
-import { MD3LightTheme, type MD3Theme } from "react-native-paper";
+import { MD3DarkTheme, type MD3Theme } from "react-native-paper";
+
+import { colors } from "./tokens";
 
 export const appTheme: MD3Theme = {
-  ...MD3LightTheme,
+  ...MD3DarkTheme,
   roundness: 4,
   colors: {
-    ...MD3LightTheme.colors,
-    primary: "#6941C6",
-    onPrimary: "#FFFFFF",
-    primaryContainer: "#E9D7FE",
-    onPrimaryContainer: "#3E1C96",
-    secondary: "#1570EF",
-    onSecondary: "#FFFFFF",
-    secondaryContainer: "#D1E9FF",
-    onSecondaryContainer: "#1849A9",
-    background: "#F2F4F7",
-    surface: "#FFFFFF",
-    surfaceVariant: "#EAECF0",
-    onSurface: "#101828",
-    onSurfaceVariant: "#475467",
-    outline: "#98A2B3",
-    outlineVariant: "#D0D5DD",
+    ...MD3DarkTheme.colors,
+    primary: colors.accent,
+    onPrimary: colors.background,
+    primaryContainer: colors.surface,
+    onPrimaryContainer: colors.text,
+    secondary: colors.success,
+    onSecondary: colors.background,
+    secondaryContainer: colors.surface,
+    onSecondaryContainer: colors.text,
+    background: colors.background,
+    surface: colors.surface,
+    surfaceVariant: colors.surface,
+    onSurface: colors.text,
+    onSurfaceVariant: colors.textMuted60,
+    outline: colors.border,
+    outlineVariant: colors.border,
     error: "#D92D20",
-    onError: "#FFFFFF",
-    errorContainer: "#FEE4E2",
-    onErrorContainer: "#912018"
+    onError: colors.text,
+    errorContainer: colors.surface,
+    onErrorContainer: "#FF8A80"
   }
 };
