@@ -1,45 +1,50 @@
 export type QrInvitePayload = {
-    type: "pocket-draw/invite";
-    version:  1;
-    matchId: string; //邀请对应的对局 ID
-    hostPlayerId: string; //发起人的fireBase UID
-    hostPlayerName?: string; //仅显示名字
-    challengeToken: string;
-    issuedAt: number;
-    expiresAt: number;
-    transport: "ble";
-    ble: {
+  type: "pocket-draw/invite";
+  version: 1;
+  matchId: string; //邀请对应的对局 ID
+  hostPlayerId: string; //发起人的fireBase UID
+  hostPlayerName?: string; //仅显示名字
+  challengeToken: string;
+  issuedAt: number;
+  expiresAt: number;
+  transport: "ble";
+  ble: {
     discoveryToken: string;
-   };
+  };
 };
 
 /** Reasons a QR invite payload can fail validation, reported back to the caller. */
 export type QrValidationErrorCode =
-    | "TOO_LARGE"
-    | "MALFORMED_JSON"
-    | "INVALID_PAYLOAD"
-    | "UNSUPPORTED_VERSION"
-    | "UNSUPPORTED_TRANSPORT"
-    | "EXPIRED"
-    | "INVALID_TIME"
-    | "SELF_INVITE";
+  | "TOO_LARGE"
+  | "MALFORMED_JSON"
+  | "INVALID_PAYLOAD"
+  | "UNSUPPORTED_VERSION"
+  | "UNSUPPORTED_TRANSPORT"
+  | "EXPIRED"
+  | "INVALID_TIME"
+  | "SELF_INVITE";
+
+// 验证结果类型
+export type QrValidationResult =
+  | { ok: true; value: QrInvitePayload }
+  | { ok: false; code: QrValidationErrorCode };
 
 //Parsing succeeded
 const now = Date.now();
 const exampleInvite: QrInvitePayload = {
-    type:"pocket-draw/invite",
-    version: 1,
-    matchId: "test-match-001",
-    hostPlayerId:"test-host-002",
-    hostPlayerName: "hostName",
-    challengeToken:"9f08bc127e44a031b69307dc84f2a658", // gitleaks:allow fixed example token, not a real secret
-    issuedAt: now,
-    expiresAt: now + 120_000,
-    transport: "ble",
-    ble :{
-        discoveryToken: "a71c9b82"
-    }
-}
+  type: "pocket-draw/invite",
+  version: 1,
+  matchId: "test-match-001",
+  hostPlayerId: "test-host-002",
+  hostPlayerName: "hostName",
+  challengeToken: "9f08bc127e44a031b69307dc84f2a658", // gitleaks:allow fixed example token, not a real secret
+  issuedAt: now,
+  expiresAt: now + 120_000,
+  transport: "ble",
+  ble: {
+    discoveryToken: "a71c9b82"
+  }
+};
 
 const encodedInvite = JSON.stringify(exampleInvite);
 console.log("Encoded:", encodedInvite);
@@ -49,8 +54,8 @@ console.log("Decoded:", decodedInvite);
 
 //无效 JSON 会发生什么？ Parsing failed
 try {
-    JSON.parse('{"version": 1}');
-    console.log("Parsing succeeded");
+  JSON.parse('{"version": 1}');
+  console.log("Parsing succeeded");
 } catch (error) {
-    console.log("Parsing failed; error caught");
+  console.log("Parsing failed; error caught");
 }
