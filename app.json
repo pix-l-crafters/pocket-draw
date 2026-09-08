@@ -18,16 +18,22 @@
       ],
       "predictiveBackGestureEnabled": false
     },
+    "extra": {
+      "eas": {
+        "projectId": "31082e1b-5705-43e2-b580-01bfc70699ed"
+      }
+    },
     "icon": "./assets/icon.png",
     "ios": {
       "bundleIdentifier": "com.anonymous.pocketdraw",
-      "supportsTablet": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "supportsTablet": true
     },
     "name": "Pocket Draw",
     "orientation": "portrait",
+    "owner": "pix-l-crafters",
     "plugins": [
       [
         "react-native-ble-manager",
@@ -50,12 +56,6 @@
     "version": "0.0.0",
     "web": {
       "favicon": "./assets/favicon.png"
-    },
-    "extra": {
-      "eas": {
-        "projectId": "31082e1b-5705-43e2-b580-01bfc70699ed"
-      }
-    },
-    "owner": "pix-l-crafters"
+    }
   }
 }

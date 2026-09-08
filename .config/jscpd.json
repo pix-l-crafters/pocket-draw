@@ -11,8 +11,9 @@
     "**/node_modules/**",
     "**/package-lock.json",
     "**/report/**",
-    "template/**",
-    "docs/superpowers/**"
+    "apm.lock.yaml",
+    "docs/superpowers/**",
+    "template/**"
   ],
   "reporters": ["html", "markdown"],
   "threshold": 0
