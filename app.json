@@ -13,14 +13,18 @@
         "android.permission.BLUETOOTH_ADMIN",
         "android.permission.BLUETOOTH_CONNECT",
         "android.permission.BLUETOOTH_SCAN",
-        "android.permission.ACCESS_FINE_LOCATION"
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION"
       ],
       "predictiveBackGestureEnabled": false
     },
     "icon": "./assets/icon.png",
     "ios": {
       "bundleIdentifier": "com.anonymous.pocketdraw",
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "name": "Pocket Draw",
     "orientation": "portrait",
@@ -38,13 +42,20 @@
         {
           "locationWhenInUsePermission": "Allow Pocket Draw to use your location while you use the app so you can see yourself on the map."
         }
-      ]
+      ],
+      "expo-font"
     ],
     "slug": "pocket-draw",
     "userInterfaceStyle": "light",
     "version": "0.0.0",
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "31082e1b-5705-43e2-b580-01bfc70699ed"
+      }
+    },
+    "owner": "pix-l-crafters"
   }
 }

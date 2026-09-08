@@ -13,6 +13,7 @@ import { RecenterButton } from "./components/RecenterButton";
 import { useForegroundLocation } from "./hooks/useForegroundLocation";
 import { usePresencePublisher } from "./hooks/usePresencePublisher";
 import type { Coordinates, CurrentUser } from "./types/map.types";
+import { colors } from "../../theme/tokens";
 
 const INITIAL_REGION: Region = {
   latitude: -33.8688,
@@ -105,7 +106,7 @@ export function MapScreen({ currentUser }: MapScreenProps) {
 
   return (
     <View style={styles.container}>
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
       <MapView
         ref={mapRef}
         initialRegion={INITIAL_REGION}
@@ -171,27 +172,27 @@ export function MapScreen({ currentUser }: MapScreenProps) {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: "#E6F4FE"
+    backgroundColor: colors.background,
+    flex: 1
   },
   overlay: {
     flex: 1
   },
   recenterButton: {
+    bottom: 20,
     position: "absolute",
-    right: 20,
-    bottom: 20
+    right: 20
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
     alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(230, 244, 254, 0.82)"
+    backgroundColor: "rgba(8, 9, 11, 0.82)",
+    justifyContent: "center"
   },
   loadingCard: {
     alignItems: "center",
-    gap: 12,
     borderRadius: 20,
+    gap: 12,
     paddingHorizontal: 28,
     paddingVertical: 22
   }
