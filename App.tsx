@@ -1,206 +1,190 @@
 import { useEffect, useState } from "react";
-import {
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { onAuthStateChanged, User } from "firebase/auth";
+import {
+  Barlow_400Regular,
+  useFonts as useBarlowFonts
+} from "@expo-google-fonts/barlow";
+import {
+  BarlowCondensed_700Bold,
+  useFonts as useBarlowCondensedFonts
+} from "@expo-google-fonts/barlow-condensed";
+import {
+  IBMPlexMono_400Regular,
+  useFonts as useIBMPlexMonoFonts
+} from "@expo-google-fonts/ibm-plex-mono";
+import { PaperProvider, SegmentedButtons } from "react-native-paper";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
 import { auth } from "./src/lib/firebase";
 import { logoutUser } from "./src/lib/auth";
+import { BleScreen } from "./src/features/ble/BleScreen";
+import { MapScreen } from "./src/features/map/MapScreen";
+import type { CurrentUser } from "./src/features/map/types/map.types";
 import LoginScreen from "./src/screens/LoginScreen";
 import RegisterScreen from "./src/screens/RegisterScreen";
+import { appTheme } from "./src/theme/appTheme";
+import { colors } from "./src/theme/tokens";
+
+function toCurrentUser(user: User): CurrentUser {
+  return {
+    uid: user.uid,
+    displayName: user.displayName ?? user.email ?? "Player"
+  };
+}
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
   const [showRegister, setShowRegister] = useState(false);
+  const [activeTab, setActiveTab] = useState<"map" | "ble">("map");
+  const [barlowLoaded] = useBarlowFonts({ Barlow_400Regular });
+  const [barlowCondensedLoaded] = useBarlowCondensedFonts({
+    BarlowCondensed_700Bold
+  });
+  const [ibmPlexMonoLoaded] = useIBMPlexMonoFonts({ IBMPlexMono_400Regular });
+  const fontsLoaded =
+    barlowLoaded && barlowCondensedLoaded && ibmPlexMonoLoaded;
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      setLoading(false);
+      setAuthLoading(false);
     });
 
     return unsubscribe;
   }, []);
 
-  if (loading) {
-    return (
-      <View style={styles.container}>
-        <StatusBar style="light" />
-        <Text style={styles.loadingText}>Loading...</Text>
-      </View>
-    );
-  }
-
-  if (!user) {
-    if (showRegister) {
-      return (
-        <View style={styles.container}>
-          <StatusBar style="light" />
-
-          <RegisterScreen />
-
-          <TouchableOpacity
-            style={styles.switchButton}
-            onPress={() => setShowRegister(false)}
-          >
-            <Text style={styles.switchText}>
-              Already have an account?{" "}
-              <Text style={styles.switchHighlight}>Login</Text>
-            </Text>
-          </TouchableOpacity>
-        </View>
-      );
-    }
-
-    return (
-      <View style={styles.container}>
-        <StatusBar style="light" />
-
-        <LoginScreen />
-
-        <TouchableOpacity
-          style={styles.switchButton}
-          onPress={() => setShowRegister(true)}
-        >
-          <Text style={styles.switchText}>
-            Don&apos;t have an account?{" "}
-            <Text style={styles.switchHighlight}>Register</Text>
-          </Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
+  const loading = authLoading || !fontsLoaded;
 
   return (
-    <View style={styles.container}>
-      <StatusBar style="light" />
+    <SafeAreaProvider>
+      <PaperProvider theme={appTheme}>
+        {loading ? (
+          <View style={styles.authScreen}>
+            <StatusBar style="light" />
+            <Text style={styles.loadingText}>Loading...</Text>
+          </View>
+        ) : !user ? (
+          showRegister ? (
+            <View style={styles.authScreen}>
+              <StatusBar style="light" />
 
-      <View style={styles.welcomeCard}>
-        <Text style={styles.logo}>⚡</Text>
+              <RegisterScreen />
 
-        <Text style={styles.welcomeTitle}>Welcome to Pocket Draw</Text>
+              <TouchableOpacity
+                onPress={() => setShowRegister(false)}
+                style={styles.switchButton}
+              >
+                <Text style={styles.switchText}>
+                  Already have an account?{" "}
+                  <Text style={styles.switchHighlight}>Login</Text>
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.authScreen}>
+              <StatusBar style="light" />
 
-        <Text style={styles.welcomeSubtitle}>
-          You&apos;re ready for your next duel.
-        </Text>
+              <LoginScreen />
 
-        <View style={styles.userBox}>
-          <Text style={styles.userLabel}>Signed in as</Text>
-          <Text style={styles.userEmail}>{user.email}</Text>
-        </View>
-
-        <TouchableOpacity
-          style={styles.logoutButton}
-          onPress={logoutUser}
-        >
-          <Text style={styles.logoutButtonText}>Logout</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+              <TouchableOpacity
+                onPress={() => setShowRegister(true)}
+                style={styles.switchButton}
+              >
+                <Text style={styles.switchText}>
+                  Don&apos;t have an account?{" "}
+                  <Text style={styles.switchHighlight}>Register</Text>
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )
+        ) : (
+          <SafeAreaView edges={["top"]} style={styles.container}>
+            <View style={styles.switcherContainer}>
+              <SegmentedButtons
+                buttons={[
+                  { value: "map", label: "Map" },
+                  { value: "ble", label: "BLE Scanner" }
+                ]}
+                onValueChange={(val) => setActiveTab(val as "map" | "ble")}
+                style={styles.switcher}
+                value={activeTab}
+              />
+              <TouchableOpacity
+                onPress={logoutUser}
+                style={styles.logoutButton}
+              >
+                <Text style={styles.logoutButtonText}>Logout</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.screenContainer}>
+              {activeTab === "map" ? (
+                <MapScreen currentUser={toCurrentUser(user)} />
+              ) : (
+                <BleScreen />
+              )}
+            </View>
+          </SafeAreaView>
+        )}
+      </PaperProvider>
+    </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#0F0F14",
+  authScreen: {
     alignItems: "center",
+    backgroundColor: colors.background,
+    flex: 1,
     justifyContent: "center",
-    paddingHorizontal: 28,
+    paddingHorizontal: 28
   },
-
   loadingText: {
-    color: "#FFFFFF",
+    color: colors.text,
     fontSize: 18,
-    fontWeight: "600",
+    fontWeight: "600"
   },
-
   switchButton: {
     marginTop: 24,
-    paddingVertical: 12,
     paddingHorizontal: 10,
+    paddingVertical: 12
   },
-
   switchText: {
-    color: "#A7A7B2",
+    color: colors.textMuted60,
     fontSize: 15,
-    textAlign: "center",
+    textAlign: "center"
   },
-
   switchHighlight: {
-    color: "#9A83FF",
-    fontWeight: "700",
+    color: colors.accent,
+    fontWeight: "700"
   },
-
-  welcomeCard: {
-    width: "100%",
-    maxWidth: 380,
-    backgroundColor: "#17171F",
-    borderRadius: 24,
-    padding: 28,
-    borderWidth: 1,
-    borderColor: "#2C2C38",
+  container: {
+    backgroundColor: colors.background,
+    flex: 1
+  },
+  switcherContainer: {
     alignItems: "center",
+    backgroundColor: colors.background,
+    flexDirection: "row",
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8
   },
-
-  logo: {
-    fontSize: 48,
-    marginBottom: 12,
+  switcher: {
+    flex: 1
   },
-
-  welcomeTitle: {
-    color: "#FFFFFF",
-    fontSize: 28,
-    fontWeight: "700",
-    textAlign: "center",
-    marginBottom: 8,
-  },
-
-  welcomeSubtitle: {
-    color: "#A7A7B2",
-    fontSize: 15,
-    textAlign: "center",
-    marginBottom: 28,
-  },
-
-  userBox: {
-    width: "100%",
-    backgroundColor: "#1F1F29",
-    borderRadius: 14,
-    paddingVertical: 16,
-    paddingHorizontal: 18,
-    marginBottom: 18,
-  },
-
-  userLabel: {
-    color: "#8B8B95",
-    fontSize: 13,
-    marginBottom: 5,
-  },
-
-  userEmail: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-
   logoutButton: {
-    width: "100%",
-    height: 54,
-    backgroundColor: "#7C5CFC",
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8
   },
-
   logoutButtonText: {
-    color: "#FFFFFF",
-    fontSize: 17,
-    fontWeight: "700",
+    color: colors.accent,
+    fontSize: 14,
+    fontWeight: "600"
   },
+  screenContainer: {
+    flex: 1
+  }
 });
