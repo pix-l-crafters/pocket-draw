@@ -20,6 +20,7 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { auth } from "./src/lib/firebase";
 import { logoutUser } from "./src/lib/auth";
 import { BleScreen } from "./src/features/ble/BleScreen";
+import { ChallengeScreen } from "./src/features/challenge/ChallengeScreen";
 import { MapScreen } from "./src/features/map/MapScreen";
 import type { CurrentUser } from "./src/features/map/types/map.types";
 import LoginScreen from "./src/screens/LoginScreen";
@@ -38,7 +39,9 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [showRegister, setShowRegister] = useState(false);
-  const [activeTab, setActiveTab] = useState<"map" | "ble">("map");
+  const [activeTab, setActiveTab] = useState<"map" | "ble" | "challenge">(
+    "map"
+  );
   const [barlowLoaded] = useBarlowFonts({ Barlow_400Regular });
   const [barlowCondensedLoaded] = useBarlowCondensedFonts({
     BarlowCondensed_700Bold
@@ -106,9 +109,12 @@ export default function App() {
               <SegmentedButtons
                 buttons={[
                   { value: "map", label: "Map" },
-                  { value: "ble", label: "BLE Scanner" }
+                  { value: "ble", label: "BLE Scanner" },
+                  { value: "challenge", label: "Challenge" }
                 ]}
-                onValueChange={(val) => setActiveTab(val as "map" | "ble")}
+                onValueChange={(val) =>
+                  setActiveTab(val as "map" | "ble" | "challenge")
+                }
                 style={styles.switcher}
                 value={activeTab}
               />
@@ -122,8 +128,17 @@ export default function App() {
             <View style={styles.screenContainer}>
               {activeTab === "map" ? (
                 <MapScreen currentUser={toCurrentUser(user)} />
-              ) : (
+              ) : activeTab === "ble" ? (
                 <BleScreen />
+              ) : (
+                <ChallengeScreen
+                  currentUser={toCurrentUser(user)}
+                  onChallengeSent={(handoff) => {
+                    // TODO(siheng): once 3.4-3.6 land, hand this off to the
+                    // real challenge send / BLE session instead of logging.
+                    console.log("Challenge handoff created:", handoff);
+                  }}
+                />
               )}
             </View>
           </SafeAreaView>

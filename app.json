@@ -56,6 +56,12 @@
           "motionPermission": "Allow Pocket Draw to detect your quick-draw gesture during a duel."
         }
       ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Pocket Draw to use your camera to scan an opponent's challenge QR code."
+        }
+      ],
       "expo-font"
     ],
     "slug": "pocket-draw",
