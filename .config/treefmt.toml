@@ -49,7 +49,7 @@ includes = ["*.pkl"]
 options = ["format", "-w", "."]
 
 [formatter.prettier]
-command = "bunx"
+command = "npx"
 # tombi: format.rules.array-values-order = "ascending"
 excludes = [
   "*.*ignore",
@@ -118,7 +118,7 @@ options = ["-i"]
 priority = 2
 
 [formatter.sort-package-json]
-command = "bunx"
+command = "npx"
 includes = ["package.json"]
 options = ["sort-package-json"]
 priority = 10
