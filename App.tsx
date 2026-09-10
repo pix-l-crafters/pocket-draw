@@ -133,10 +133,14 @@ export default function App() {
               ) : (
                 <ChallengeScreen
                   currentUser={toCurrentUser(user)}
-                  onChallengeSent={(handoff) => {
-                    // TODO(siheng): once 3.4-3.6 land, hand this off to the
-                    // real challenge send / BLE session instead of logging.
-                    console.log("Challenge handoff created:", handoff);
+                  onOpponentConfirmed={(challengerId, scannedPlayerId) => {
+                    // TODO(3.4): pick up here with the round-count
+                    // selector, then 3.5's send-challenge-request logic.
+                    console.log(
+                      "Opponent confirmed:",
+                      challengerId,
+                      scannedPlayerId
+                    );
                   }}
                 />
               )}

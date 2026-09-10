@@ -3,18 +3,17 @@ import { StyleSheet, View } from "react-native";
 import { SegmentedButtons } from "react-native-paper";
 
 import { colors } from "../../theme/tokens";
-import type { ChallengeHandoff } from "../../contracts/challengeHandoff";
 import { QrDisplayScreen } from "./QrDisplayScreen";
 import { QrScannerScreen } from "./QrScannerScreen";
 
 type ChallengeScreenProps = {
   currentUser: { displayName: string; uid: string };
-  onChallengeSent: (handoff: ChallengeHandoff) => void;
+  onOpponentConfirmed: (challengerId: string, scannedPlayerId: string) => void;
 };
 
 export function ChallengeScreen({
   currentUser,
-  onChallengeSent
+  onOpponentConfirmed
 }: ChallengeScreenProps) {
   const [mode, setMode] = useState<"myQr" | "scan">("myQr");
 
@@ -35,7 +34,7 @@ export function ChallengeScreen({
         ) : (
           <QrScannerScreen
             currentUser={currentUser}
-            onChallengeSent={onChallengeSent}
+            onOpponentConfirmed={onOpponentConfirmed}
           />
         )}
       </View>
