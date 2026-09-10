@@ -11,7 +11,6 @@ export interface PlayerStats {
 }
 
 // Real lookup: `playerStatsRepository.getPlayerStats` in
-// `src/features/backend/` (wins/losses from matchResults; eloRating is still
-// DEFAULT_ELO_RATING until Tanachat's 5.4). Consumers can swap
+// `src/features/backend/` (wins/losses from matchResults; ELO replayed from
+// match history with starting rating 1500 / K=40). Consumers can swap
 // mocks/mockPlayerStats.ts once they wire that import; delete the mock then.
-// TODO(mihir): after 5.4/5.5, surface live ELO and remove the default.

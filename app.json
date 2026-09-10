@@ -55,7 +55,9 @@
           "cameraPermission": "Allow Pocket Draw to use your camera to scan an opponent's challenge QR code."
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-audio",
+      "expo-asset"
     ],
     "slug": "pocket-draw",
     "userInterfaceStyle": "light",

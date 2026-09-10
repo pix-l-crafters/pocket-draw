@@ -1,5 +1,13 @@
 export { isNetworkAvailable, subscribeNetworkChanges } from "./connectivity";
 export {
+  ELO_K_FACTOR,
+  expectedScore,
+  updateElo,
+  updateEloPair,
+  type EloOutcome,
+  type EloUpdate
+} from "./elo";
+export {
   clearMatchResultQueue,
   enqueueMatchResult,
   listQueuedMatchResults,

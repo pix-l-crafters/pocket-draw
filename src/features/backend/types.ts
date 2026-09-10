@@ -1,8 +1,8 @@
 import type { MatchResult } from "../../contracts/matchResult";
 import type { PlayerStats } from "../../contracts/playerStats";
 
-/** Default ELO until Tanachat's 5.4 formula lands. */
-export const DEFAULT_ELO_RATING = 1000;
+/** Starting ELO for every player (Tanachat 5.4). */
+export const DEFAULT_ELO_RATING = 1500;
 
 /**
  * Firestore document written to `matchResults/{matchId}`.

@@ -23,6 +23,7 @@ import { BleScreen } from "./src/features/ble/BleScreen";
 import { ChallengeScreen } from "./src/features/challenge/ChallengeScreen";
 import { ConnectingScreen } from "./src/features/challenge/ConnectingScreen";
 import type { ChallengeHandoff } from "./src/contracts/challengeHandoff";
+import { DuelScreen } from "./src/features/duel/DuelScreen";
 import { MapScreen } from "./src/features/map/MapScreen";
 import type { CurrentUser } from "./src/features/map/types/map.types";
 import LoginScreen from "./src/screens/LoginScreen";
@@ -37,13 +38,13 @@ function toCurrentUser(user: User): CurrentUser {
   };
 }
 
+type AppTab = "map" | "ble" | "challenge" | "duel";
+
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [showRegister, setShowRegister] = useState(false);
-  const [activeTab, setActiveTab] = useState<"map" | "ble" | "challenge">(
-    "map"
-  );
+  const [activeTab, setActiveTab] = useState<AppTab>("map");
   const [pendingHandoff, setPendingHandoff] = useState<ChallengeHandoff | null>(
     null
   );
@@ -115,11 +116,10 @@ export default function App() {
                 buttons={[
                   { value: "map", label: "Map" },
                   { value: "ble", label: "BLE Scanner" },
-                  { value: "challenge", label: "Challenge" }
+                  { value: "challenge", label: "Challenge" },
+                  { value: "duel", label: "Duel" }
                 ]}
-                onValueChange={(val) =>
-                  setActiveTab(val as "map" | "ble" | "challenge")
-                }
+                onValueChange={(val) => setActiveTab(val as AppTab)}
                 style={styles.switcher}
                 value={activeTab}
               />
@@ -135,6 +135,8 @@ export default function App() {
                 <MapScreen currentUser={toCurrentUser(user)} />
               ) : activeTab === "ble" ? (
                 <BleScreen />
+              ) : activeTab === "duel" ? (
+                <DuelScreen />
               ) : pendingHandoff ? (
                 <ConnectingScreen
                   handoff={pendingHandoff}
