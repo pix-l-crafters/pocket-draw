@@ -7,6 +7,13 @@ export interface RaiseGestureSpec {
   debounceMs: number;
 }
 
+export interface FalseStartSpec {
+  /** Resting accelerometer magnitude under gravity. */
+  restingMagnitudeG: number;
+  /** Minimum deviation from rest that counts as early movement. */
+  movementDeltaThresholdG: number;
+}
+
 /**
  * Approved ticket 4.9 raise-to-threshold gesture.
  *
@@ -18,4 +25,9 @@ export const RAISE_GESTURE_SPEC: Readonly<RaiseGestureSpec> = Object.freeze({
   accelerationThresholdG: 1.8,
   minimumDurationMs: 80,
   debounceMs: 300
+});
+
+export const FALSE_START_SPEC: Readonly<FalseStartSpec> = Object.freeze({
+  restingMagnitudeG: 1,
+  movementDeltaThresholdG: 0.25
 });

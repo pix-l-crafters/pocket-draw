@@ -19,7 +19,7 @@ Source: Section 9; backlog Epics 4 and 0/7. See `README.md` in this folder for s
 - [x] 4.9 — Fire/raise gesture spec (after the design decision above)
 - [x] 4.10 — Raise/fire gesture detection (accelerometer, per the spec)
 - [x] 4.11 — "Test your draw" calibration step
-- [ ] 4.12 — False-start detection
+- [x] 4.12 — False-start detection
 - [ ] 4.13 — False-start handling (after the design decision above)
 - [ ] 4.14 — Reaction time capture (ms)
 - [ ] 4.15 — Tie detection & handling (after the design decision above)
