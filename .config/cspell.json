@@ -45,6 +45,7 @@
     "pipx",
     "pycache",
     "pytest",
+    "qrcode",
     "qvqq",
     "Rabade",
     "rgba",
