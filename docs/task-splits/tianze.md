@@ -11,7 +11,7 @@ Source: Section 9; backlog Epics 4 and 0/7. See `README.md` in this folder for s
 
 ## Tasks (backlog refs)
 
-- [ ] 4.8 — FIRE signal trigger & sync (both phones, after the countdown)
+- [x] 4.8 — FIRE signal trigger & sync (both phones, after the countdown)
 - [ ] 4.9 — Fire/raise gesture spec (after the design decision above)
 - [ ] 4.10 — Raise/fire gesture detection (accelerometer, per the spec)
 - [ ] 4.11 — "Test your draw" calibration step
