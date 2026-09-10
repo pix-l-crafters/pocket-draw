@@ -34,6 +34,7 @@ export type NearbyPlayersState =
 
 export type PresencePublishState =
   | { status: "idle" }
+  | { status: "off" }
   | { status: "publishing" }
   | { status: "published" }
   | { status: "error"; message: string };

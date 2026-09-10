@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   PRESENCE_HEARTBEAT_MS,
@@ -16,6 +16,8 @@ import { coarsenCoordinate } from "../utils/map.utils";
 type UsePresencePublisherInput = {
   currentUser: CurrentUser | null;
   position: Coordinates | null;
+  /** Whether the player wants to broadcast; `null` while still loading. */
+  enabled: boolean | null;
 };
 
 function getPublishErrorMessage(error: unknown) {
@@ -28,12 +30,14 @@ function getPublishErrorMessage(error: unknown) {
 
 export function usePresencePublisher({
   currentUser,
-  position
+  position,
+  enabled
 }: UsePresencePublisherInput) {
   const [presenceState, setPresenceState] = useState<PresencePublishState>({
     status: "idle"
   });
   const [retrySequence, setRetrySequence] = useState(0);
+  const removedWhileDisabledRef = useRef(false);
 
   const uid = currentUser?.uid ?? null;
   const displayName = currentUser?.displayName ?? null;
@@ -45,6 +49,24 @@ export function usePresencePublisher({
     : null;
 
   useEffect(() => {
+    if (enabled === null) {
+      // Preference not read yet — do nothing either way.
+      return;
+    }
+
+    if (!enabled) {
+      setPresenceState({ status: "off" });
+
+      if (uid !== null && !removedWhileDisabledRef.current) {
+        removedWhileDisabledRef.current = true;
+        void presenceRepository.removePresence(uid).catch(() => undefined);
+      }
+
+      return;
+    }
+
+    removedWhileDisabledRef.current = false;
+
     if (
       uid === null ||
       displayName === null ||
@@ -113,7 +135,14 @@ export function usePresencePublisher({
         clearTimeout(timer);
       }
     };
-  }, [uid, displayName, coarseLatitude, coarseLongitude, retrySequence]);
+  }, [
+    enabled,
+    uid,
+    displayName,
+    coarseLatitude,
+    coarseLongitude,
+    retrySequence
+  ]);
 
   useEffect(() => {
     if (uid === null) {

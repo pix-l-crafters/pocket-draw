@@ -37,6 +37,10 @@ function getMapSummary(
   isAuthenticated: boolean,
   presenceState: PresencePublishState
 ) {
+  if (presenceState.status === "off") {
+    return "Location sharing is off";
+  }
+
   switch (locationState.status) {
     case "loading":
       return "Finding your location...";
@@ -86,8 +90,9 @@ export function MapStatusCard({
 const styles = StyleSheet.create({
   card: {
     alignSelf: "flex-start",
-    marginHorizontal: 16,
-    marginTop: 12,
+    marginLeft: 12,
+    marginRight: 16,
+    marginTop: 4,
     borderRadius: 20,
     paddingHorizontal: 18,
     paddingVertical: 14

@@ -10,9 +10,11 @@ import { MapStatusCard } from "./components/MapStatusCard";
 import { PlayerMarker } from "./components/PlayerMarker";
 import { PresenceStatusSnackbar } from "./components/PresenceStatusSnackbar";
 import { RecenterButton } from "./components/RecenterButton";
+import { SharingToggle } from "./components/SharingToggle";
 import { useForegroundLocation } from "./hooks/useForegroundLocation";
 import { useNearbyPlayers } from "./hooks/useNearbyPlayers";
 import { usePresencePublisher } from "./hooks/usePresencePublisher";
+import { useSharingPreference } from "./hooks/useSharingPreference";
 import type { Coordinates, CurrentUser } from "./types/map.types";
 import { pinColorForUid } from "./utils/map.utils";
 import { colors } from "../../theme/tokens";
@@ -41,13 +43,18 @@ export function MapScreen({ currentUser }: MapScreenProps) {
   const hasCenteredOnUserRef = useRef(false);
   const [isMapReady, setIsMapReady] = useState(false);
   const { locationState, retry } = useForegroundLocation();
+  const { isSharing, toggleSharing } = useSharingPreference();
   const userCoordinate =
     locationState.status === "granted" ? locationState.position : null;
   const {
     dismissError: dismissPresenceError,
     presenceState,
     retry: retryPresence
-  } = usePresencePublisher({ currentUser, position: userCoordinate });
+  } = usePresencePublisher({
+    currentUser,
+    position: userCoordinate,
+    enabled: isSharing
+  });
   const nearbyPlayersState = useNearbyPlayers(currentUser?.uid ?? null);
   const nearbyPlayers =
     nearbyPlayersState.status === "ready" ? nearbyPlayersState.players : [];
@@ -122,6 +129,10 @@ export function MapScreen({ currentUser }: MapScreenProps) {
           />
         </View>
 
+        <View style={styles.sharingToggle}>
+          <SharingToggle isSharing={isSharing} onToggle={toggleSharing} />
+        </View>
+
         <LocationStatusCard
           locationState={locationState}
           onOpenSettings={handleOpenSettings}
@@ -158,6 +169,11 @@ const styles = StyleSheet.create({
   },
   overlay: {
     flex: 1
+  },
+  sharingToggle: {
+    alignItems: "flex-start",
+    marginLeft: 12,
+    marginTop: 6
   },
   recenterButton: {
     bottom: 20,
