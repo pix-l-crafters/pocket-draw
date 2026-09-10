@@ -1,4 +1,7 @@
-import { PUBLIC_LOCATION_DECIMAL_PLACES } from "../constants/map.constants";
+import {
+  PLAYER_PIN_COLORS,
+  PUBLIC_LOCATION_DECIMAL_PLACES
+} from "../constants/map.constants";
 import type { Coordinates } from "../types/map.types";
 
 function assertCoordinateInRange(
@@ -31,4 +34,17 @@ export function coarsenCoordinates({
     latitude: coarsenCoordinate(latitude),
     longitude: coarsenCoordinate(longitude)
   };
+}
+
+/** Picks a stable marker colour for a player from their uid. */
+export function pinColorForUid(uid: string): string {
+  let hash = 0;
+
+  for (let index = 0; index < uid.length; index += 1) {
+    hash = (hash * 31 + uid.charCodeAt(index)) | 0;
+  }
+
+  const bucket = Math.abs(hash) % PLAYER_PIN_COLORS.length;
+
+  return PLAYER_PIN_COLORS[bucket];
 }

@@ -17,5 +17,9 @@ export interface DuelChannel {
   isConnected(): boolean;
 }
 
-// TODO(siheng): once 3.8 lands, replace this with a real BLE-backed
-// DuelChannel and delete mocks/mockDuelChannel.ts.
+// 3.8: the session layer lives in src/features/challenge/session/. It currently
+// hands back a real DuelChannel over mockDuelSessionTransport (an in-process
+// channel) because BLE peripheral-mode discovery is unsolved — see the map-duel
+// design doc §9 and session/bleDuelSessionTransport.ts. Duel logic still depends
+// only on this interface. mocks/mockDuelChannel.ts stays until a real transport
+// exists.
