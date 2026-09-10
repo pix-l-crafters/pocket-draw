@@ -33,3 +33,9 @@ These block the tickets below — flag them for resolution before writing the co
 ## Suggested branches
 
 `tanachat/feat/duel-pre-round-ritual`, `tanachat/feat/elo-calc`
+
+## Building in parallel
+
+- The pre-round ritual (4.1-4.7) talks to the BLE session through `src/contracts/duelChannel.ts` — use `mocks/mockDuelChannel.ts` (an in-memory loopback pair) instead of waiting on Siheng's 3.8. Swap in the real channel once it lands.
+- You're a co-producer of `src/contracts/roundOutcome.ts` (via 4.15, tie handling) alongside Tianze — keep its shape in sync with him rather than each assuming different fields.
+- See `src/contracts/README.md` for the full pattern.

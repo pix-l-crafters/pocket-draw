@@ -17,15 +17,21 @@ Product (onboarding, empty states, demo script, leaderboard) is deliberately lef
 - Any AI-assisted commit needs a `Co-authored-by` trailer (format and provider addresses are in `AGENTS.md`) and a same-day entry in `.agents/logs/YYYY-MM-DD.md`
 - Run `hk run fix` / `mise run fmt` before committing
 
+## Shared contracts (unblocking parallel work)
+
+Several people's tasks only depend on each other's _output shape_, not on waiting for the other person's branch to merge. `src/contracts/` defines that shape for each cross-person dependency, plus a mock implementation to build against today.
+See `src/contracts/README.md` for the full pattern and the producer/consumer table. In short: import the type from the contract file, import the mock from `mocks/` until the real thing lands, then swap the import and delete the mock.
+
+## Integration cadence
+
+Don't wait until every piece is finished to test them together. Per the plan's own Section 9 ("all members integrate weekly on the path: map → QR → BLE → duel → stats"), merge each piece into `dev` as soon as it's ready and test that pairing — e.g. Tingyue's QR work and Siheng's challenge flow can be tested together well before Duel exists.
+A single big-bang merge at the end is when mock-vs-real mismatches surface all at once, with no time left to fix them.
+
 ## Files
 
 - `mobark.md`, `mihir.md`, `tingyue.md`, `siheng.md`, `tanachat.md`, `tianze.md`
 
 ## Suggested merge order
 
-Roughly follows the plan's own timetable (Section 10):
-
-1. Challenge/QR (Tingyue, Siheng) and backend groundwork (Mihir) first, since Duel depends on them existing.
-2. The pre-round ritual (Tanachat) before fire/raise detection (Tianze), since the countdown gates the fire signal.
-3. Round-loop and result screens (Mobark) last, once reaction times and outcomes exist to feed them.
-4. Integrate into an updated `dev` weekly, per the plan.
+Roughly follows the plan's own timetable (Section 10): Challenge/QR (Tingyue, Siheng) and backend groundwork (Mihir) first, since Duel depends on them existing; the pre-round ritual (Tanachat) before fire/raise detection (Tianze), since the countdown gates the fire signal; round-loop and result screens (Mobark) last, once reaction times and outcomes exist to feed them.
+Integrate into an updated `dev` weekly, per the plan — using the contracts above, this is a target order for real integration, not a blocker on when each person can start coding.
