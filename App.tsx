@@ -154,7 +154,11 @@ export default function App() {
               ) : (
                 <ChallengeScreen
                   currentUser={toCurrentUser(user)}
-                  onChallengeSent={(handoff) => setPendingHandoff(handoff)}
+                  onOpponentConfirmed={(opponent) => {
+                    // TODO(3.4): pick up here with the round-count
+                    // selector, then 3.5's send-challenge-request logic.
+                    console.log("Opponent confirmed:", opponent);
+                  }}
                 />
               )}
             </View>

@@ -7,7 +7,6 @@ import { CutCornerButton } from "../../components/CutCornerButton";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { StatusTag } from "../../components/StatusTag";
 import { colors } from "../../theme/tokens";
-import type { ChallengeHandoff } from "../../contracts/challengeHandoff";
 import { parseQrInvite } from "../qr/utils/qr.validation";
 import type { QrValidationErrorCode } from "../qr/types/qr.types";
 import { OpponentPopup } from "./components/OpponentPopup";
@@ -23,14 +22,26 @@ const ERROR_MESSAGES: Record<QrValidationErrorCode, string> = {
   SELF_INVITE: "You can't scan your own invite."
 };
 
+export type ConfirmedOpponent = {
+  challengerId: string;
+  scannedPlayerId: string;
+  scannedPlayerName: string;
+  matchId: string;
+  discoveryToken: string;
+};
+
 type QrScannerScreenProps = {
   currentUser: { displayName: string; uid: string };
-  onChallengeSent: (handoff: ChallengeHandoff) => void;
+  // Round count isn't decided yet at this point in the flow — that's
+  // 3.4 (round-count selector), which runs next and is responsible for
+  // actually building the ChallengeHandoff and calling 3.5 (send challenge
+  // request).
+  onOpponentConfirmed: (opponent: ConfirmedOpponent) => void;
 };
 
 export function QrScannerScreen({
   currentUser,
-  onChallengeSent
+  onOpponentConfirmed
 }: QrScannerScreenProps) {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanError, setScanError] = useState<string | null>(null);
@@ -73,17 +84,15 @@ export function QrScannerScreen({
     if (!scannedInvite) {
       return;
     }
-    onChallengeSent({
+    onOpponentConfirmed({
       challengerId: currentUser.uid,
       scannedPlayerId: scannedInvite.hostPlayerId,
       scannedPlayerName: scannedInvite.hostPlayerName,
-      // TODO(tingyue, 3.4): replace the hardcoded 3 with the round selector.
-      roundCount: 3,
       matchId: scannedInvite.matchId,
       discoveryToken: scannedInvite.discoveryToken
     });
     resetScan();
-  }, [currentUser.uid, onChallengeSent, resetScan, scannedInvite]);
+  }, [currentUser.uid, onOpponentConfirmed, resetScan, scannedInvite]);
 
   if (!permission) {
     return <View style={styles.container} />;
