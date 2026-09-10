@@ -8,11 +8,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LocationStatusCard } from "./components/LocationStatusCard";
 import { MapStatusCard } from "./components/MapStatusCard";
 import { PlayerMarker } from "./components/PlayerMarker";
+import { PlayerStatsCard } from "./components/PlayerStatsCard";
 import { PresenceStatusSnackbar } from "./components/PresenceStatusSnackbar";
 import { RecenterButton } from "./components/RecenterButton";
 import { SharingToggle } from "./components/SharingToggle";
 import { useForegroundLocation } from "./hooks/useForegroundLocation";
 import { useNearbyPlayers } from "./hooks/useNearbyPlayers";
+import { usePlayerStats } from "./hooks/usePlayerStats";
 import { usePresencePublisher } from "./hooks/usePresencePublisher";
 import { useSharingPreference } from "./hooks/useSharingPreference";
 import type { Coordinates, CurrentUser } from "./types/map.types";
@@ -58,6 +60,12 @@ export function MapScreen({ currentUser }: MapScreenProps) {
   const nearbyPlayersState = useNearbyPlayers(currentUser?.uid ?? null);
   const nearbyPlayers =
     nearbyPlayersState.status === "ready" ? nearbyPlayersState.players : [];
+  const [selectedPlayerUid, setSelectedPlayerUid] = useState<string | null>(
+    null
+  );
+  const selectedPlayer =
+    nearbyPlayers.find((player) => player.uid === selectedPlayerUid) ?? null;
+  const selectedPlayerStats = usePlayerStats(selectedPlayer);
 
   useEffect(() => {
     if (!isMapReady || !userCoordinate || hasCenteredOnUserRef.current) {
@@ -90,6 +98,10 @@ export function MapScreen({ currentUser }: MapScreenProps) {
     void Linking.openSettings();
   }, []);
 
+  const clearSelectedPlayer = useCallback(() => {
+    setSelectedPlayerUid(null);
+  }, []);
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
@@ -97,6 +109,11 @@ export function MapScreen({ currentUser }: MapScreenProps) {
         ref={mapRef}
         initialRegion={INITIAL_REGION}
         onMapReady={handleMapReady}
+        onPress={(event) => {
+          if (event.nativeEvent.action !== "marker-press") {
+            clearSelectedPlayer();
+          }
+        }}
         rotateEnabled={false}
         style={StyleSheet.absoluteFillObject}
       >
@@ -104,8 +121,8 @@ export function MapScreen({ currentUser }: MapScreenProps) {
           <PlayerMarker
             key={player.uid}
             coordinate={player.coordinate}
-            description="Nearby player"
             name={player.displayName}
+            onPress={() => setSelectedPlayerUid(player.uid)}
             pinColor={pinColorForUid(player.uid)}
           />
         ))}
@@ -139,9 +156,20 @@ export function MapScreen({ currentUser }: MapScreenProps) {
           onRetry={retry}
         />
 
-        <View style={styles.recenterButton}>
-          <RecenterButton disabled={!userCoordinate} onPress={handleRecenter} />
-        </View>
+        {selectedPlayer ? (
+          <PlayerStatsCard
+            displayName={selectedPlayer.displayName}
+            onClose={clearSelectedPlayer}
+            stats={selectedPlayerStats}
+          />
+        ) : (
+          <View style={styles.recenterButton}>
+            <RecenterButton
+              disabled={!userCoordinate}
+              onPress={handleRecenter}
+            />
+          </View>
+        )}
       </SafeAreaView>
 
       <PresenceStatusSnackbar
