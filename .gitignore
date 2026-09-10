@@ -1,11 +1,22 @@
 # agents
 .agent/skills
+.agents/apm-hooks.json
+.agents/hooks.json
+.agents/hooks/
 .agents/mcp_config.json
 .agents/skills
+.claude/apm-hooks.json
+.claude/hooks/
 .claude/settings.json
 .claude/settings.local.json
 .claude/skills
+.codex/apm-hooks.json
 .codex/config.toml
+.codex/hooks.json
+.codex/hooks/
+.cursor/apm-hooks.json
+.cursor/hooks.json
+.cursor/hooks/
 .cursor/mcp.json
 .cursor/skills
 .github/skills
