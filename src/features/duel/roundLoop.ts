@@ -33,20 +33,45 @@ export function createRoundLoop(
   };
 }
 
+function tallyOutcome(
+  wins: Record<string, number>,
+  participantIds: [string, string],
+  outcome: RoundOutcome
+): Record<string, number> {
+  if (outcome.kind === "win") {
+    return { ...wins, [outcome.winnerId]: (wins[outcome.winnerId] ?? 0) + 1 };
+  }
+  if (outcome.kind === "falseStart") {
+    const opponentId = participantIds.find((id) => id !== outcome.playerId);
+    if (!opponentId) return wins;
+    return { ...wins, [opponentId]: (wins[opponentId] ?? 0) + 1 };
+  }
+  return wins;
+}
+
 export function applyRoundOutcome(
   state: RoundLoopState,
   outcome: RoundOutcome
 ): RoundLoopState {
-  const wins = { ...state.wins };
-  if (outcome.kind === "win") {
-    wins[outcome.winnerId] = (wins[outcome.winnerId] ?? 0) + 1;
-  } else if (outcome.kind === "falseStart") {
-    const opponentId = state.participantIds.find(
-      (id) => id !== outcome.playerId
-    );
-    if (opponentId) wins[opponentId] = (wins[opponentId] ?? 0) + 1;
-  }
-  return { ...state, rounds: [...state.rounds, outcome], wins };
+  return {
+    ...state,
+    rounds: [...state.rounds, outcome],
+    wins: tallyOutcome(state.wins, state.participantIds, outcome)
+  };
+}
+
+// Re-derives the win tally from a finished match's round history (e.g. a
+// MatchResult loaded for the summary screen), without replaying a full
+// RoundLoopState.
+export function scoreFromRounds(
+  participantIds: [string, string],
+  rounds: RoundOutcome[]
+): Record<string, number> {
+  const [a, b] = participantIds;
+  return rounds.reduce(
+    (wins, outcome) => tallyOutcome(wins, participantIds, outcome),
+    { [a]: 0, [b]: 0 }
+  );
 }
 
 function winsNeeded(roundCount: 3 | 5 | 7): number {
@@ -113,6 +138,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   assert.deepEqual(s3.wins, { a: 0, b: 0 });
   assert.equal(s3.rounds.length, 1);
   assert.equal(isMatchDecided(s3), false);
+
+  // scoreFromRounds agrees with the live tally kept by applyRoundOutcome
+  assert.deepEqual(scoreFromRounds(["a", "b"], s.rounds), s.wins);
+  assert.deepEqual(scoreFromRounds(["a", "b"], s2.rounds), s2.wins);
 
   console.log("roundLoop self-check passed");
 }
