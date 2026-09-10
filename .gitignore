@@ -13,6 +13,7 @@
 .opencode/skills
 .superpowers
 .vscode/mcp.json
+apm.lock.yaml
 apm_modules/
 opencode.json
 
@@ -39,7 +40,6 @@ Quickdraw Showdown.html
 .git
 .pre-commit-config.yaml
 .svn
-firebase-debug.log
 .trivycache/
 .venv/
 __MACOSX
