@@ -4,8 +4,8 @@ Source: Section 9; backlog Epics 2 and 3. See `README.md` in this folder for sha
 
 ## Tasks (backlog refs)
 
-- [ ] 2.4 — Privacy/invisible toggle on the map
-- [ ] 2.6 — Handle GPS/location-unavailable state
+- [x] 2.4 — Privacy/invisible toggle on the map
+- [x] 2.6 — Handle GPS/location-unavailable state
 - [ ] 2.2 — Player pin popup (name, wins, ELO) — stub wins/ELO until Mihir's backend lands
 - [ ] 3.4 — Round-count selector (3/5/7) before sending a challenge
 - [ ] 3.5 — Send challenge request (with round count) to the scanned player

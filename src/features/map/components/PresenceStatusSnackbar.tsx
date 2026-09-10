@@ -30,7 +30,7 @@ export function PresenceStatusSnackbar({
         visible={presenceState.status === "error"}
         wrapperStyle={styles.wrapper}
       >
-        Could not share your location. {errorMessage}
+        {`Could not share your location. ${errorMessage}`}
       </Snackbar>
     </Portal>
   );

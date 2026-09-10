@@ -1,11 +1,31 @@
-import { doc, serverTimestamp, setDoc } from "firebase/firestore";
+import {
+  collection,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  query,
+  serverTimestamp,
+  setDoc,
+  where,
+  type DocumentData,
+  type Unsubscribe
+} from "firebase/firestore";
 
 import { db } from "../../../lib/firebase";
-import type { PublishPresenceInput } from "../types/map.types";
+import type { NearbyPlayer, PublishPresenceInput } from "../types/map.types";
 import { coarsenCoordinates } from "../utils/map.utils";
+
+type PresenceSubscriptionHandlers = {
+  onData: (players: NearbyPlayer[]) => void;
+  onError: (error: Error) => void;
+};
 
 export type PresenceRepository = {
   publishPresence(input: PublishPresenceInput): Promise<void>;
+  removePresence(uid: string): Promise<void>;
+  subscribeToVisiblePresence(
+    handlers: PresenceSubscriptionHandlers
+  ): Unsubscribe;
 };
 
 function validateIdentity(uid: string, displayName: string) {
@@ -22,6 +42,35 @@ function validateIdentity(uid: string, displayName: string) {
   return trimmedDisplayName;
 }
 
+function parsePresence(uid: string, data: DocumentData): NearbyPlayer | null {
+  const { displayName, latitude, longitude, lastSeen } = data;
+
+  if (
+    typeof displayName !== "string" ||
+    typeof latitude !== "number" ||
+    typeof longitude !== "number"
+  ) {
+    return null;
+  }
+
+  // `lastSeen` is null while a server timestamp write is still pending locally.
+  const lastSeenDate =
+    lastSeen && typeof lastSeen.toDate === "function"
+      ? (lastSeen.toDate() as Date)
+      : null;
+
+  if (!lastSeenDate) {
+    return null;
+  }
+
+  return {
+    uid,
+    displayName,
+    coordinate: { latitude, longitude },
+    lastSeen: lastSeenDate
+  };
+}
+
 export const presenceRepository: PresenceRepository = {
   async publishPresence(input) {
     const displayName = validateIdentity(input.uid, input.displayName);
@@ -34,5 +83,32 @@ export const presenceRepository: PresenceRepository = {
       isVisible: true,
       lastSeen: serverTimestamp()
     });
+  },
+
+  async removePresence(uid) {
+    // Security rules forbid writing `isVisible: false`, so going offline is a
+    // delete. Re-publishing later recreates the document.
+    await deleteDoc(doc(db, "presence", uid));
+  },
+
+  subscribeToVisiblePresence({ onData, onError }) {
+    const visiblePresenceQuery = query(
+      collection(db, "presence"),
+      where("isVisible", "==", true)
+    );
+
+    return onSnapshot(
+      visiblePresenceQuery,
+      (snapshot) => {
+        const players = snapshot.docs
+          .map((entry) => parsePresence(entry.id, entry.data()))
+          .filter((player): player is NearbyPlayer => player !== null);
+
+        onData(players);
+      },
+      (error) => {
+        onError(error);
+      }
+    );
   }
 };

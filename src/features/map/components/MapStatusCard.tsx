@@ -2,19 +2,45 @@ import { StyleSheet } from "react-native";
 import { Surface, Text } from "react-native-paper";
 
 import type { LocationState } from "../hooks/useForegroundLocation";
-import type { PresencePublishState } from "../types/map.types";
+import type {
+  NearbyPlayersState,
+  PresencePublishState
+} from "../types/map.types";
 
 type MapStatusCardProps = {
   isAuthenticated: boolean;
   locationState: LocationState;
+  nearbyPlayersState: NearbyPlayersState;
   presenceState: PresencePublishState;
 };
+
+function getNearbyHeadline(nearbyPlayersState: NearbyPlayersState) {
+  switch (nearbyPlayersState.status) {
+    case "loading":
+      return "Players nearby";
+    case "error":
+      return "Couldn't load nearby players";
+    case "ready": {
+      const count = nearbyPlayersState.players.length;
+
+      if (count === 0) {
+        return "No players nearby";
+      }
+
+      return `${count} ${count === 1 ? "player" : "players"} nearby`;
+    }
+  }
+}
 
 function getMapSummary(
   locationState: LocationState,
   isAuthenticated: boolean,
   presenceState: PresencePublishState
 ) {
+  if (presenceState.status === "off") {
+    return "Location sharing is off";
+  }
+
   switch (locationState.status) {
     case "loading":
       return "Finding your location...";
@@ -43,6 +69,7 @@ function getMapSummary(
 export function MapStatusCard({
   isAuthenticated,
   locationState,
+  nearbyPlayersState,
   presenceState
 }: MapStatusCardProps) {
   return (
@@ -50,7 +77,9 @@ export function MapStatusCard({
       <Text style={styles.eyebrow} variant="labelSmall">
         MAP PREVIEW
       </Text>
-      <Text variant="headlineSmall">Players nearby</Text>
+      <Text variant="headlineSmall">
+        {getNearbyHeadline(nearbyPlayersState)}
+      </Text>
       <Text style={styles.subtitle} variant="bodySmall">
         {getMapSummary(locationState, isAuthenticated, presenceState)}
       </Text>
@@ -61,8 +90,9 @@ export function MapStatusCard({
 const styles = StyleSheet.create({
   card: {
     alignSelf: "flex-start",
-    marginHorizontal: 16,
-    marginTop: 12,
+    marginLeft: 12,
+    marginRight: 16,
+    marginTop: 4,
     borderRadius: 20,
     paddingHorizontal: 18,
     paddingVertical: 14

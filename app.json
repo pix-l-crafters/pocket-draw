@@ -25,7 +25,7 @@
     },
     "icon": "./assets/icon.png",
     "ios": {
-      "bundleIdentifier": "com.anonymous.pocketdraw",
+      "bundleIdentifier": "com.sihengm.pocketdraw",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
