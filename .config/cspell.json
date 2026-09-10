@@ -9,6 +9,7 @@
     ".vscode",
     ".zed",
     "apm.lock.yaml",
+    "fnox.toml",
     "megalinter",
     "megalinter-reports",
     "package-lock.json",
