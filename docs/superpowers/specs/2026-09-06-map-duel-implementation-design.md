@@ -121,7 +121,9 @@ Map (GPS + presence, ~built)
 | Mockup: ELO ladder + Agent settings as visible screens                                              | Out of scope for this pass (§7)                                                                                                                                     |
 | No prior doc addressed a Firestore challenge collection                                             | Explicitly rejected — the QR scan itself is the handshake, no separate invite/accept doc                                                                            |
 
-All other Aug 15/21 locks (nearby-only, BLE live path where feasible, host authority, cloud-not-referee, 4-retry BLE reconnect policy) stand.
+All other Aug 15/21 locks (nearby-only, BLE live path where feasible, host
+authority, and cloud-not-referee) stand. Mid-duel reconnect behavior is now
+locked to two three-second attempts before aborting the match.
 
 ---
 
@@ -144,17 +146,17 @@ time-boxed spike before the real `DuelSession` BLE implementation is attempted.
 
 ## 10. Error handling
 
-| Failure                          | Behaviour                                                                                                                                                                                                  |
-| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Invalid/expired QR invite        | Rejected using the existing `QrValidationErrorCode`s (no new logic)                                                                                                                                        |
-| Host profile fetch fails         | Block starting the duel; retry                                                                                                                                                                             |
-| BLE connect timeout              | Auto-retry ×4, then manual Retry button (per Aug 21 doc)                                                                                                                                                   |
-| BLE drop mid-duel                | Abort both UIs; no result written (optional `aborted` MatchResult if online)                                                                                                                               |
-| False start                      | Round loss; match continues                                                                                                                                                                                |
-| Near-simultaneous raise (tie)    | Sudden-death rematch offer for that round; exact tie-window threshold is a tunable constant, dialed in during playtesting (Aug 21 doc used ~80ms, the mockup's UI text used ±25ms — neither is fixed here) |
-| Opponent never sends "ready"     | Host cancels; no result row                                                                                                                                                                                |
-| App backgrounded/killed mid-duel | Abort; nothing persisted                                                                                                                                                                                   |
-| Offline after duel completes     | Queue `matchResults` write; flush on reconnect                                                                                                                                                             |
+| Failure                          | Behaviour                                                                                                                                   |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Invalid/expired QR invite        | Rejected using the existing `QrValidationErrorCode`s (no new logic)                                                                         |
+| Host profile fetch fails         | Block starting the duel; retry                                                                                                              |
+| BLE connect timeout              | Auto-retry ×4, then manual Retry button (per Aug 21 doc)                                                                                    |
+| BLE drop mid-duel                | Auto-retry twice with a three-second timeout per attempt, then abort both UIs; no result written (optional `aborted` MatchResult if online) |
+| False start                      | Round loss; match continues                                                                                                                 |
+| Near-simultaneous raise (tie)    | Reactions within 100ms are a tie; award one point to each player                                                                            |
+| Opponent never sends "ready"     | Host cancels; no result row                                                                                                                 |
+| App backgrounded/killed mid-duel | Abort; nothing persisted                                                                                                                    |
+| Offline after duel completes     | Queue `matchResults` write; flush on reconnect                                                                                              |
 
 ---
 

@@ -11,7 +11,14 @@ export function mockRoundOutcome(
 ): RoundOutcome {
   const roll = Math.random();
   if (roll < 0.1) return { kind: "falseStart", playerId: playerAId };
-  if (roll < 0.2) return { kind: "tie", reactionMs: 250 };
+  if (roll < 0.2) {
+    return {
+      kind: "tie",
+      reactionMs: 250,
+      opponentReactionMs: 310,
+      pointsEach: 1
+    };
+  }
   const winnerId = roll < 0.6 ? playerAId : playerBId;
   return { kind: "win", winnerId, reactionMs: 220, opponentReactionMs: 280 };
 }

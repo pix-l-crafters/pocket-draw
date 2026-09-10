@@ -2,24 +2,28 @@
 
 Source: Section 9; backlog Epics 4 and 0/7. See `README.md` in this folder for shared notes.
 
-## Design decisions to raise with the team first (Section 11)
+## Resolved design decisions (Section 11)
 
-- Fire/raise gesture spec (4.9) — same raise-to-threshold as the original draw mechanic, or a distinct gesture? Exact detection thresholds?
-- False-start handling scope (4.13) — voids just the round or the whole match? What movement threshold counts as "early"?
-- Tie-window threshold and behavior (4.15)
-- Mid-round/mid-match disconnect handling (4.18) — abort, pause, or retry?
+- Fire/raise gesture spec (4.9) — use the original raise-to-threshold mechanic:
+  1.8g sustained for 80ms, with 300ms debounce.
+- False-start handling scope (4.13) — lose the current round when movement
+  differs from resting gravity by at least 0.25g before FIRE.
+- Tie-window threshold and behavior (4.15) — reactions within 100ms are a tie;
+  award one point to each player.
+- Mid-round/mid-match disconnect handling (4.18) — retry automatically twice,
+  allowing three seconds per attempt, then abort the match.
 
 ## Tasks (backlog refs)
 
-- [ ] 4.8 — FIRE signal trigger & sync (both phones, after the countdown)
-- [ ] 4.9 — Fire/raise gesture spec (after the design decision above)
-- [ ] 4.10 — Raise/fire gesture detection (accelerometer, per the spec)
-- [ ] 4.11 — "Test your draw" calibration step
-- [ ] 4.12 — False-start detection
-- [ ] 4.13 — False-start handling (after the design decision above)
-- [ ] 4.14 — Reaction time capture (ms)
-- [ ] 4.15 — Tie detection & handling (after the design decision above)
-- [ ] 4.18 — Mid-round/mid-match disconnect handling (after the design decision above)
+- [x] 4.8 — FIRE signal trigger & sync (both phones, after the countdown)
+- [x] 4.9 — Fire/raise gesture spec (after the design decision above)
+- [x] 4.10 — Raise/fire gesture detection (accelerometer, per the spec)
+- [x] 4.11 — "Test your draw" calibration step
+- [x] 4.12 — False-start detection
+- [x] 4.13 — False-start handling (after the design decision above)
+- [x] 4.14 — Reaction time capture (ms)
+- [x] 4.15 — Tie detection & handling (after the design decision above)
+- [x] 4.18 — Mid-round/mid-match disconnect handling (after the design decision above)
 - [ ] 0.5 — iOS signing & TestFlight pipeline — the EAS project is already linked (`eas.json`, on `mobark/receive-branches`); finish the signing/distribution setup
 - [ ] 7.2 — iOS physical-device full-loop test
 
