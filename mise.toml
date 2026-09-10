@@ -8,15 +8,15 @@ postinstall = ["hk install --mise"]
 [tasks]
 ai-setup = "apm install"
 check = ["hk check --all", "cog check"]
-fmt = ["hk fix --all", "treefmt"]
+fmt = ["hk fix --all"]
 pre-commit = "hk run pre-commit"
 prepare = ["npm install"]
 
 [tools]
 android-sdk = "latest"
-apm = { postinstall = "apm install", version = "latest" }
+apm = { postinstall = "apm install", version = "0.28" }
 "aqua:google/keep-sorted" = "latest"
-"aqua:numtide/treefmt" = "latest"
+"aqua:numtide/treefmt" = { version = "latest", os = ["linux", "macos"] }
 "aqua:owenlamont/ryl" = "latest"
 betterleaks = "latest"
 cocogitto = "latest"
@@ -39,7 +39,3 @@ typos = "latest"
 typstyle = "latest"
 uv = "latest"
 yq = "latest"
-
-[[watch_files]]
-patterns = ["apm.yml"]
-task = "ai-setup"
