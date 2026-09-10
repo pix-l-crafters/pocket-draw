@@ -22,7 +22,7 @@ Source: Section 9; backlog Epics 4 and 0/7. See `README.md` in this folder for s
 - [x] 4.12 — False-start detection
 - [x] 4.13 — False-start handling (after the design decision above)
 - [x] 4.14 — Reaction time capture (ms)
-- [ ] 4.15 — Tie detection & handling (after the design decision above)
+- [x] 4.15 — Tie detection & handling (after the design decision above)
 - [ ] 4.18 — Mid-round/mid-match disconnect handling (after the design decision above)
 - [ ] 0.5 — iOS signing & TestFlight pipeline — the EAS project is already linked (`eas.json`, on `mobark/receive-branches`); finish the signing/distribution setup
 - [ ] 7.2 — iOS physical-device full-loop test
