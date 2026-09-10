@@ -1,7 +1,7 @@
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Linking, StyleSheet, View } from "react-native";
-import MapView, { type LatLng, type Region } from "react-native-maps";
+import MapView, { type Region } from "react-native-maps";
 import { ActivityIndicator, Surface, Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -11,8 +11,10 @@ import { PlayerMarker } from "./components/PlayerMarker";
 import { PresenceStatusSnackbar } from "./components/PresenceStatusSnackbar";
 import { RecenterButton } from "./components/RecenterButton";
 import { useForegroundLocation } from "./hooks/useForegroundLocation";
+import { useNearbyPlayers } from "./hooks/useNearbyPlayers";
 import { usePresencePublisher } from "./hooks/usePresencePublisher";
 import type { Coordinates, CurrentUser } from "./types/map.types";
+import { pinColorForUid } from "./utils/map.utils";
 import { colors } from "../../theme/tokens";
 
 const INITIAL_REGION: Region = {
@@ -21,32 +23,6 @@ const INITIAL_REGION: Region = {
   latitudeDelta: 0.035,
   longitudeDelta: 0.035
 };
-
-const MOCK_PLAYERS: ReadonlyArray<{
-  id: string;
-  name: string;
-  coordinate: LatLng;
-  pinColor: string;
-}> = [
-  {
-    id: "mock-player-maya",
-    name: "Maya",
-    coordinate: { latitude: -33.865, longitude: 151.2094 },
-    pinColor: "#7F56D9"
-  },
-  {
-    id: "mock-player-noah",
-    name: "Noah",
-    coordinate: { latitude: -33.8722, longitude: 151.2148 },
-    pinColor: "#F04438"
-  },
-  {
-    id: "mock-player-zoe",
-    name: "Zoe",
-    coordinate: { latitude: -33.8681, longitude: 151.2016 },
-    pinColor: "#12B76A"
-  }
-];
 
 function getRegionForCoordinate(coordinate: Coordinates): Region {
   return {
@@ -72,6 +48,9 @@ export function MapScreen({ currentUser }: MapScreenProps) {
     presenceState,
     retry: retryPresence
   } = usePresencePublisher({ currentUser, position: userCoordinate });
+  const nearbyPlayersState = useNearbyPlayers(currentUser?.uid ?? null);
+  const nearbyPlayers =
+    nearbyPlayersState.status === "ready" ? nearbyPlayersState.players : [];
 
   useEffect(() => {
     if (!isMapReady || !userCoordinate || hasCenteredOnUserRef.current) {
@@ -114,12 +93,13 @@ export function MapScreen({ currentUser }: MapScreenProps) {
         rotateEnabled={false}
         style={StyleSheet.absoluteFillObject}
       >
-        {MOCK_PLAYERS.map((player) => (
+        {nearbyPlayers.map((player) => (
           <PlayerMarker
-            key={player.id}
+            key={player.uid}
             coordinate={player.coordinate}
-            name={player.name}
-            pinColor={player.pinColor}
+            description="Nearby player"
+            name={player.displayName}
+            pinColor={pinColorForUid(player.uid)}
           />
         ))}
         {userCoordinate ? (
@@ -137,6 +117,7 @@ export function MapScreen({ currentUser }: MapScreenProps) {
           <MapStatusCard
             isAuthenticated={currentUser !== null}
             locationState={locationState}
+            nearbyPlayersState={nearbyPlayersState}
             presenceState={presenceState}
           />
         </View>
