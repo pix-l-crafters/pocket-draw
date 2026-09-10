@@ -31,7 +31,10 @@ Source: Section 9; backlog Epics 4 and 0/7. See `README.md` in this folder for s
 
 `tianze/feat/duel-fire-detection`, `tianze/chore/ios-signing`
 
-## Depends on / blocked by
+## Building in parallel
 
-- 4.10 depends on 4.9's spec being settled — don't start detection code before that decision is made
-- 7.2 is sequenced last, after the rest of the duel loop is demoable
+- Fire/raise/false-start code (4.8-4.13) talks to the BLE session through `src/contracts/duelChannel.ts` — use `mocks/mockDuelChannel.ts` instead of waiting on Siheng's 3.8. Swap in the real channel once it lands.
+- You're the main producer of `src/contracts/roundOutcome.ts` — keep its shape in sync with Tanachat, who also writes to it (via 4.15, tie handling).
+- 4.10 still genuinely depends on 4.9's design decision being settled first — contracts don't help with an undecided spec.
+- 7.2 is sequenced last, after the rest of the duel loop is demoable.
+- See `src/contracts/README.md` for the full pattern.

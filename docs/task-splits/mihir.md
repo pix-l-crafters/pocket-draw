@@ -23,7 +23,8 @@ Your `mihir/feat/secrets-setup-rebased` branch duplicates a chunk of the design-
 
 `mihir/feat/match-results-backend`, `mihir/chore/reconcile-tooling`
 
-## Depends on / blocked by
+## Building in parallel
 
-- 5.2/5.3 need the round loop (Mobark, 4.17) to know when a match result exists to write
-- 7.1/7.3 depend on most other epics being demoable end-to-end first — sequence these last
+- 5.2/5.3: code against `src/contracts/matchResult.ts` + `mocks/mockMatchResult.ts` instead of waiting on Mobark's round loop (4.17). Swap for the real thing once his branch merges.
+- 7.1/7.3 genuinely can't happen until the rest of the loop is demoable — sequence these last; contracts don't help with device/QA testing itself.
+- See `src/contracts/README.md` for the full pattern.

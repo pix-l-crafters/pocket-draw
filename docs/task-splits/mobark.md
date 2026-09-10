@@ -19,7 +19,8 @@ Source: Section 9 of "Pocket Draw - Project Plan Final v2"; backlog Epics 4 & 6.
 
 `mobark/feat/duel-round-loop`, `mobark/feat/postmatch-summary`
 
-## Depends on / blocked by
+## Building in parallel
 
-- The round loop needs Tianze's reaction-time capture (4.14) and Tanachat's tie/false-start handling landed first
-- ELO shown on the summary screen needs Mihir's 5.4 (ELO calc) — stub with a placeholder until then
+- Round loop (4.17): code against `src/contracts/roundOutcome.ts` + `mocks/mockRoundOutcome.ts` instead of waiting on Tianze's (4.10-4.13) and Tanachat's (4.15) real detection code. Swap the mock for the real thing once their branches merge.
+- ELO on the summary screen (6.1): code against `src/contracts/playerStats.ts` + its mock instead of waiting on Mihir's 5.4.
+- See `src/contracts/README.md` for the full mock → real swap pattern, and integrate into `dev` as each dependency actually lands rather than waiting for everything at once.
