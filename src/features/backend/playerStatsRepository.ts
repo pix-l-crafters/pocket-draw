@@ -3,6 +3,7 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import type { MatchResult } from "../../contracts/matchResult";
 import type { PlayerStats } from "../../contracts/playerStats";
 import { db } from "../../lib/firebase";
+import { ELO_K_FACTOR, updateEloPair } from "./elo";
 import { DEFAULT_ELO_RATING, type PlayerStatsRepository } from "./types";
 
 function isMatchResultDocument(data: unknown): data is MatchResult {
@@ -21,8 +22,7 @@ function isMatchResultDocument(data: unknown): data is MatchResult {
 }
 
 /**
- * Aggregates wins/losses from `matchResults` for a player.
- * eloRating stays at DEFAULT_ELO_RATING until Tanachat's 5.4 lands.
+ * Aggregates wins/losses and replays completed matches to derive current ELO.
  */
 export const playerStatsRepository: PlayerStatsRepository = {
   async getPlayerStats(uid, displayName): Promise<PlayerStats> {
@@ -40,18 +40,31 @@ export const playerStatsRepository: PlayerStatsRepository = {
     let wins = 0;
     let losses = 0;
 
-    for (const docSnap of snapshot.docs) {
-      const data = docSnap.data();
+    const ratings = new Map<string, number>();
+    const relevantResults = snapshot.docs
+      .map((docSnap) => docSnap.data())
+      .filter(isMatchResultDocument)
+      .sort((left, right) => left.completedAt.localeCompare(right.completedAt));
 
-      if (!isMatchResultDocument(data)) {
-        continue;
-      }
-
+    for (const data of relevantResults) {
       if (data.winnerId === uid) {
         wins += 1;
       } else if (data.participantIds.includes(uid)) {
         losses += 1;
       }
+
+      const [playerA, playerB] = data.participantIds;
+      const ratingA = ratings.get(playerA) ?? DEFAULT_ELO_RATING;
+      const ratingB = ratings.get(playerB) ?? DEFAULT_ELO_RATING;
+      const outcome = data.winnerId === playerA ? "win" : "loss";
+      const [nextA, nextB] = updateEloPair(
+        ratingA,
+        ratingB,
+        outcome,
+        ELO_K_FACTOR
+      );
+      ratings.set(playerA, nextA);
+      ratings.set(playerB, nextB);
     }
 
     return {
@@ -59,7 +72,7 @@ export const playerStatsRepository: PlayerStatsRepository = {
       displayName: trimmedName,
       wins,
       losses,
-      eloRating: DEFAULT_ELO_RATING
+      eloRating: ratings.get(uid) ?? DEFAULT_ELO_RATING
     };
   }
 };
