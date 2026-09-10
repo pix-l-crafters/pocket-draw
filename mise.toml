@@ -14,7 +14,7 @@ prepare = ["npm install"]
 
 [tools]
 android-sdk = "latest"
-apm = { postinstall = "apm install", version = "latest" }
+apm = { version = "0.28", postinstall = "apm install" }
 "aqua:google/keep-sorted" = "latest"
 "aqua:numtide/treefmt" = "latest"
 "aqua:owenlamont/ryl" = "latest"
