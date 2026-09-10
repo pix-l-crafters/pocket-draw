@@ -20,8 +20,21 @@ export type PlayerPresenceDocument = {
 
 export type PublishPresenceInput = CurrentUser & Coordinates;
 
+export type NearbyPlayer = {
+  uid: string;
+  displayName: string;
+  coordinate: Coordinates;
+  lastSeen: Date;
+};
+
+export type NearbyPlayersState =
+  | { status: "loading" }
+  | { status: "ready"; players: NearbyPlayer[] }
+  | { status: "error"; message: string };
+
 export type PresencePublishState =
   | { status: "idle" }
+  | { status: "off" }
   | { status: "publishing" }
   | { status: "published" }
   | { status: "error"; message: string };

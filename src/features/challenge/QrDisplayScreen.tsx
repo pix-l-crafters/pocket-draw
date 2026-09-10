@@ -83,7 +83,7 @@ export function QrDisplayScreen({ currentUser }: QrDisplayScreenProps) {
           />
         </View>
         <StatusTag tone={secondsLeft <= 10 ? "warning" : "muted"}>
-          Refreshes in {secondsLeft}s
+          {`Refreshes in ${secondsLeft}s`}
         </StatusTag>
       </CutCornerSurface>
       <CutCornerButton label="Generate New Code" onPress={regenerate} />
