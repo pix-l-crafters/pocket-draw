@@ -48,7 +48,12 @@ assertEqual(isMatchDecided(s2), false, "one round loss should not decide it");
 
 // ties don't move the score and don't decide the match
 let s3 = createRoundLoop(["a", "b"], 5);
-s3 = applyRoundOutcome(s3, { kind: "tie", reactionMs: 250 });
+s3 = applyRoundOutcome(s3, {
+  kind: "tie",
+  reactionMs: 250,
+  opponentReactionMs: 260,
+  pointsEach: 1
+});
 assertEqual(s3.wins, { a: 0, b: 0 }, "tie should not change the score");
 assertEqual(s3.rounds.length, 1, "tie is still recorded in round history");
 assertEqual(isMatchDecided(s3), false, "a tie should not decide the match");
