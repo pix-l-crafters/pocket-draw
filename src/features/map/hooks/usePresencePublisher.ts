@@ -1,21 +1,21 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
+import {
+  PRESENCE_HEARTBEAT_MS,
+  PRESENCE_MAX_PUBLISH_RETRIES,
+  PRESENCE_RETRY_BASE_DELAY_MS
+} from "../constants/map.constants";
 import type {
   Coordinates,
   CurrentUser,
-  PresencePublishState,
-  PublishPresenceInput
+  PresencePublishState
 } from "../types/map.types";
 import { presenceRepository } from "../services/presenceRepository";
+import { coarsenCoordinate } from "../utils/map.utils";
 
 type UsePresencePublisherInput = {
   currentUser: CurrentUser | null;
   position: Coordinates | null;
-};
-
-type PublishAttempt = {
-  key: string;
-  promise: Promise<void>;
 };
 
 function getPublishErrorMessage(error: unknown) {
@@ -26,15 +26,6 @@ function getPublishErrorMessage(error: unknown) {
   return "Unable to share your location. Please try again.";
 }
 
-function getPublishKey(input: PublishPresenceInput) {
-  return JSON.stringify([
-    input.uid,
-    input.displayName,
-    input.latitude,
-    input.longitude
-  ]);
-}
-
 export function usePresencePublisher({
   currentUser,
   position
@@ -43,70 +34,100 @@ export function usePresencePublisher({
     status: "idle"
   });
   const [retrySequence, setRetrySequence] = useState(0);
-  const attemptRef = useRef<PublishAttempt | null>(null);
+
   const uid = currentUser?.uid ?? null;
   const displayName = currentUser?.displayName ?? null;
-  const latitude = position?.latitude ?? null;
-  const longitude = position?.longitude ?? null;
+  // Publishing is keyed on the coarsened cell, so small GPS jitter within the
+  // same ~110 m cell does not trigger a write; a heartbeat keeps it fresh.
+  const coarseLatitude = position ? coarsenCoordinate(position.latitude) : null;
+  const coarseLongitude = position
+    ? coarsenCoordinate(position.longitude)
+    : null;
 
   useEffect(() => {
     if (
       uid === null ||
       displayName === null ||
-      latitude === null ||
-      longitude === null
+      coarseLatitude === null ||
+      coarseLongitude === null
     ) {
-      attemptRef.current = null;
       setPresenceState({ status: "idle" });
       return;
     }
 
-    const input: PublishPresenceInput = {
+    const input = {
       uid,
       displayName,
-      latitude,
-      longitude
+      latitude: coarseLatitude,
+      longitude: coarseLongitude
     };
-    const key = getPublishKey(input);
-    let attempt = attemptRef.current;
 
-    if (!attempt || attempt.key !== key) {
-      attempt = {
-        key,
-        promise: presenceRepository.publishPresence(input)
-      };
-      attemptRef.current = attempt;
-    }
+    let cancelled = false;
+    let retryCount = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
 
-    let isActive = true;
-    setPresenceState({ status: "publishing" });
+    const publish = async () => {
+      if (cancelled) {
+        return;
+      }
 
-    void attempt.promise
-      .then(() => {
-        if (isActive) {
-          setPresenceState({ status: "published" });
-        }
-      })
-      .catch((error: unknown) => {
-        if (attemptRef.current === attempt) {
-          attemptRef.current = null;
+      setPresenceState((previous) =>
+        previous.status === "published" ? previous : { status: "publishing" }
+      );
+
+      try {
+        await presenceRepository.publishPresence(input);
+
+        if (cancelled) {
+          return;
         }
 
-        if (isActive) {
-          setPresenceState({
-            status: "error",
-            message: getPublishErrorMessage(error)
-          });
+        retryCount = 0;
+        setPresenceState({ status: "published" });
+        timer = setTimeout(() => void publish(), PRESENCE_HEARTBEAT_MS);
+      } catch (error) {
+        if (cancelled) {
+          return;
         }
-      });
+
+        if (retryCount < PRESENCE_MAX_PUBLISH_RETRIES) {
+          retryCount += 1;
+          const delay = PRESENCE_RETRY_BASE_DELAY_MS * 2 ** (retryCount - 1);
+          timer = setTimeout(() => void publish(), delay);
+          return;
+        }
+
+        setPresenceState({
+          status: "error",
+          message: getPublishErrorMessage(error)
+        });
+      }
+    };
+
+    void publish();
 
     return () => {
-      isActive = false;
+      cancelled = true;
+
+      if (timer) {
+        clearTimeout(timer);
+      }
     };
-  }, [displayName, latitude, longitude, retrySequence, uid]);
+  }, [uid, displayName, coarseLatitude, coarseLongitude, retrySequence]);
+
+  useEffect(() => {
+    if (uid === null) {
+      return;
+    }
+
+    return () => {
+      // Best effort: on logout or leaving the map, drop out of everyone's view.
+      // A missed delete ages out on its own via the staleness window.
+      void presenceRepository.removePresence(uid).catch(() => undefined);
+    };
+  }, [uid]);
 
   const retry = useCallback(() => {
-    attemptRef.current = null;
     setRetrySequence((sequence) => sequence + 1);
   }, []);
 

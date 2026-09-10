@@ -1,5 +1,6 @@
 import {
   collection,
+  deleteDoc,
   doc,
   onSnapshot,
   query,
@@ -21,6 +22,7 @@ type PresenceSubscriptionHandlers = {
 
 export type PresenceRepository = {
   publishPresence(input: PublishPresenceInput): Promise<void>;
+  removePresence(uid: string): Promise<void>;
   subscribeToVisiblePresence(
     handlers: PresenceSubscriptionHandlers
   ): Unsubscribe;
@@ -81,6 +83,12 @@ export const presenceRepository: PresenceRepository = {
       isVisible: true,
       lastSeen: serverTimestamp()
     });
+  },
+
+  async removePresence(uid) {
+    // Security rules forbid writing `isVisible: false`, so going offline is a
+    // delete. Re-publishing later recreates the document.
+    await deleteDoc(doc(db, "presence", uid));
   },
 
   subscribeToVisiblePresence({ onData, onError }) {
