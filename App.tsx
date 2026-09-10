@@ -20,6 +20,7 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { auth } from "./src/lib/firebase";
 import { logoutUser } from "./src/lib/auth";
 import { BleScreen } from "./src/features/ble/BleScreen";
+import { DuelScreen } from "./src/features/duel/DuelScreen";
 import { MapScreen } from "./src/features/map/MapScreen";
 import type { CurrentUser } from "./src/features/map/types/map.types";
 import LoginScreen from "./src/screens/LoginScreen";
@@ -38,7 +39,7 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [showRegister, setShowRegister] = useState(false);
-  const [activeTab, setActiveTab] = useState<"map" | "ble">("map");
+  const [activeTab, setActiveTab] = useState<"map" | "ble" | "duel">("map");
   const [barlowLoaded] = useBarlowFonts({ Barlow_400Regular });
   const [barlowCondensedLoaded] = useBarlowCondensedFonts({
     BarlowCondensed_700Bold
@@ -106,7 +107,8 @@ export default function App() {
               <SegmentedButtons
                 buttons={[
                   { value: "map", label: "Map" },
-                  { value: "ble", label: "BLE Scanner" }
+                  { value: "ble", label: "BLE Scanner" },
+                  { value: "duel", label: "Duel" }
                 ]}
                 onValueChange={(val) => setActiveTab(val as "map" | "ble")}
                 style={styles.switcher}
@@ -122,8 +124,10 @@ export default function App() {
             <View style={styles.screenContainer}>
               {activeTab === "map" ? (
                 <MapScreen currentUser={toCurrentUser(user)} />
-              ) : (
+              ) : activeTab === "ble" ? (
                 <BleScreen />
+              ) : (
+                <DuelScreen />
               )}
             </View>
           </SafeAreaView>
