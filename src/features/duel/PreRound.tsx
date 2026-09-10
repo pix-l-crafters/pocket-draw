@@ -1,4 +1,5 @@
 import { Accelerometer } from "expo-sensors";
+import { useAudioPlayer } from "expo-audio";
 import * as Haptics from "expo-haptics";
 import { useEffect, useMemo, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
@@ -6,6 +7,7 @@ import { Button, ProgressBar } from "react-native-paper";
 
 import type { DuelChannel, DuelMessage } from "../../contracts/duelChannel";
 import { colors, fonts } from "../../theme/tokens";
+import { COUNTDOWN_AUDIO_SOURCE } from "./countdownAudio";
 
 export const SEPARATION_RSSI_THRESHOLD = -70;
 const COUNTDOWN_VALUES = [3, 2, 1] as const;
@@ -31,6 +33,7 @@ type PreRoundProps = {
 };
 
 export function PreRound({ channel, readRssi }: PreRoundProps) {
+  const countdownAudio = useAudioPlayer(COUNTDOWN_AUDIO_SOURCE);
   const [phase, setPhase] = useState<Phase>("separate");
   const [rssi, setRssi] = useState<number | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
@@ -59,12 +62,19 @@ export function PreRound({ channel, readRssi }: PreRoundProps) {
         setPhase("countdown");
       }
       if (message.type === "countdown") {
+        playCountdownAudio();
         void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         setCountdown(message.value);
       }
       if (message.type === "ready") setPhase("ready");
     });
   }, [channel]);
+
+  const playCountdownAudio = () => {
+    if (!COUNTDOWN_AUDIO_SOURCE) return;
+    countdownAudio.seekTo(0);
+    countdownAudio.play();
+  };
 
   useEffect(() => {
     if (phase !== "separate") return;
@@ -106,6 +116,7 @@ export function PreRound({ channel, readRssi }: PreRoundProps) {
         COUNTDOWN_VALUES.forEach((value, index) => {
           setTimeout(() => {
             channel.send({ type: "countdown", value });
+            playCountdownAudio();
             void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             setCountdown(value);
           }, index * 1000);
