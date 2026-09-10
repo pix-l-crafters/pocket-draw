@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 
+import type { DuelChannel } from "../../contracts/duelChannel";
 import { createMockDuelChannelPair } from "../../contracts/mocks/mockDuelChannel";
 import { PreRound, type RssiReader } from "./PreRound";
 
@@ -8,13 +9,20 @@ import { PreRound, type RssiReader } from "./PreRound";
  * DuelChannel once the BLE session producer lands.
  */
 type DuelScreenProps = {
+  channel?: DuelChannel;
   readRssi?: RssiReader;
 };
 
-export function DuelScreen({ readRssi }: DuelScreenProps = {}) {
-  const channel = useMemo(() => createMockDuelChannelPair()[0], []);
+export function DuelScreen({
+  channel: providedChannel,
+  readRssi
+}: DuelScreenProps = {}) {
+  const mockChannel = useMemo(() => createMockDuelChannelPair()[0], []);
 
   return (
-    <PreRound channel={channel} readRssi={readRssi ?? (async () => -75)} />
+    <PreRound
+      channel={providedChannel ?? mockChannel}
+      readRssi={readRssi ?? (async () => -75)}
+    />
   );
 }

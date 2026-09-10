@@ -1,4 +1,5 @@
 import { Accelerometer } from "expo-sensors";
+import * as Haptics from "expo-haptics";
 import { useEffect, useMemo, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Button, ProgressBar } from "react-native-paper";
@@ -51,10 +52,16 @@ export function PreRound({ channel, readRssi }: PreRoundProps) {
   useEffect(() => {
     return channel.onMessage((message: DuelMessage) => {
       if (message.type === "buzz") {
+        void Haptics.notificationAsync(
+          Haptics.NotificationFeedbackType.Success
+        );
         setBuzzed(true);
         setPhase("countdown");
       }
-      if (message.type === "countdown") setCountdown(message.value);
+      if (message.type === "countdown") {
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        setCountdown(message.value);
+      }
       if (message.type === "ready") setPhase("ready");
     });
   }, [channel]);
@@ -91,11 +98,15 @@ export function PreRound({ channel, readRssi }: PreRoundProps) {
       const delayMs = 1000 + Math.floor(Math.random() * 2000);
       setTimeout(() => {
         channel.send({ type: "buzz", delayMs });
+        void Haptics.notificationAsync(
+          Haptics.NotificationFeedbackType.Success
+        );
         setBuzzed(true);
         setPhase("countdown");
         COUNTDOWN_VALUES.forEach((value, index) => {
           setTimeout(() => {
             channel.send({ type: "countdown", value });
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             setCountdown(value);
           }, index * 1000);
         });
