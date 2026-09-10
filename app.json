@@ -14,7 +14,8 @@
         "android.permission.BLUETOOTH_CONNECT",
         "android.permission.BLUETOOTH_SCAN",
         "android.permission.ACCESS_FINE_LOCATION",
-        "android.permission.ACCESS_COARSE_LOCATION"
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.HIGH_SAMPLING_RATE_SENSORS"
       ],
       "predictiveBackGestureEnabled": false
     },
@@ -47,6 +48,12 @@
         "expo-location",
         {
           "locationWhenInUsePermission": "Allow Pocket Draw to use your location while you use the app so you can see yourself on the map."
+        }
+      ],
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "Allow Pocket Draw to detect your quick-draw gesture during a duel."
         }
       ],
       [
