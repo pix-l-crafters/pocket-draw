@@ -1,12 +1,15 @@
-// 4.17 — round loop / match-decided logic: tracks round wins across a
+// 4.17 — round loop / match-decided logic: tracks round points across a
 // best-of-3/5/7 match and decides when it's over.
 //
-// Round rules (docs/superpowers/specs/2026-09-06-map-duel-implementation-design.md §10):
-// - "win": winnerId gets a round win.
+// Round rules (matches src/features/duel/roundJudge.ts, the real producer of
+// RoundOutcome):
+// - "win": winnerId gets 1 point.
 // - "falseStart": the false-starting player loses the round (opponent gets
-//   the win); the match continues.
-// - "tie": sudden-death replay for that round — no win tally change. Still
-//   appended to `rounds` so the summary can show it happened.
+//   1 point); the match continues.
+// - "tie": both players get `pointsEach` (roundJudge.ts's approved tie rule
+//   — reactions within the tie window score for both). If that pushes both
+//   players to the win threshold in the same round, the match is NOT decided
+//   — a tied leaderboard always plays a sudden-death decider round.
 
 import type { RoundOutcome } from "../../contracts/roundOutcome";
 import type { MatchResult } from "../../contracts/matchResult";
@@ -44,7 +47,12 @@ function tallyOutcome(
     if (!opponentId) return wins;
     return { ...wins, [opponentId]: (wins[opponentId] ?? 0) + 1 };
   }
-  return wins;
+  const [a, b] = participantIds;
+  return {
+    ...wins,
+    [a]: (wins[a] ?? 0) + outcome.pointsEach,
+    [b]: (wins[b] ?? 0) + outcome.pointsEach
+  };
 }
 
 export function applyRoundOutcome(
@@ -78,7 +86,12 @@ function winsNeeded(roundCount: 3 | 5 | 7): number {
 
 export function matchWinnerId(state: RoundLoopState): string | undefined {
   const needed = winsNeeded(state.roundCount);
-  return state.participantIds.find((id) => state.wins[id] >= needed);
+  const [a, b] = state.participantIds;
+  const scoreA = state.wins[a] ?? 0;
+  const scoreB = state.wins[b] ?? 0;
+  if (scoreA === scoreB) return undefined;
+  const [leader, leaderScore] = scoreA > scoreB ? [a, scoreA] : [b, scoreB];
+  return leaderScore >= needed ? leader : undefined;
 }
 
 export function isMatchDecided(state: RoundLoopState): boolean {
