@@ -39,7 +39,3 @@ typos = "latest"
 typstyle = "latest"
 uv = "latest"
 yq = "latest"
-
-[[watch_files]]
-patterns = ["apm.yml"]
-task = "ai-setup"
