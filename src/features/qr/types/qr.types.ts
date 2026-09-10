@@ -1,15 +1,16 @@
 export type QrInvitePayload = {
-  type: "pocket-draw/invite";
-  version: 1;
-  matchId: string; //邀请对应的对局 ID
-  hostPlayerId: string; //发起人的fireBase UID
-  hostPlayerName?: string; //仅显示名字
-  challengeToken: string;
-  issuedAt: number;
-  expiresAt: number;
-  transport: "ble";
+  // 323 + 200
+  type: "pocket-draw/invite"; //数据部分：19 结构部分：4+1 = 5
+  version: 1; // 数据部分：1  结构部分：7+1 = 8
+  matchId: string; //邀请对应的对局 ID 数据部分：36 结构：9
+  hostPlayerId: string; //发起人的fireBase UID 数据部分：128 结构：13
+  hostPlayerName?: string; //仅显示名字 数据部分：64 结构：17
+  challengeToken: string; // 数据部分：32 结构：16
+  issuedAt: number; // 数据部分：16 结构：10
+  expiresAt: number; // 数据部分：16 结构：11
+  transport: "ble"; // 数据部分：3 结构： 11
   ble: {
-    discoveryToken: string;
+    discoveryToken: string; // 数据部分：8 结构：7
   };
 };
 
@@ -39,7 +40,7 @@ const exampleInvite: QrInvitePayload = {
   hostPlayerName: "hostName",
   challengeToken: "9f08bc127e44a031b69307dc84f2a658", // gitleaks:allow fixed example token, not a real secret
   issuedAt: now,
-  expiresAt: now + 120_000,
+  expiresAt: now + 60_000,
   transport: "ble",
   ble: {
     discoveryToken: "a71c9b82"

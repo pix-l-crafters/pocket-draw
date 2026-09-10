@@ -1,9 +1,9 @@
-// Individual field checks for QR invite payloads parsed from untrusted JSON.
-// These checks do not yet validate timestamps or a complete invite, and do not
-// verify that a BLE host session is active or that a token was securely generated.
+// Field checks and full-invite validation for QR invite payloads parsed from
+// untrusted JSON. These checks do not verify that a BLE host session is
+// active or that a token was securely generated.
 // Console examples are temporary learning checks, not automated assertions.
 
-import type { QrValidationResult } from "../types/qr.types";
+import type { QrInvitePayload, QrValidationResult } from "../types/qr.types";
 /** Narrow unknown input to a non-null, non-array object before reading fields. */
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return (
@@ -214,10 +214,10 @@ console.log(hasValidTimestampFields({ issuedAt: 1_000_000 }));
 console.log(hasValidTimestampFields({}));
 console.log(hasValidTimestampFields(null));
 
-/** Require the invite's issued/expiry gap to be exactly the fixed two-minute lifetime. */
+/** Require the invite's issued/expiry gap to be exactly the fixed one-minute lifetime. */
 export function hasValidLifetime(issuedAt: number, expiresAt: number): boolean {
-  // Return whether the lifetime is exactly two minutes.
-  return expiresAt - issuedAt === 120_000;
+  // Return whether the lifetime is exactly one minute.
+  return expiresAt - issuedAt === 60_000;
 }
 
 /** Check whether an invite has passed its expiry time relative to the given clock reading. */
@@ -275,5 +275,75 @@ export function validateQrInvite(
   ) {
     return { ok: false, code: "INVALID_TIME" };
   }
-  return { ok: false, code: "INVALID_PAYLOAD" }; //兜底的invalid payload return
+  if (
+    isIssuedTooFarInFuture(value.issuedAt, now) ||
+    !hasValidLifetime(value.issuedAt, value.expiresAt)
+  ) {
+    //时钟偏移过大，或有效期不是固定的一分钟
+    return { ok: false, code: "INVALID_TIME" };
+  }
+  if (isInviteExpired(value.expiresAt, now)) {
+    //二维码已过期
+    return { ok: false, code: "EXPIRED" };
+  }
+  if (value.hostPlayerId === currentUserId) {
+    //不能扫描自己发起的邀请
+    return { ok: false, code: "SELF_INVITE" };
+  }
+  return { ok: true, value: value as QrInvitePayload };
 }
+
+// Fixed values keep these examples repeatable without depending on the current time.
+const validInvite = {
+  type: "pocket-draw/invite",
+  version: 1,
+  matchId: "d970d475-0992-4e92-86df-b44c1f8115a9",
+  hostPlayerId: "test-host-002",
+  hostPlayerName: "Alex",
+  challengeToken: "9f08bc127e44a031b69307dc84f2a658", // gitleaks:allow fixed example token, not a real secret
+  issuedAt: 1_000_000,
+  expiresAt: 1_060_000,
+  transport: "ble",
+  ble: { discoveryToken: "a71c9b82" }
+};
+// Expected: ok, then EXPIRED, INVALID_TIME (too far ahead), SELF_INVITE, INVALID_PAYLOAD (not an object).
+console.log(validateQrInvite(validInvite, "some-other-user", 1_000_500));
+console.log(validateQrInvite(validInvite, "some-other-user", 1_060_000));
+console.log(
+  validateQrInvite(
+    { ...validInvite, issuedAt: 1_100_000, expiresAt: 1_160_000 },
+    "some-other-user",
+    1_000_000
+  )
+);
+console.log(validateQrInvite(validInvite, "test-host-002", 1_000_500));
+console.log(validateQrInvite(null, "some-other-user", 1_000_500));
+
+// parseQrInvite Large threshold - 525 round up 550, 给一点留余量
+export function parseQrInvite(
+  raw: string,
+  currentUserId: string,
+  now: number // Date.now() 现在的时间戳
+): QrValidationResult {
+  let parsed: unknown;
+  const MAX_QR_PAYLOAD_LENGTH = 550;
+  if (raw.length > MAX_QR_PAYLOAD_LENGTH) {
+    return { ok: false, code: "TOO_LARGE" };
+  }
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return { ok: false, code: "MALFORMED_JSON" };
+  }
+  return validateQrInvite(parsed, currentUserId, now); //最后一步 validateQrInvite 的返回值本身就是 QrValidationResult 类型，跟这个函数要返回的类型一致，可以直接 return。
+}
+// Expected: ok
+const encodedValidInvite = JSON.stringify(validInvite);
+console.log(parseQrInvite(encodedValidInvite, "some-other-user", 1_000_500));
+
+//Expected: MALFORMED_JSON
+console.log(parseQrInvite(encodedValidInvite, "some-other-user", 1_000_500));
+//Expected: TOO_LARGE
+console.log(
+  parseQrInvite(MAX_QR_PAYLOAD_LENGTH + 1, "some-other-user", 1_000_500)
+);
