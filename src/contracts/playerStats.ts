@@ -10,5 +10,8 @@ export interface PlayerStats {
   eloRating: number;
 }
 
-// TODO(mihir): once 5.1/5.5/5.4 land, replace mockPlayerStats with the real
-// Firestore-backed lookup and delete mocks/mockPlayerStats.ts.
+// Real lookup: `playerStatsRepository.getPlayerStats` in
+// `src/features/backend/` (wins/losses from matchResults; eloRating is still
+// DEFAULT_ELO_RATING until Tanachat's 5.4). Consumers can swap
+// mocks/mockPlayerStats.ts once they wire that import; delete the mock then.
+// TODO(mihir): after 5.4/5.5, surface live ELO and remove the default.
