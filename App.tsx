@@ -28,6 +28,9 @@ import { MapScreen } from "./src/features/map/MapScreen";
 import type { CurrentUser } from "./src/features/map/types/map.types";
 import LoginScreen from "./src/screens/LoginScreen";
 import RegisterScreen from "./src/screens/RegisterScreen";
+import { RoundCountSelector } from "./src/features/challenge/RoundCountSelector";
+import { challengeRequestRepository } from "./src/features/challenge/services/challengeRequestRepository";
+import type { ConfirmedOpponent } from "./src/features/challenge/QrScannerScreen";
 import { appTheme } from "./src/theme/appTheme";
 import { colors } from "./src/theme/tokens";
 
@@ -48,6 +51,8 @@ export default function App() {
   const [pendingHandoff, setPendingHandoff] = useState<ChallengeHandoff | null>(
     null
   );
+  const [pendingOpponent, setPendingOpponent] =
+    useState<ConfirmedOpponent | null>(null);
   const [barlowLoaded] = useBarlowFonts({ Barlow_400Regular });
   const [barlowCondensedLoaded] = useBarlowCondensedFonts({
     BarlowCondensed_700Bold
@@ -71,11 +76,13 @@ export default function App() {
     <SafeAreaProvider>
       <PaperProvider theme={appTheme}>
         {loading ? (
+          // 登录状态或字体仍在加载。
           <View style={styles.authScreen}>
             <StatusBar style="light" />
             <Text style={styles.loadingText}>Loading...</Text>
           </View>
         ) : !user ? (
+          // 加载已经完成，但当前没有已登录用户，因此显示登录或注册界面。
           showRegister ? (
             <View style={styles.authScreen}>
               <StatusBar style="light" />
@@ -110,6 +117,7 @@ export default function App() {
             </View>
           )
         ) : (
+          // 用户已经登录，因此显示应用主界面。
           <SafeAreaView edges={["top"]} style={styles.container}>
             <View style={styles.switcherContainer}>
               <SegmentedButtons
@@ -155,13 +163,31 @@ export default function App() {
                 <ChallengeScreen
                   currentUser={toCurrentUser(user)}
                   onOpponentConfirmed={(opponent) => {
-                    // TODO(3.4): pick up here with the round-count
-                    // selector, then 3.5's send-challenge-request logic.
-                    console.log("Opponent confirmed:", opponent);
+                    setPendingOpponent(opponent);
                   }}
                 />
               )}
             </View>
+            {pendingOpponent ? (
+              <RoundCountSelector
+                challengerId={pendingOpponent.challengerId}
+                discoveryToken={pendingOpponent.discoveryToken}
+                matchId={pendingOpponent.matchId}
+                onCancel={() => setPendingOpponent(null)}
+                onRoundCountSelected={(handoff) => {
+                  setPendingOpponent(null);
+                  setPendingHandoff(handoff);
+                  void challengeRequestRepository
+                    .sendChallenge(handoff)
+                    .catch((error) =>
+                      console.error("Failed to send challenge request:", error)
+                    );
+                }}
+                scannedPlayerId={pendingOpponent.scannedPlayerId}
+                scannedPlayerName={pendingOpponent.scannedPlayerName}
+                visible
+              />
+            ) : null}
           </SafeAreaView>
         )}
       </PaperProvider>

@@ -5,7 +5,10 @@ import { appTheme } from "../../theme/appTheme";
 import { RoundCountSelector } from "./RoundCountSelector";
 
 const challengerId = "challenger-123";
+const discoveryToken = "discovery-token-123";
+const matchId = "match-123";
 const scannedPlayerId = "opponent-456";
+const scannedPlayerName = "Opponent";
 
 describe("RoundCountSelector", () => {
   test("returns a complete handoff after selecting five rounds", async () => {
@@ -15,9 +18,12 @@ describe("RoundCountSelector", () => {
       <PaperProvider theme={appTheme}>
         <RoundCountSelector
           challengerId={challengerId}
+          discoveryToken={discoveryToken}
+          matchId={matchId}
           onCancel={jest.fn()}
           onRoundCountSelected={onRoundCountSelected}
           scannedPlayerId={scannedPlayerId}
+          scannedPlayerName={scannedPlayerName}
           visible
         />
       </PaperProvider>
@@ -28,8 +34,11 @@ describe("RoundCountSelector", () => {
 
     expect(onRoundCountSelected).toHaveBeenCalledWith({
       challengerId,
+      discoveryToken,
+      matchId,
+      roundCount: 5,
       scannedPlayerId,
-      roundCount: 5
+      scannedPlayerName
     });
   });
 
@@ -40,9 +49,12 @@ describe("RoundCountSelector", () => {
       <PaperProvider theme={appTheme}>
         <RoundCountSelector
           challengerId={challengerId}
+          discoveryToken={discoveryToken}
+          matchId={matchId}
           onCancel={onCancel}
           onRoundCountSelected={jest.fn()}
           scannedPlayerId={scannedPlayerId}
+          scannedPlayerName={scannedPlayerName}
           visible
         />
       </PaperProvider>
