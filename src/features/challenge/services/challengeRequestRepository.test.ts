@@ -35,14 +35,20 @@ describe("challengeRequestRepository", () => {
 
     const result = await challengeRequestRepository.sendChallenge({
       challengerId: "challenger-123",
+      discoveryToken: "discovery-token-123",
+      matchId: "match-123",
+      roundCount: 5,
       scannedPlayerId: "opponent-456",
-      roundCount: 5
+      scannedPlayerName: "Opponent"
     });
 
     expect(addDoc).toHaveBeenCalledWith(collectionReference, {
       challengerId: "challenger-123",
-      scannedPlayerId: "opponent-456",
+      discoveryToken: "discovery-token-123",
+      matchId: "match-123",
       roundCount: 5,
+      scannedPlayerId: "opponent-456",
+      scannedPlayerName: "Opponent",
       status: "pending",
       createdAt,
       expiresAt
