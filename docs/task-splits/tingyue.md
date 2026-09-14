@@ -13,6 +13,9 @@ Rebase it onto the current design-system baseline first; it predates the dark th
 - [ ] 3.1 — Generate & display player QR code (encode identity/session token)
 - [ ] 3.2 — QR scanner screen (camera-based)
 - [ ] 3.3 — Opponent details popup on scan (name, wins, ELO, win/loss — stub the stats until Mihir's backend lands)
+- [ ] 3.4 — Round-count selector (3/5/7) before sending a challenge
+- [ ] 3.5 — Send challenge request (with round count) to the scanned player
+- [ ] 3.6 — Incoming challenge popup (Accept/Decline)
 
 ## Likely files
 
