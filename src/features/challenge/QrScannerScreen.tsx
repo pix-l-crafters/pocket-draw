@@ -37,6 +37,8 @@ export function QrScannerScreen({
   const [scannedInvite, setScannedInvite] = useState<{
     hostPlayerId: string;
     hostPlayerName: string;
+    matchId: string;
+    discoveryToken: string;
   } | null>(null);
 
   const handleBarcodeScanned = useCallback(
@@ -54,7 +56,9 @@ export function QrScannerScreen({
       setScanError(null);
       setScannedInvite({
         hostPlayerId: result.value.hostPlayerId,
-        hostPlayerName: result.value.hostPlayerName ?? "Player"
+        hostPlayerName: result.value.hostPlayerName ?? "Player",
+        matchId: result.value.matchId,
+        discoveryToken: result.value.ble.discoveryToken
       });
     },
     [currentUser.uid, scannedInvite]
@@ -72,7 +76,11 @@ export function QrScannerScreen({
     onChallengeSent({
       challengerId: currentUser.uid,
       scannedPlayerId: scannedInvite.hostPlayerId,
-      roundCount: 3
+      scannedPlayerName: scannedInvite.hostPlayerName,
+      // TODO(tingyue, 3.4): replace the hardcoded 3 with the round selector.
+      roundCount: 3,
+      matchId: scannedInvite.matchId,
+      discoveryToken: scannedInvite.discoveryToken
     });
     resetScan();
   }, [currentUser.uid, onChallengeSent, resetScan, scannedInvite]);

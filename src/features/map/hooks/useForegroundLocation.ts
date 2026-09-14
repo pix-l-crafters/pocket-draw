@@ -3,10 +3,13 @@ import {
   getCurrentPositionAsync,
   getForegroundPermissionsAsync,
   hasServicesEnabledAsync,
-  requestForegroundPermissionsAsync
+  requestForegroundPermissionsAsync,
+  watchPositionAsync,
+  type LocationSubscription
 } from "expo-location";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { LOCATION_WATCH_DISTANCE_M } from "../constants/map.constants";
 import type { Coordinates } from "../types/map.types";
 
 export type LocationState =
@@ -29,84 +32,122 @@ export function useForegroundLocation() {
   });
   const isMountedRef = useRef(false);
   const requestSequenceRef = useRef(0);
+  const watchSubscriptionRef = useRef<LocationSubscription | null>(null);
 
-  const loadLocation = useCallback(async (isUserRetry: boolean) => {
-    const requestSequence = ++requestSequenceRef.current;
-    const isCurrentRequest = () =>
-      isMountedRef.current && requestSequenceRef.current === requestSequence;
+  const stopWatching = useCallback(() => {
+    watchSubscriptionRef.current?.remove();
+    watchSubscriptionRef.current = null;
+  }, []);
 
-    if (isMountedRef.current) {
-      setLocationState({ status: "loading" });
-    }
+  const loadLocation = useCallback(
+    async (isUserRetry: boolean) => {
+      const requestSequence = ++requestSequenceRef.current;
+      const isCurrentRequest = () =>
+        isMountedRef.current && requestSequenceRef.current === requestSequence;
 
-    try {
-      let permission = await getForegroundPermissionsAsync();
+      stopWatching();
 
-      if (!isCurrentRequest()) {
-        return;
+      if (isMountedRef.current) {
+        setLocationState({ status: "loading" });
       }
 
-      const shouldRequestPermission =
-        permission.status === "undetermined" ||
-        (isUserRetry && permission.canAskAgain);
+      try {
+        let permission = await getForegroundPermissionsAsync();
 
-      if (shouldRequestPermission) {
-        permission = await requestForegroundPermissionsAsync();
-      }
+        if (!isCurrentRequest()) {
+          return;
+        }
 
-      if (!isCurrentRequest()) {
-        return;
-      }
+        const shouldRequestPermission =
+          permission.status === "undetermined" ||
+          (isUserRetry && permission.canAskAgain);
 
-      if (!permission.granted) {
-        setLocationState({
-          status: "denied",
-          canAskAgain: permission.canAskAgain
+        if (shouldRequestPermission) {
+          permission = await requestForegroundPermissionsAsync();
+        }
+
+        if (!isCurrentRequest()) {
+          return;
+        }
+
+        if (!permission.granted) {
+          setLocationState({
+            status: "denied",
+            canAskAgain: permission.canAskAgain
+          });
+          return;
+        }
+
+        const areLocationServicesEnabled = await hasServicesEnabledAsync();
+
+        if (!isCurrentRequest()) {
+          return;
+        }
+
+        if (!areLocationServicesEnabled) {
+          setLocationState({
+            status: "error",
+            message:
+              "Location services are turned off. Enable them and try again."
+          });
+          return;
+        }
+
+        const location = await getCurrentPositionAsync({
+          accuracy: Accuracy.Balanced
         });
-        return;
-      }
 
-      const areLocationServicesEnabled = await hasServicesEnabledAsync();
+        if (!isCurrentRequest()) {
+          return;
+        }
 
-      if (!isCurrentRequest()) {
-        return;
-      }
+        setLocationState({
+          status: "granted",
+          position: {
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude
+          }
+        });
 
-      if (!areLocationServicesEnabled) {
+        const subscription = await watchPositionAsync(
+          {
+            accuracy: Accuracy.Balanced,
+            distanceInterval: LOCATION_WATCH_DISTANCE_M
+          },
+          (update) => {
+            if (!isCurrentRequest()) {
+              return;
+            }
+
+            setLocationState({
+              status: "granted",
+              position: {
+                latitude: update.coords.latitude,
+                longitude: update.coords.longitude
+              }
+            });
+          }
+        );
+
+        if (!isCurrentRequest()) {
+          subscription.remove();
+          return;
+        }
+
+        watchSubscriptionRef.current = subscription;
+      } catch (error) {
+        if (!isCurrentRequest()) {
+          return;
+        }
+
         setLocationState({
           status: "error",
-          message:
-            "Location services are turned off. Enable them and try again."
+          message: getLocationErrorMessage(error)
         });
-        return;
       }
-
-      const location = await getCurrentPositionAsync({
-        accuracy: Accuracy.Balanced
-      });
-
-      if (!isCurrentRequest()) {
-        return;
-      }
-
-      setLocationState({
-        status: "granted",
-        position: {
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude
-        }
-      });
-    } catch (error) {
-      if (!isCurrentRequest()) {
-        return;
-      }
-
-      setLocationState({
-        status: "error",
-        message: getLocationErrorMessage(error)
-      });
-    }
-  }, []);
+    },
+    [stopWatching]
+  );
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -115,8 +156,9 @@ export function useForegroundLocation() {
     return () => {
       isMountedRef.current = false;
       requestSequenceRef.current += 1;
+      stopWatching();
     };
-  }, [loadLocation]);
+  }, [loadLocation, stopWatching]);
 
   const retry = useCallback(() => {
     void loadLocation(true);

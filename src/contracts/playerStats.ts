@@ -10,5 +10,7 @@ export interface PlayerStats {
   eloRating: number;
 }
 
-// TODO(mihir): once 5.1/5.5/5.4 land, replace mockPlayerStats with the real
-// Firestore-backed lookup and delete mocks/mockPlayerStats.ts.
+// Real lookup: `playerStatsRepository.getPlayerStats` in
+// `src/features/backend/` (wins/losses from matchResults; ELO replayed from
+// match history with starting rating 1500 / K=40). Consumers can swap
+// mocks/mockPlayerStats.ts once they wire that import; delete the mock then.

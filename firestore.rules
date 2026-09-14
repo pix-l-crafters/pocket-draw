@@ -41,6 +41,63 @@ service cloud.firestore {
         && data.lastSeen == request.time;
     }
 
+    // --- matchResults helpers ---
+
+    function hasValidMatchResultFields(data) {
+      return data.keys().hasAll([
+        'matchId',
+        'participantIds',
+        'roundCount',
+        'rounds',
+        'winnerId',
+        'completedAt',
+        'uploadedBy',
+        'createdAt'
+      ]) && data.keys().hasOnly([
+        'matchId',
+        'participantIds',
+        'roundCount',
+        'rounds',
+        'winnerId',
+        'completedAt',
+        'uploadedBy',
+        'createdAt'
+      ]);
+    }
+
+    // On create, `resource` is null — compare matchId to the path wildcard.
+    function hasValidMatchResultValues(data, matchId) {
+      return data.matchId is string
+        && data.matchId == matchId
+        && data.participantIds is list
+        && data.participantIds.size() == 2
+        && data.participantIds[0] is string
+        && data.participantIds[1] is string
+        && data.participantIds[0].size() > 0
+        && data.participantIds[1].size() > 0
+        && data.participantIds[0] != data.participantIds[1]
+        && data.roundCount is int
+        && (data.roundCount == 3 || data.roundCount == 5 || data.roundCount == 7)
+        && data.rounds is list
+        && data.rounds.size() > 0
+        && data.rounds.size() <= data.roundCount
+        && data.winnerId is string
+        && (data.winnerId == data.participantIds[0] || data.winnerId == data.participantIds[1])
+        && data.completedAt is string
+        && data.completedAt.size() > 0
+        && data.completedAt.size() <= 40
+        && data.uploadedBy is string
+        && data.uploadedBy == request.auth.uid
+        && data.createdAt is timestamp
+        && data.createdAt == request.time;
+    }
+
+    function isMatchResultUploader() {
+      return isSignedIn()
+        && request.auth.uid in request.resource.data.participantIds
+        && request.resource.data.uploadedBy == request.auth.uid;
+    }
+
     match /presence/{uid} {
       allow read: if isSignedIn()
         && (request.auth.uid == uid || resource.data.isVisible == true);
@@ -48,6 +105,14 @@ service cloud.firestore {
         && hasValidPresenceFields(request.resource.data)
         && hasValidPresenceValues(request.resource.data);
       allow delete: if isPresenceOwner(uid);
+    }
+
+    match /matchResults/{matchId} {
+      allow read: if isSignedIn();
+      allow create: if isMatchResultUploader()
+        && hasValidMatchResultFields(request.resource.data)
+        && hasValidMatchResultValues(request.resource.data, matchId);
+      allow update, delete: if false;
     }
   }
 }

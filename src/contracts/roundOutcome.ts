@@ -9,8 +9,14 @@ export type RoundOutcome =
       reactionMs: number;
       opponentReactionMs: number;
     }
-  | { kind: "tie"; reactionMs: number }
+  | {
+      kind: "tie";
+      reactionMs: number;
+      opponentReactionMs: number;
+      pointsEach: 1;
+    }
   | { kind: "falseStart"; playerId: string };
 
-// TODO(tianze/tanachat): once 4.10-4.15 land, replace mockRoundOutcome with
-// the real detection pipeline and delete mocks/mockRoundOutcome.ts.
+// Producer implementation: src/features/duel/roundJudge.ts.
+// TODO(mobark): once the producer branch lands, replace mockRoundOutcome with
+// the real pipeline and delete mocks/mockRoundOutcome.ts.

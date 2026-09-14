@@ -14,7 +14,8 @@
         "android.permission.BLUETOOTH_CONNECT",
         "android.permission.BLUETOOTH_SCAN",
         "android.permission.ACCESS_FINE_LOCATION",
-        "android.permission.ACCESS_COARSE_LOCATION"
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.HIGH_SAMPLING_RATE_SENSORS"
       ],
       "predictiveBackGestureEnabled": false
     },
@@ -50,12 +51,20 @@
         }
       ],
       [
+        "expo-sensors",
+        {
+          "motionPermission": "Allow Pocket Draw to detect your quick-draw gesture during a duel."
+        }
+      ],
+      [
         "expo-camera",
         {
           "cameraPermission": "Allow Pocket Draw to use your camera to scan an opponent's challenge QR code."
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-audio",
+      "expo-asset"
     ],
     "slug": "pocket-draw",
     "userInterfaceStyle": "light",
