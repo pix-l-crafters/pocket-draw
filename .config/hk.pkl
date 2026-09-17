@@ -1,6 +1,6 @@
-amends "package://github.com/jdx/hk/releases/download/v1.56.1/hk@1.56.1#/Config.pkl"
+amends "package://github.com/jdx/hk/releases/download/v2.0.1/hk@2.0.1#/Config.pkl"
 
-import "package://github.com/jdx/hk/releases/download/v1.56.1/hk@1.56.1#/Builtins.pkl"
+import "package://github.com/jdx/hk/releases/download/v2.0.1/hk@2.0.1#/Builtins.pkl"
 
 local linters = new Mapping<String, Step> {
   ["betterleaks"] = Builtins.betterleaks
@@ -51,24 +51,16 @@ local linters = new Mapping<String, Step> {
     depends = List("prettier")
   }
 }
-
+steps = linters
 hooks {
-  ["check"] {
-    steps = linters
-  }
   ["commit-msg"] {
     steps {
       ["conventional-commit"] = Builtins.cocogitto_commit_msg
+      ["cspell"] {
+        check =
+          "cspell --no-must-find-files --no-progress --no-summary --gitignore --files {{files}}"
+      }
       ["typos"] = Builtins.typos
     }
-  }
-  ["fix"] {
-    fix = true
-    steps = linters
-  }
-  ["pre-commit"] {
-    fix = true
-    stash = "git"
-    steps = linters
   }
 }

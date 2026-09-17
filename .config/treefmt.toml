@@ -52,6 +52,7 @@ options = ["format", "-w", "."]
 command = "npx"
 # tombi: format.rules.array-values-order = "ascending"
 excludes = [
+  "**/bin/mise",
   "*.*ignore",
   "*.aac",
   "*.docx",
