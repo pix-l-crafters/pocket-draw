@@ -102,35 +102,39 @@ Accelerometer-based position estimation drifts — this needs its own feasibilit
 ### Phase 1 — Contracts & rules
 
 3. Feasibility-check continuous position/height tracking from the calibrated ready/shoulder reference points (accelerometer drift risk) needed to classify a shot as miss/bodyshot/headshot
-4. Rebuild the fire trigger: Android volume-button key intercept, iOS on-screen tap-to-fire as the default — see "Fire mechanic & scoring" above for the documented alternatives
-5. Rewrite `roundJudge.ts`/`RoundOutcome` for v2 scoring: order shots by reaction time, classify the faster shot's zone, fall through to the slower shot on a miss, keep `falseStart` as its own outcome kind
-6. Rewrite `MatchResult` and the match-level `roundLoop.ts` for strict 3-round + 1-tiebreaker matches with win/lose/draw outcomes
-7. Extend `PlayerStats` and `playerStatsRepository` to tally draws
-8. Remove `RoundCountSelector`'s 3/5/7 choice (round count is fixed now)
+4. Android fire trigger: volume-button key intercept (native module, e.g. `react-native-volume-manager`)
+5. iOS fire trigger: on-screen tap-to-fire button (default) — see "Fire mechanic & scoring" above for the documented alternatives a teammate can swap in instead
+6. Rewrite `roundJudge.ts`/`RoundOutcome` for v2 scoring: order shots by reaction time, classify the faster shot's zone, fall through to the slower shot on a miss, keep `falseStart` as its own outcome kind
+7. Rewrite `MatchResult` and the match-level `roundLoop.ts` for strict 3-round + 1-tiebreaker matches with win/lose/draw outcomes. Confirmed the `matchResults` Firestore collection is dev-only scratch data — clear it before cutover rather than writing a migration for the old `winnerId` shape
+8. Extend `PlayerStats` and `playerStatsRepository` to tally draws
+9. Remove `RoundCountSelector`'s 3/5/7 choice (round count is fixed now). Narrow the shared `ChallengeHandoff.roundCount` contract type (`src/contracts/challengeHandoff.ts`) from `3 | 5 | 7` to the literal `3` too — it flows through `App.tsx` into the duel session, so leaving it un-narrowed means TypeScript won't catch a stale caller still constructing a 5- or 7-round handoff
 
 ### Phase 2 — Missing UI
 
-9. Full-screen game-instructions step, shown right after challenge acceptance and before calibration (`UI.md`: "the Challenge tab, when the challenge is accepted, launches the game instructions screen in full screen... From that screen, the gameplay starts."). Nothing in the current challenge→duel pipeline shows this today — `DrawCalibrationScreen.tsx`'s copy is calibration-specific, not game rules.
-10. Leaderboard data layer (`leaderboardRepository`)
-11. Leaderboard screen with ranking-type selector (win/loss ratio, wins, losses, draws, ELO, avg reaction time)
-12. Profile & Settings screen (own stats, username edit via Firebase Auth `updateProfile`, logout moved here)
-13. Tab IA rewire: `Map / Challenge / Leaderboards / Profile`, drop the BLE debug tab from shipped UI
+10. Full-screen game-instructions step, shown right after challenge acceptance and before calibration (`UI.md`: "the Challenge tab, when the challenge is accepted, launches the game instructions screen in full screen... From that screen, the gameplay starts."). Nothing in the current challenge→duel pipeline shows this today — `DrawCalibrationScreen.tsx`'s copy is calibration-specific, not game rules.
+11. Leaderboard data layer (`leaderboardRepository`)
+12. Leaderboard screen with ranking-type selector (win/loss ratio, wins, losses, draws, ELO, avg reaction time)
+13. Profile & Settings screen (own stats, username edit via Firebase Auth `updateProfile`, logout moved here)
+14. Tab IA rewire: `Map / Challenge / Leaderboards / Profile`, drop the BLE debug tab from shipped UI
 
 ### Phase 3 — Connectivity rewrite (core)
 
-14. Remove the BLE transport stack entirely
-15. QR payload carries WiFi/hotspot connection info, regenerates on network change
-16. Host-side: existing-network detection, Android hotspot auto-create, iOS manual-hotspot flow
-17. Join-network flow via `react-native-wifi-reborn` (both platforms)
-18. Local signaling server (host) + SDP/ICE exchange; add `NSLocalNetworkUsageDescription` to iOS's `infoPlist` — any direct local-network connection on iOS 14+ needs this or the connection silently fails with no permission-denied signal to the user
-19. `RTCPeerConnection`/`DataChannel`-backed `DuelChannel` implementation
-20. Clock-offset calibration folded into the pre-round calibration screen, applied in `fireSignalCoordinator`/`reactionTimer`
+15. Remove the BLE transport stack entirely
+16. QR payload carries WiFi/hotspot connection info, regenerates on network change
+17. Existing-network detection: try the current shared WiFi network before falling back to creating a hotspot
+18. Android hotspot auto-create via `WifiManager.startLocalOnlyHotspot()`
+19. iOS manual-hotspot flow: Settings instructions + one-time password entry (the app can't read its own hotspot password)
+20. Join-network flow via `react-native-wifi-reborn` (both platforms)
+21. Local signaling server (host) + SDP/ICE exchange. Add `NSLocalNetworkUsageDescription` to iOS's `infoPlist` — any direct local-network connection on iOS 14+ needs this or the connection silently fails with no permission-denied signal to the user
+22. Authenticate the signaling connection: require the connecting peer to present the QR payload's `challengeToken`/`discoveryToken` before the host accepts an SDP exchange — on the "existing shared WiFi" mode, the signaling port isn't private to the two duelists, so an unauthenticated server would let any other device on that network hijack or deny the pairing
+23. `RTCPeerConnection`/`DataChannel`-backed `DuelChannel` implementation
+24. Clock-offset calibration folded into the pre-round calibration screen, applied in `fireSignalCoordinator`/`reactionTimer`
 
 ### Phase 4 — Stretch
 
-21. Average reaction time aggregation + leaderboard ranking by it (product design marks this "do only when we have time")
-22. Onboarding / empty states / demo script — flagged unassigned since `docs/task-splits-v2/README.md`
-23. Full prod-readiness device QA (Android/iOS full-loop, permission-denial recovery) — carried over from the existing prod-readiness checklist in `docs/task-splits-v2/README.md`
+25. Average reaction time aggregation + leaderboard ranking by it (product design marks this "do only when we have time")
+26. Onboarding / empty states / demo script — flagged unassigned since `docs/task-splits-v2/README.md`
+27. Full prod-readiness device QA (Android/iOS full-loop, permission-denial recovery) — carried over from the existing prod-readiness checklist in `docs/task-splits-v2/README.md`
 
 ## Open risks to verify during implementation
 
