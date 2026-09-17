@@ -4,7 +4,8 @@ The interface has 3 tabs:
 
 1. Map
 2. Challenge
-3. Profile & Settings
+3. Leaderboards
+4. Profile & Settings
 
 ## Map
 
@@ -24,6 +25,10 @@ My QR - Shows the player's QR code. Primarily used by the challenger to join the
 Scan - Allows the player to scan a QR code to join the game. Primarily used by the challenge receiver to join the game.
 
 Players will join the game either via Bluetooth or via WebRTC (challenger initiating Personal WiFi Hotspot).
+
+## Leaderboards
+
+This section shows player leaderboards, where they can see their rank and statistics against other players.
 
 ## Profile & Settings
 
