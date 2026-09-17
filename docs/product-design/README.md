@@ -17,3 +17,5 @@ This document is organized into sections, each covering a different aspect of th
 1. [UI](UI.md)
 2. [Gameplay v1](Gameplay-v1.md)
 3. [Gameplay v2](Gameplay-v2.md)
+4. [Leaderboards](Leaderboards.md)
+5. [Roadmap](Roadmap.md)
