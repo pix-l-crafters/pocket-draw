@@ -24,6 +24,11 @@ plugins:
       repo: Leonxlnx/taste-skill
     id: taste-skill
     type: github
+  - def:
+      description: Official Expo skills for building, deploying, upgrading, and debugging Expo apps.
+      repo: expo/skills::plugins/expo
+    id: expo
+    type: github
 providers:
   # keep-sorted start
   - antigravity

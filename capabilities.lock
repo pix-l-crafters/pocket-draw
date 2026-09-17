@@ -1,6 +1,6 @@
 version: 1
 generator: capa@2.2.1
-generatedAt: '2026-09-17T22:14:37.540Z'
+generatedAt: '2026-09-17T22:25:33.798Z'
 skills:
   - id: bootstrap
     source: github
@@ -9,7 +9,7 @@ skills:
     requestedVersion: null
     requestedRef: null
     resolvedRef: e458ae5e0747cdf9c521336bf3292eec96edff1e
-    resolvedVersion: v2.2.1
+    resolvedVersion: null
   - id: capabilities-manager
     source: github
     repo: infragate/capa
@@ -17,7 +17,7 @@ skills:
     requestedVersion: null
     requestedRef: null
     resolvedRef: e458ae5e0747cdf9c521336bf3292eec96edff1e
-    resolvedVersion: v2.2.1
+    resolvedVersion: null
   - id: git-commit
     source: github
     repo: github/awesome-copilot
@@ -33,7 +33,7 @@ skills:
     requestedVersion: null
     requestedRef: null
     resolvedRef: 6acc160e4e0cd062dbbbd7a1b26ae92855edf07e
-    resolvedVersion: v1.2.3
+    resolvedVersion: null
   - id: grill-with-docs
     source: github
     repo: mattpocock/skills
@@ -41,7 +41,7 @@ skills:
     requestedVersion: null
     requestedRef: null
     resolvedRef: 6acc160e4e0cd062dbbbd7a1b26ae92855edf07e
-    resolvedVersion: v1.2.3
+    resolvedVersion: null
   - id: grilling
     source: github
     repo: mattpocock/skills
@@ -49,7 +49,7 @@ skills:
     requestedVersion: null
     requestedRef: null
     resolvedRef: 6acc160e4e0cd062dbbbd7a1b26ae92855edf07e
-    resolvedVersion: v1.2.3
+    resolvedVersion: null
   - id: to-tickets
     source: github
     repo: mattpocock/skills
@@ -57,8 +57,19 @@ skills:
     requestedVersion: null
     requestedRef: null
     resolvedRef: 6acc160e4e0cd062dbbbd7a1b26ae92855edf07e
-    resolvedVersion: v1.2.3
+    resolvedVersion: null
 plugins:
+  - id: expo
+    source: github
+    repo: expo/skills
+    subpath: plugins/expo
+    requestedSearchName: null
+    requestedVersion: null
+    requestedRef: null
+    resolvedRef: 39708666ce7014def1f8e34f3d8c93e8d3f588bb
+    resolvedVersion: null
+    manifestName: expo
+    manifestVersion: 1.13.5
   - id: megalinter
     source: github
     repo: oxsecurity/megalinter
@@ -67,7 +78,7 @@ plugins:
     requestedVersion: null
     requestedRef: null
     resolvedRef: 9949bad031045f366be2467e00e8371a7328a2e2
-    resolvedVersion: v10.1.0
+    resolvedVersion: null
     manifestName: megalinter
     manifestVersion: 1.0.5
   - id: paad
@@ -89,7 +100,7 @@ plugins:
     requestedVersion: null
     requestedRef: null
     resolvedRef: b36e0829c6d0140e93cfef2ca599b1b07d4a7797
-    resolvedVersion: v6.3.0
+    resolvedVersion: null
     manifestName: superpowers
     manifestVersion: 6.3.0
   - id: taste-skill
