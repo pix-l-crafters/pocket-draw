@@ -24,6 +24,7 @@ These cut across multiple issues below, decided up front so individual issues do
 4. **Navigation stays manual state, no new nav library.** Extend `App.tsx`'s existing `AppTab` union instead of introducing `@react-navigation/bottom-tabs`. The challenge→duel→postmatch flow already works this way; four tabs instead of two doesn't change that.
 5. **WebRTC becomes the sole transport; BLE is removed entirely.** Not additive — a full replacement. The QR code becomes the WebRTC pairing point, carrying WiFi/hotspot connection info instead of (or alongside) the existing BLE discovery token. See "Connectivity architecture" below.
 6. **Reaction-time fairness needs clock-offset calibration**, folded into the existing pre-round calibration step rather than shipped as a separate wait.
+7. **The Android map and the haptics-only fire cue are both fixed as part of this pass**, not left as separate untracked bugs — see the two subsections below.
 
 ### Connectivity architecture
 
@@ -46,39 +47,68 @@ This is a transport-independent bug, not something the WebRTC migration introduc
 
 Fix: a ping-pong RTT exchange (`offset ≈ ((t1-t0)-(t3-t2))/2`) run during the existing pre-round calibration step (`DrawCalibrationScreen.tsx`), alongside the arm-position calibration that already happens there. The resulting clock offset corrects received timestamps before `reactionMs` is computed.
 
+`accelerometerRaiseMonitor.ts` already works around a related, subtler platform gap: native accelerometer sample timestamps use each OS's own monotonic clock, not wall-clock time, so it stamps raise detection with `Date.now()` at the JS callback instead.
+That's the right call, but it trades in a small amount of JS-thread scheduling jitter whose size can differ between iOS and Android — worth a quick sanity check once clock-offset calibration lands, not a separate issue.
+
+### Android map rendering
+
+`MapScreen.tsx` uses `react-native-maps` with the default provider (Apple Maps on iOS, Google Maps SDK on Android).
+`app.json`'s `plugins` array has no `react-native-maps` entry and no Google Maps API key anywhere — Android's Google Maps SDK requires one to render anything, iOS's Apple Maps doesn't.
+That fully explains "works on iOS, doesn't load on Android": it's a missing config, not a library defect.
+`react-native-maps` remains the right library for 2026 — Expo's own first-party `expo-maps` is still alpha and Expo's guidance is to only use it if you can drop iOS support below iOS 17, which doesn't apply here.
+Fix is additive: register the config plugin with an `androidGoogleMapsApiKey`, get a "Maps SDK for Android" key from Google Cloud Console (needs billing enabled), inject it via an EAS secret rather than committing it.
+
+### Fire-signal cue (haptics-only today)
+
+The "buzz" that tells players to fire (`PreRound.tsx`) is implemented purely via `expo-haptics` — no audio at all; `countdownAudio.ts`'s `COUNTDOWN_AUDIO_SOURCE` is still a `null` placeholder.
+Haptic intensity is not comparable across devices: iOS's Taptic Engine gives a crisp, consistent pulse, while Android's vibration motors vary widely in strength and latency by device.
+For a game whose entire premise is "fastest to react," a haptics-only cue risks the outcome hinging on whose phone has a stronger buzzer rather than who actually reacted first.
+Fix: wire up the placeholder audio asset as a redundant cue alongside haptics, and explicitly configure iOS's audio session to play through the silent/mute switch (`expo-audio`'s playback-in-silent-mode option) — Android has no equivalent muting behavior to work around.
+
 ## Phased issue list
+
+### Phase 0 — Quick fixes
+
+1. Fix Android map: register the `react-native-maps` config plugin with an `androidGoogleMapsApiKey` (Google Cloud Maps SDK for Android key, billing enabled, injected via EAS secret)
+2. Wire up the countdown audio cue alongside the existing haptics-only "buzz" signal, with iOS audio-session config to play through silent/mute mode
 
 ### Phase 1 — Contracts & rules
 
-1. Rewrite `MatchResult` and `roundLoop.ts` for strict 3-round + 1-tiebreaker matches with win/lose/draw outcomes
-2. Extend `PlayerStats` and `playerStatsRepository` to tally draws
-3. Remove `RoundCountSelector`'s 3/5/7 choice (round count is fixed now)
+3. Rewrite `MatchResult` and `roundLoop.ts` for strict 3-round + 1-tiebreaker matches with win/lose/draw outcomes
+4. Extend `PlayerStats` and `playerStatsRepository` to tally draws
+5. Remove `RoundCountSelector`'s 3/5/7 choice (round count is fixed now)
 
 ### Phase 2 — Missing UI
 
-4. Leaderboard data layer (`leaderboardRepository`)
-5. Leaderboard screen with ranking-type selector (win/loss ratio, wins, losses, draws, ELO, avg reaction time)
-6. Profile & Settings screen (own stats, username edit via Firebase Auth `updateProfile`, logout moved here)
-7. Tab IA rewire: `Map / Challenge / Leaderboards / Profile`, drop the BLE debug tab from shipped UI
+6. Leaderboard data layer (`leaderboardRepository`)
+7. Leaderboard screen with ranking-type selector (win/loss ratio, wins, losses, draws, ELO, avg reaction time)
+8. Profile & Settings screen (own stats, username edit via Firebase Auth `updateProfile`, logout moved here)
+9. Tab IA rewire: `Map / Challenge / Leaderboards / Profile`, drop the BLE debug tab from shipped UI
 
 ### Phase 3 — Connectivity rewrite (core)
 
-8. Remove the BLE transport stack entirely
-9. QR payload carries WiFi/hotspot connection info, regenerates on network change
-10. Host-side: existing-network detection, Android hotspot auto-create, iOS manual-hotspot flow
-11. Join-network flow via `react-native-wifi-reborn` (both platforms)
-12. Local signaling server (host) + SDP/ICE exchange
-13. `RTCPeerConnection`/`DataChannel`-backed `DuelChannel` implementation
-14. Clock-offset calibration folded into the pre-round calibration screen, applied in `fireSignalCoordinator`/`reactionTimer`
+10. Remove the BLE transport stack entirely
+11. QR payload carries WiFi/hotspot connection info, regenerates on network change
+12. Host-side: existing-network detection, Android hotspot auto-create, iOS manual-hotspot flow
+13. Join-network flow via `react-native-wifi-reborn` (both platforms)
+14. Local signaling server (host) + SDP/ICE exchange; add `NSLocalNetworkUsageDescription` to iOS's `infoPlist` — any direct local-network connection on iOS 14+ needs this or the connection silently fails with no permission-denied signal to the user
+15. `RTCPeerConnection`/`DataChannel`-backed `DuelChannel` implementation
+16. Clock-offset calibration folded into the pre-round calibration screen, applied in `fireSignalCoordinator`/`reactionTimer`
 
 ### Phase 4 — Stretch
 
-15. Average reaction time aggregation + leaderboard ranking by it (product design marks this "do only when we have time")
-16. Onboarding / empty states / demo script — flagged unassigned since `docs/task-splits-v2/README.md`
-17. Full prod-readiness device QA (Android/iOS full-loop, permission-denial recovery) — carried over from the existing prod-readiness checklist in `docs/task-splits-v2/README.md`
+17. Average reaction time aggregation + leaderboard ranking by it (product design marks this "do only when we have time")
+18. Onboarding / empty states / demo script — flagged unassigned since `docs/task-splits-v2/README.md`
+19. Full prod-readiness device QA (Android/iOS full-loop, permission-denial recovery) — carried over from the existing prod-readiness checklist in `docs/task-splits-v2/README.md`
 
 ## Open risks to verify during implementation
 
 - Whether `react-native-wifi-reborn` also covers Android's `startLocalOnlyHotspot()` hotspot-creation path, or whether that needs to be called directly.
 - iOS can't read its own Personal Hotspot password — confirm the one-time manual entry is acceptable UX, not a blocker.
 - `@config-plugins/react-native-webrtc` version pinning against this project's Expo SDK 54 / RN 0.81.5.
+
+## Branch survey
+
+Checked all remote branches, not just `dev`/`main`, before finalizing this roadmap: `tingyue/feat/challenge-connect-flow`, `sihengma/map`, `tanachat/feat/duel-pre-round-ritual`, and `tianze/feat/duel-fire-detection` are all fully merged into `dev` already (zero commits ahead).
+`feature/payload-rebased` has unmerged commits but is a stale pre-architecture snapshot (thousands of lines behind `dev`, superseded auth/QR experiment) with nothing platform-relevant.
+`dev` is the complete, current picture this roadmap is based on.
