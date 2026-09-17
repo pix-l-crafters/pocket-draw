@@ -37,6 +37,13 @@ This section shows player leaderboards, where they can see their rank and statis
 
 This section shows player profile, where they can customise their username.
 
-Here they can also see their statistics, including their win/loss ratio and score.
+Here they can also see their statistics.
+The statistics are:
+
+1. Number of wins
+2. Number of losses
+3. Number of draws
+4. ELO Rating (low priority)
+5. Average reaction time (do only when we have time)
 
 And in settings they can log out of the game.
