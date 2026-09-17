@@ -1,4 +1,5 @@
 [env]
+EXPO_UNSTABLE_MCP_SERVER = 1
 HK_MISE = 1
 
 [hooks]
