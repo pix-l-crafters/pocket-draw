@@ -13,7 +13,7 @@ lockfile = true
 use_git_credentials = true
 
 [tasks]
-ai-setup = "capa install"
+ai-setup = "capa install -y"
 check = ["hk check --all", "cog check"]
 prepare = ["npm install"]
 
@@ -35,7 +35,7 @@ cocogitto = "latest"
 cspell = "latest"
 fnox = "latest"
 git-cliff = "latest"
-"github:infragate/capa" = { postinstall = "capa install", version = "2.2.1" }
+"github:infragate/capa" = { postinstall = "capa install -y", version = "2.2.1" }
 hk = "2.0.1"
 java = "21"
 ls-lint = "latest"
