@@ -7,6 +7,9 @@ The interface has 4 tabs:
 3. Leaderboards
 4. Profile & Settings
 
+The Challenge tab, when the challenge is accepted, launches the game instructions screen in full screen for the players to follow.
+From that screen, the gameplay starts.
+
 ## Map
 
 The map tab displays real world map with live locations of each player showing up as markers on the map.
