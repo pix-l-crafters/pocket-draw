@@ -24,7 +24,10 @@ My QR - Shows the player's QR code. Primarily used by the challenger to join the
 
 Scan - Allows the player to scan a QR code to join the game. Primarily used by the challenge receiver to join the game.
 
-Players will join the game either via Bluetooth or via WebRTC (challenger initiating Personal WiFi Hotspot).
+Players will join the game either via Bluetooth or via WebRTC. Challenger will initiate Personal WiFi Hotspot for WebRTC.
+WebRTC is the primary means to connect.
+
+Bluetooth is the fallback, considering differences in iOS & Android. We might end up not using bluetooth if WebRTC works better.
 
 ## Leaderboards
 
