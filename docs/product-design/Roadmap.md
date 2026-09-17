@@ -136,7 +136,8 @@ Items 15–25: see the full [connectivity rewrite spec](../superpowers/specs/202
 19. iOS manual-hotspot flow: Settings instructions + one-time password entry (the app can't read its own hotspot password)
 20. Join-network flow via `react-native-wifi-reborn` (both platforms)
 21. Local signaling server (host) + SDP/ICE exchange. Add `NSLocalNetworkUsageDescription` to iOS's `infoPlist` — any direct local-network connection on iOS 14+ needs this or the connection silently fails with no permission-denied signal to the user
-22. Authenticate the signaling connection: require the connecting peer to present the QR payload's `challengeToken`/`discoveryToken` before the host accepts an SDP exchange — on the "existing shared WiFi" mode, the signaling port isn't private to the two duelists, so an unauthenticated server would let any other device on that network hijack or deny the pairing
+22. Authenticate the signaling connection: require the connecting peer to present the QR payload's `challengeToken`/`discoveryToken` before the host accepts an SDP exchange — on the "existing shared WiFi" mode, the signaling port isn't private to the two duelists, so an unauthenticated server would let any other device on that network hijack or deny the pairing.
+    See the connectivity spec's "Token freshness on reconnect" note for how this interacts with item 24 — a deadline-driven call flagged there for confirmation, not a settled answer
 23. `RTCPeerConnection`/`DataChannel`-backed `DuelChannel` implementation
 24. Port `disconnectRecovery.ts` to the WebRTC transport (detect data-channel disconnection instead of BLE) and carry the in-progress `RoundLoopState` (score, round number) through a reconnect so the match resumes instead of restarting — this is what actually makes reconnection feel seamless, not the signaling-socket lifecycle
 25. Clock-offset calibration folded into the pre-round calibration screen, applied in `fireSignalCoordinator`/`reactionTimer`

@@ -21,6 +21,15 @@ Per the design decision made this session, WebRTC becomes the **sole** transport
    If absent (existing-WiFi mode), skip straight to step 5; if the device isn't actually on the same network, the next step fails with a clear "couldn't reach host" error, which should suggest the host switch to hotspot mode rather than trying to guess or retry silently.
 5. **Joiner opens a socket** to `hostIp:signalPort` — a small local TCP/WS server the host runs, existing purely for the SDP/ICE handshake, no internet server involved.
 6. **Authenticate the signaling connection:** the joiner's first message must include the QR payload's `challengeToken`/`discoveryToken`. The host validates these against what it issued before proceeding — this is the fix from the pushback review; without it, on existing-WiFi mode the signaling port is reachable by anyone else on that network, not just the intended opponent.
+
+   **Token freshness on reconnect (item 24) — decided under the mid-October deadline, flag to your human before building this piece:** the QR's `challengeToken`/`discoveryToken` are only valid for `INVITE_LIFETIME_MS` (60s), meant for the initial pairing window.
+   A mid-match reconnect (item 24) could happen well past that window. Three ways to handle it, in order of what a non-time-pressured team would prefer:
+   1. Mint a short-lived session-local secret once the channel first establishes, exchanged over that now-trusted channel, and authenticate reconnects against that instead of the QR's own expiry — decouples reconnect auth from initial-pairing auth correctly, but is more to build.
+   2. **Selected for now:** extend `expiresAt` to cover the whole match duration instead of just initial pairing. Simpler, ships faster, but weakens the original short-lived-invite anti-replay intent for the rest of the match.
+   3. Leave reconnect auth unspecified and decide during implementation — cheapest today, but risks shipping a reconnect that silently fails exactly when it's needed.
+
+   Selected option 2 given the timeline, not because it's the strongest answer — whoever picks up this item should raise this tradeoff with their team before treating it as final.
+
 7. **Exchange SDP offer/answer and ICE candidates** over that authenticated socket. Host-only ICE candidates — same LAN, no STUN/TURN needed.
 8. **Establish `RTCPeerConnection` + `DataChannel`.** Once open, wrap it in an object implementing the existing `DuelChannel` interface (`send`/`onMessage`/`isConnected`) so `fireSignalCoordinator.ts`, `roundLoop.ts`, etc. work completely unmodified — this is the same seam `mockDuelSessionTransport.ts`/`bleDuelSessionTransport.ts` already sit behind.
 9. **Close the signaling socket** once the data channel is open — it's not needed afterward.
