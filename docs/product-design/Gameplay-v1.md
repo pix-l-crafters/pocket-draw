@@ -1,4 +1,6 @@
-# Gameplay
+# Gameplay (superseded)
+
+**Superseded by [Gameplay v2](Gameplay-v2.md), which is now the canonical gameplay spec. Kept here for history only.**
 
 Once the challenge is initiated, a new game screen is displayed.
 

@@ -1,6 +1,6 @@
 # Roadmap
 
-This document reconciles the product design (`README.md`, `UI.md`, `Gameplay-v1.md`/`Gameplay-v2.md`, `Leaderboards.md`) against what's actually implemented on `dev`, and lays out the remaining work as independent, GitHub-issue-sized items. Anyone can pick up any item below — this isn't a per-person assignment list like `docs/task-splits-v2/`.
+This document reconciles the product design (`README.md`, `UI.md`, `Gameplay-v2.md` — the canonical gameplay spec, `Gameplay-v1.md` is superseded, `Leaderboards.md`) against what's actually implemented on `dev`, and lays out the remaining work as independent, GitHub-issue-sized items. Anyone can pick up any item below — this isn't a per-person assignment list like `docs/task-splits-v2/`.
 
 ## Current state
 
@@ -25,6 +25,7 @@ These cut across multiple issues below, decided up front so individual issues do
 5. **WebRTC becomes the sole transport; BLE is removed entirely.** Not additive — a full replacement. The QR code becomes the WebRTC pairing point, carrying WiFi/hotspot connection info instead of (or alongside) the existing BLE discovery token. See "Connectivity architecture" below.
 6. **Reaction-time fairness needs clock-offset calibration**, folded into the existing pre-round calibration step rather than shipped as a separate wait.
 7. **The Android map and the haptics-only fire cue are both fixed as part of this pass**, not left as separate untracked bugs — see the two subsections below.
+8. **The fire mechanic and round scoring are rebuilt to match Gameplay v2, not v1.** The current implementation auto-fires on a raise gesture and scores purely on reaction time (win/tie/falseStart, no headshot/bodyshot) — that's v1's model. v2 requires a manual fire trigger and height-zone-based scoring. See "Fire mechanic & scoring" below.
 
 ### Connectivity architecture
 
@@ -65,6 +66,32 @@ Haptic intensity is not comparable across devices: iOS's Taptic Engine gives a c
 For a game whose entire premise is "fastest to react," a haptics-only cue risks the outcome hinging on whose phone has a stronger buzzer rather than who actually reacted first.
 Fix: wire up the placeholder audio asset as a redundant cue alongside haptics, and explicitly configure iOS's audio session to play through the silent/mute switch (`expo-audio`'s playback-in-silent-mode option) — Android has no equivalent muting behavior to work around.
 
+### Fire mechanic & scoring (Gameplay v2)
+
+Today, `raiseGestureDetector.ts` auto-fires purely from accelerometer magnitude crossing a threshold, and `roundJudge.ts` scores purely on who reacted faster (`"win" | "tie" | "falseStart"`, 1 point, no headshot/bodyshot).
+That's v1's model.
+v2 requires a manual fire trigger, plus height-zone scoring: a bodyshot zone (ready-height to shoulder-height, 1 point), a headshot zone (shoulder-height to +15cm above, 2 points), and misses (0 points) for anything else.
+
+**Round scoring:** order both players' shots by reaction time (the existing tie-window logic still applies for near-simultaneous shots).
+Classify the faster shot's landing height into miss/bodyshot/headshot.
+If it's valid, that player scores those points and the other scores 0.
+If the faster shot is a miss, fall through and classify the slower shot the same way — if that one's valid, they score instead.
+If both miss, the round is 0-0.
+`falseStart` stays as its own outcome kind, untouched by this — it's a timing violation (firing before the buzz), orthogonal to where a shot lands, not folded into the zone system.
+Reaction time still gates who's even eligible to score, and separately remains the leaderboard's avg-reaction-time stat.
+
+**Feasibility flag:** classifying a shot's height needs continuous position tracking relative to the calibrated ready/shoulder reference points, not just today's one-shot threshold-crossing raise event.
+Accelerometer-based position estimation drifts — this needs its own feasibility check (bounded drift over a single round's timescale, possibly gyroscope fusion) before committing to an implementation approach.
+
+**Fire trigger — documented for whoever picks this up, since the right answer differs by platform and by how much risk you're willing to accept:**
+
+- **Android:** volume button via native key interception (`KEYCODE_VOLUME_UP/DOWN`, e.g. `react-native-volume-manager` or a small custom native module — this project already runs `expo-dev-client`, so a native module is nothing new). Reliable, no caveats.
+- **iOS, default:** on-screen tap-to-fire button. No API-misuse risk, no camera overhead, works on every device.
+- **iOS, alternative — native volume trigger via `AVCaptureEventInteraction`:** Apple's only sanctioned API for volume-button capture, but it's scoped to apps actively using the camera; non-camera apps risk the capture session being terminated. Would need an active (if hidden) camera session running during the duel just to unlock the events.
+- **iOS, alternative — unofficial volume-observation hack:** watch `AVAudioSession.outputVolume` for changes. Works without a camera session, but is fragile: volume needs resetting between rounds, detection can be missed at min/max volume, and the system volume HUD flashes unless suppressed.
+- **iOS, alternative — Action Button:** only exists on iPhone 15 Pro and later, and requires the _player_ to manually assign your app's Shortcut to it in Settings ahead of time — not something the app can claim automatically. Whether it delivers a fast in-scene event to an already-foregrounded duel screen (vs. behaving like an app relaunch) isn't confirmed without device testing.
+- **Ruled out — side/power button:** no public API exists for any app to intercept it; fully reserved by iOS.
+
 ## Phased issue list
 
 ### Phase 0 — Quick fixes
@@ -74,32 +101,36 @@ Fix: wire up the placeholder audio asset as a redundant cue alongside haptics, a
 
 ### Phase 1 — Contracts & rules
 
-3. Rewrite `MatchResult` and `roundLoop.ts` for strict 3-round + 1-tiebreaker matches with win/lose/draw outcomes
-4. Extend `PlayerStats` and `playerStatsRepository` to tally draws
-5. Remove `RoundCountSelector`'s 3/5/7 choice (round count is fixed now)
+3. Feasibility-check continuous position/height tracking from the calibrated ready/shoulder reference points (accelerometer drift risk) needed to classify a shot as miss/bodyshot/headshot
+4. Rebuild the fire trigger: Android volume-button key intercept, iOS on-screen tap-to-fire as the default — see "Fire mechanic & scoring" above for the documented alternatives
+5. Rewrite `roundJudge.ts`/`RoundOutcome` for v2 scoring: order shots by reaction time, classify the faster shot's zone, fall through to the slower shot on a miss, keep `falseStart` as its own outcome kind
+6. Rewrite `MatchResult` and the match-level `roundLoop.ts` for strict 3-round + 1-tiebreaker matches with win/lose/draw outcomes
+7. Extend `PlayerStats` and `playerStatsRepository` to tally draws
+8. Remove `RoundCountSelector`'s 3/5/7 choice (round count is fixed now)
 
 ### Phase 2 — Missing UI
 
-6. Leaderboard data layer (`leaderboardRepository`)
-7. Leaderboard screen with ranking-type selector (win/loss ratio, wins, losses, draws, ELO, avg reaction time)
-8. Profile & Settings screen (own stats, username edit via Firebase Auth `updateProfile`, logout moved here)
-9. Tab IA rewire: `Map / Challenge / Leaderboards / Profile`, drop the BLE debug tab from shipped UI
+9. Full-screen game-instructions step, shown right after challenge acceptance and before calibration (`UI.md`: "the Challenge tab, when the challenge is accepted, launches the game instructions screen in full screen... From that screen, the gameplay starts."). Nothing in the current challenge→duel pipeline shows this today — `DrawCalibrationScreen.tsx`'s copy is calibration-specific, not game rules.
+10. Leaderboard data layer (`leaderboardRepository`)
+11. Leaderboard screen with ranking-type selector (win/loss ratio, wins, losses, draws, ELO, avg reaction time)
+12. Profile & Settings screen (own stats, username edit via Firebase Auth `updateProfile`, logout moved here)
+13. Tab IA rewire: `Map / Challenge / Leaderboards / Profile`, drop the BLE debug tab from shipped UI
 
 ### Phase 3 — Connectivity rewrite (core)
 
-10. Remove the BLE transport stack entirely
-11. QR payload carries WiFi/hotspot connection info, regenerates on network change
-12. Host-side: existing-network detection, Android hotspot auto-create, iOS manual-hotspot flow
-13. Join-network flow via `react-native-wifi-reborn` (both platforms)
-14. Local signaling server (host) + SDP/ICE exchange; add `NSLocalNetworkUsageDescription` to iOS's `infoPlist` — any direct local-network connection on iOS 14+ needs this or the connection silently fails with no permission-denied signal to the user
-15. `RTCPeerConnection`/`DataChannel`-backed `DuelChannel` implementation
-16. Clock-offset calibration folded into the pre-round calibration screen, applied in `fireSignalCoordinator`/`reactionTimer`
+14. Remove the BLE transport stack entirely
+15. QR payload carries WiFi/hotspot connection info, regenerates on network change
+16. Host-side: existing-network detection, Android hotspot auto-create, iOS manual-hotspot flow
+17. Join-network flow via `react-native-wifi-reborn` (both platforms)
+18. Local signaling server (host) + SDP/ICE exchange; add `NSLocalNetworkUsageDescription` to iOS's `infoPlist` — any direct local-network connection on iOS 14+ needs this or the connection silently fails with no permission-denied signal to the user
+19. `RTCPeerConnection`/`DataChannel`-backed `DuelChannel` implementation
+20. Clock-offset calibration folded into the pre-round calibration screen, applied in `fireSignalCoordinator`/`reactionTimer`
 
 ### Phase 4 — Stretch
 
-17. Average reaction time aggregation + leaderboard ranking by it (product design marks this "do only when we have time")
-18. Onboarding / empty states / demo script — flagged unassigned since `docs/task-splits-v2/README.md`
-19. Full prod-readiness device QA (Android/iOS full-loop, permission-denial recovery) — carried over from the existing prod-readiness checklist in `docs/task-splits-v2/README.md`
+21. Average reaction time aggregation + leaderboard ranking by it (product design marks this "do only when we have time")
+22. Onboarding / empty states / demo script — flagged unassigned since `docs/task-splits-v2/README.md`
+23. Full prod-readiness device QA (Android/iOS full-loop, permission-denial recovery) — carried over from the existing prod-readiness checklist in `docs/task-splits-v2/README.md`
 
 ## Open risks to verify during implementation
 

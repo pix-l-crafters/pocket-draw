@@ -41,4 +41,6 @@ Headshot - 2 points
 Body shot - 1 point
 Miss - 0 points
 
-In the given round, player with the highest score wins.
+Reaction time still decides who gets to score: whichever player shot faster is evaluated first. If their shot is a hit (bodyshot or headshot), they score those points and the round ends — the other player scores 0 regardless of where their own shot landed. If the faster player's shot is a miss, the slower player's shot is evaluated instead. If both players miss, the round is 0-0.
+
+A false start (firing before the buzz) is a separate case from the above — it's a timing violation, not a scored shot, and is judged on its own regardless of where any shot would have landed.
