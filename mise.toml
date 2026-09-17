@@ -16,7 +16,7 @@ prepare = ["npm install"]
 android-sdk = "latest"
 apm = { postinstall = "apm install", version = "0.28" }
 "aqua:google/keep-sorted" = "latest"
-"aqua:numtide/treefmt" = { version = "latest", os = ["linux", "macos"] }
+"aqua:numtide/treefmt" = { os = ["linux", "macos"], version = "latest" }
 "aqua:owenlamont/ryl" = "latest"
 betterleaks = "latest"
 cocogitto = "latest"

@@ -4,7 +4,6 @@
     "strict": true,
     "types": ["jest"]
   },
-  "extends": "expo/tsconfig.base",
   "exclude": [
     "node_modules",
     "babel.config.js",
@@ -13,5 +12,6 @@
     "android",
     "ios",
     "apm_modules"
-  ]
+  ],
+  "extends": "expo/tsconfig.base"
 }
