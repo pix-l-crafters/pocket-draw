@@ -1,6 +1,6 @@
 # UI
 
-The interface has 3 tabs:
+The interface has 4 tabs:
 
 1. Map
 2. Challenge
