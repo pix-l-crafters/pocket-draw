@@ -132,8 +132,8 @@ Items 15–25: see the full [connectivity rewrite spec](../superpowers/specs/202
 
 15. Remove the BLE transport stack entirely
 16. QR payload carries WiFi/hotspot connection info, regenerates on network change
-17. Existing-network detection: try the current shared WiFi network before falling back to creating a hotspot
-18. Android hotspot auto-create via `WifiManager.startLocalOnlyHotspot()`
+17. Existing-network detection: try the current shared WiFi network before falling back to creating a hotspot, using `expo-network`'s `getIpAddressAsync()` for the host-IP lookup (confirmed cross-platform, no platform-specific handling needed)
+18. Android hotspot auto-create via `WifiManager.startLocalOnlyHotspot()` — `react-native-wifi-reborn` (item 20) doesn't cover hotspot creation, only joining; use `react-native-local-only-hotspot` (or an equivalent small native module) for this specific call
 19. iOS manual-hotspot flow: Settings instructions + one-time password entry (the app can't read its own hotspot password)
 20. Join-network flow via `react-native-wifi-reborn` (both platforms)
 21. Local signaling server (host) + SDP/ICE exchange. Add `NSLocalNetworkUsageDescription` to iOS's `infoPlist` — any direct local-network connection on iOS 14+ needs this or the connection silently fails with no permission-denied signal to the user
@@ -153,7 +153,6 @@ Items 15–25: see the full [connectivity rewrite spec](../superpowers/specs/202
 
 ## Open risks to verify during implementation
 
-- Whether `react-native-wifi-reborn` also covers Android's `startLocalOnlyHotspot()` hotspot-creation path, or whether that needs to be called directly.
 - iOS can't read its own Personal Hotspot password — confirm the one-time manual entry is acceptable UX, not a blocker.
 - `@config-plugins/react-native-webrtc` version pinning against this project's Expo SDK 54 / RN 0.81.5.
 

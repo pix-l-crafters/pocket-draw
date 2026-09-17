@@ -12,7 +12,8 @@ Per the design decision made this session, WebRTC becomes the **sole** transport
 ## End-to-end flow
 
 1. **Host chooses a connection mode** on the QR-display screen: use the current WiFi network, or create a hotspot. This is an explicit toggle the host picks, not silent auto-detection with fallback — auto-detect-and-retry is harder to get right and slower to fail visibly than just asking. (Flagging this as a call made to resolve an ambiguity the roadmap left open — revisit if you disagree.)
-2. **Existing-WiFi mode:** the host doesn't need to know its own SSID or password — if both players are already on the same network, the joiner doesn't need to "join" anything. The host just needs its own local IP on that network. QR encodes `{ hostIp, signalPort }` only.
+2. **Existing-WiFi mode:** the host doesn't need to know its own SSID or password — if both players are already on the same network, the joiner doesn't need to "join" anything.
+   The host just needs its own local IP on that network, via `expo-network`'s `getIpAddressAsync()` — confirmed cross-platform (both iOS and Android), no platform-specific handling needed. QR encodes `{ hostIp, signalPort }` only.
 3. **Hotspot mode:**
    - **Android:** `WifiManager.startLocalOnlyHotspot()` creates an internet-less, app-scoped WiFi AP and returns its SSID/password automatically — no user interaction beyond the initial permission grant (`NEARBY_WIFI_DEVICES` on API 33+, `ACCESS_FINE_LOCATION` below that).
    - **iOS:** no creation API exists. The host manually enables Personal Hotspot in Settings, then types the password into the app once (the app can't read it). The host's own address on that interface is always the fixed `172.20.10.1` — no detection needed, hardcode it once hotspot mode + iOS is selected.
@@ -63,7 +64,7 @@ A discriminated union rather than optional `ssid`/`password` fields on one shape
 - `src/features/duel/disconnectRecovery.ts` — on reconnect, carry the in-progress `RoundLoopState` (score, round number) through to the new channel instead of restarting the match; this is what actually makes reconnection feel seamless, not the signaling-socket lifecycle (see step 9 above)
 - New: signaling client/server modules — host-side TCP/WS listener, joiner-side client, token-auth check
 - New: a thin wrapper around `react-native-wifi-reborn` for the join step
-- New: Android hotspot-creation integration — verify whether `react-native-wifi-reborn` covers `startLocalOnlyHotspot()` before writing a separate native module for it (open risk, see below)
+- New: Android hotspot-creation integration via `react-native-local-only-hotspot` (or an equivalent small native module) — confirmed `react-native-wifi-reborn` only covers joining networks, not creating a hotspot, so this is a separate dependency from the join-network wrapper above
 - Delete entirely: `src/features/ble/BleScreen.tsx`, `bleRssi.ts`, `session/bleDuelSessionTransport.ts`, the BLE permission block in `app.json`, the `react-native-ble-manager` dependency
 - `app.json` — add `NSLocalNetworkUsageDescription` to iOS `infoPlist`, add the `@config-plugins/react-native-webrtc` plugin entry
 - `src/features/duel/DrawCalibrationScreen.tsx` — add the clock-offset ping-pong step
@@ -76,6 +77,4 @@ A discriminated union rather than optional `ssid`/`password` fields on one shape
 
 ## Open questions
 
-- **Carried over from the roadmap:** does `react-native-wifi-reborn` cover Android's `startLocalOnlyHotspot()` hotspot-creation path, or does that need a separate native module call? Check before scoping the Android hotspot-creation work.
 - iOS has no reliable public deep-link directly into the Personal Hotspot settings pane — `Linking.openSettings()` only opens the app's own settings page. Confirm the best achievable UX is "open the general Settings app + show instructions," not a precise jump.
-- Whether the existing-WiFi host-IP lookup (step 2) needs any platform-specific handling, or whether a standard `expo-network`-style local-IP query is sufficient on both platforms — not verified here.
