@@ -24,6 +24,15 @@ This resolves the earlier open question about how the tie window interacts with 
 
 Reaction time is still captured for every shot regardless of outcome — it gates who's evaluated first above, and separately feeds the leaderboard's average-reaction-time stat (Phase 4, item 25).
 
+### Match-level tally: sum of points, not count of rounds won
+
+`Gameplay-v2.md` carries forward v1's "the winner is determined by the highest score" — under v1 every round win was worth exactly 1 point, so that phrase was equivalent to "most rounds won."
+v2's differentiated zone scoring (1 or 2 points) breaks that equivalence, so this had to be decided explicitly: **the match winner (and whether the tiebreaker round triggers) is the sum of each player's round points across the match, not a count of rounds won.**
+
+This changes `roundLoop.ts`'s `tallyOutcome`: today it accumulates a flat `+= 1` on a win and `+= pointsEach` on a tie, which happened to be the same number under v1's scoring.
+Under v2, the accumulator needs to add each round's actual zone point value (0/1/2) for whichever player(s) scored, including on the new independent-both-score tie case above.
+`matchWinnerId`/`isMatchDecided` then compare summed points, not round-win counts.
+
 ## Zone classification — the feasibility question
 
 **Ruled out: literal position/height tracking.** Double-integrating accelerometer data to get a position in centimeters is a well-documented dead end — integration of both a constant bias and of noise makes it "highly sensitive to bias noise," and error grows unbounded over time. This is not usable for a multi-second duel round.
@@ -78,7 +87,8 @@ Without measuring arm length, using one fixed `δ` for every player is a deliber
 - `src/features/duel/raiseGestureDetector.ts` / new module for pitch-angle tracking and `f` calculation
 - `src/features/duel/DrawCalibrationScreen.tsx` — capture `θ_ready`/`θ_shoulder`
 - `src/contracts/roundOutcome.ts` — extend `RoundOutcome`'s `"win"` case (or add a new shape) to carry zone/points per player; `falseStart` stays unchanged
-- `src/features/duel/roundJudge.ts` — implement the fallthrough logic above
+- `src/features/duel/roundJudge.ts` — implement the fallthrough/independent-scoring logic above
+- `src/features/duel/roundLoop.ts` — `tallyOutcome`/`matchWinnerId`/`isMatchDecided` switch from counting round wins to summing round points (see "Match-level tally" above); this is also where item 7's strict 3+1-tiebreaker rewrite lands
 - `src/features/duel/DuelScreen.tsx` — wire in the platform-specific fire trigger
 - New: Android native module or library integration for volume-key interception; iOS on-screen fire button component
 

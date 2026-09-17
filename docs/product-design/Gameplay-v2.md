@@ -11,8 +11,8 @@ This screen shows instructions on how to play the game.
 
 3. Once sensor data is recorded from both positions, the game will calibrate the "rest" position and "fire" position. The "fire" position will be the shoulder level position, and the "rest" position will be the arm downwards position.
 
-4. There will be 3 rounds per match. Once the scores are tallied, the winner is determined by the highest score.
-   a. If it results in Tie, a tie breaker round is initiated. Whatever the result of tie breaker, the match ends and the scores of the entire match is saved, be it win/lose/tie.
+4. There will be 3 rounds per match. Once the scores are tallied, the winner is determined by the highest score — the **sum of each player's round points** across all 3 rounds (bodyshot/headshot/miss values below), not simply who won more individual rounds.
+   a. If the point totals are tied, a tie breaker round is initiated. Whatever the result of tie breaker, the match ends and the scores of the entire match is saved, be it win/lose/tie.
 
 5. When the phones are down, the game will begin a count down timer of 3 seconds. Once the timer is out, the phone will buzz which is an indicator that the players should now shoot.
 
@@ -41,6 +41,10 @@ Headshot - 2 points
 Body shot - 1 point
 Miss - 0 points
 
-Reaction time still decides who gets to score: whichever player shot faster is evaluated first. If their shot is a hit (bodyshot or headshot), they score those points and the round ends — the other player scores 0 regardless of where their own shot landed. If the faster player's shot is a miss, the slower player's shot is evaluated instead. If both players miss, the round is 0-0.
+Reaction time still decides who gets to score, outside a narrow tie window: whichever player shot faster is evaluated first.
+If their shot is a hit (bodyshot or headshot), they score those points and the round ends — the other player scores 0 regardless of where their own shot landed.
+If the faster player's shot is a miss, the slower player's shot is evaluated instead. If both players miss, the round is 0-0.
+
+If both players fire within the tie window (near-simultaneous), speed no longer picks a single shot to evaluate — each player's shot is scored independently on its own accuracy. Whoever scores higher wins the round. If both score the same (including both missing), the round is a tie and both players keep their equal points.
 
 A false start (firing before the buzz) is a separate case from the above — it's a timing violation, not a scored shot, and is judged on its own regardless of where any shot would have landed.

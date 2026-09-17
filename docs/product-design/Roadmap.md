@@ -12,20 +12,23 @@ Already implemented on `dev` (ahead of this doc's own branch):
 - Backend: match-result write path, offline queue, ELO calculation, `playerStatsRepository` (wins/losses/ELO)
 - Postmatch summary screen (rematch / return-to-map)
 
-Not implemented at all: Leaderboards tab, Profile & Settings tab, match-level draws, WebRTC transport, clock-sync for reaction timing.
+Not implemented at all: Leaderboards tab, Profile & Settings tab, match-level draws, WebRTC transport, clock-sync for reaction timing, the Gameplay-v2 fire mechanic and zone-based scoring (current code implements v1's auto-fire/reaction-only model), the post-challenge game-instructions screen, and the Android map / haptics-only fire cue bugs.
 
 ## Design decisions
 
 These cut across multiple issues below, decided up front so individual issues don't re-litigate them.
 
 1. **Match outcome is an explicit per-player map.** `MatchResult.winnerId: string` becomes `results: Record<string, "win" | "lose" | "draw">`, keyed by participant uid. Chosen over a nullable `winnerId` for explicitness — every consumer reads a three-way result directly instead of null-checking a single field.
-2. **Rounds are strictly 3, plus at most 1 tiebreaker.** No more variable-length (3/5/7) matches. If tied after 3 rounds, exactly one tiebreaker round plays, and the match ends after it regardless of outcome — a draw is a valid, storable match result.
+2. **Rounds are strictly 3, plus at most 1 tiebreaker.** No more variable-length (3/5/7) matches.
+   **The match winner is decided by the sum of each player's round points (bodyshot 1 / headshot 2 / miss 0), not by count of rounds won** — under v1 these were equivalent since every round win was worth exactly 1 point, but v2's differentiated zone scoring breaks that equivalence.
+   If point totals are tied after 3 rounds, exactly one tiebreaker round plays (also decided by points), and the match ends after it regardless of outcome — a draw is a valid, storable match result.
 3. **Leaderboard is computed client-side.** Fetch all players' aggregated stats and sort in-memory per the selected ranking, the same full-scan-and-replay pattern `playerStatsRepository` already uses for one player. No denormalized leaderboard collection or Cloud Function — not worth the added backend responsibility at this project's scale.
 4. **Navigation stays manual state, no new nav library.** Extend `App.tsx`'s existing `AppTab` union instead of introducing `@react-navigation/bottom-tabs`. The challenge→duel→postmatch flow already works this way; four tabs instead of two doesn't change that.
 5. **WebRTC becomes the sole transport; BLE is removed entirely.** Not additive — a full replacement. The QR code becomes the WebRTC pairing point, carrying WiFi/hotspot connection info instead of (or alongside) the existing BLE discovery token. See "Connectivity architecture" below and the full [connectivity rewrite spec](../superpowers/specs/2026-09-17-connectivity-rewrite-design.md).
 6. **Reaction-time fairness needs clock-offset calibration**, folded into the existing pre-round calibration step rather than shipped as a separate wait.
 7. **The Android map and the haptics-only fire cue are both fixed as part of this pass**, not left as separate untracked bugs — see the two subsections below.
-8. **The fire mechanic and round scoring are rebuilt to match Gameplay v2, not v1.** The current implementation auto-fires on a raise gesture and scores purely on reaction time (win/tie/falseStart, no headshot/bodyshot) — that's v1's model. v2 requires a manual fire trigger and height-zone-based scoring. See "Fire mechanic & scoring" below and the full [fire mechanic & scoring spec](../superpowers/specs/2026-09-17-fire-mechanic-scoring-design.md).
+8. **The fire mechanic and round scoring are rebuilt to match Gameplay v2, not v1.** The current implementation auto-fires on a raise gesture and scores purely on reaction time (win/tie/falseStart, no headshot/bodyshot) — that's v1's model.
+   v2 requires a manual fire trigger and height-zone-based scoring. See "Fire mechanic & scoring" below and the full [fire mechanic & scoring spec](../superpowers/specs/2026-09-17-fire-mechanic-scoring-design.md).
 
 ### Connectivity architecture
 
@@ -33,7 +36,7 @@ Full spec: [`docs/superpowers/specs/2026-09-17-connectivity-rewrite-design.md`](
 
 `DuelChannel`/`DuelMessage` (`src/contracts/duelChannel.ts`) already abstracts duel logic away from the transport — nothing in the duel gameplay code needs to change for this swap.
 
-- QR payload gains connection info (`ssid`, `password?`, `hostIp`, `signalPort`) alongside the existing `matchId`/tokens, regenerated whenever the host's network changes.
+- QR payload gains a `connection` field — a discriminated union, `{ mode: "existingWifi", hostIp, signalPort }` or `{ mode: "hotspot", hostIp, signalPort, ssid, password }` — alongside the existing `matchId`/tokens, regenerated whenever the host's network changes.
 - Host either uses an existing shared WiFi network, or creates a hotspot.
   Android does this automatically via `WifiManager.startLocalOnlyHotspot()`.
   iOS has no public API to create Personal Hotspot, so the user manually enables it and types the hotspot password into the app once (the app can't read it) — the only manual step in the flow.
@@ -76,11 +79,8 @@ Today, `raiseGestureDetector.ts` auto-fires purely from accelerometer magnitude 
 That's v1's model.
 v2 requires a manual fire trigger, plus height-zone scoring: a bodyshot zone (ready-height to shoulder-height, 1 point), a headshot zone (shoulder-height to +15cm above, 2 points), and misses (0 points) for anything else.
 
-**Round scoring:** order both players' shots by reaction time (the existing tie-window logic still applies for near-simultaneous shots).
-Classify the faster shot's landing height into miss/bodyshot/headshot.
-If it's valid, that player scores those points and the other scores 0.
-If the faster shot is a miss, fall through and classify the slower shot the same way — if that one's valid, they score instead.
-If both miss, the round is 0-0.
+**Round scoring:** order both players' shots by reaction time. Outside the tie window, classify the faster shot's landing height into miss/bodyshot/headshot — if valid, that player scores those points and the other scores 0; if the faster shot is a miss, fall through and classify the slower shot the same way; if both miss, the round is 0-0.
+Within the tie window (near-simultaneous fire), classify **both** shots independently — each player scores their own zone value regardless of the other's timing — and whoever scores higher wins the round; equal scores (including a double miss) tie, with both keeping their equal points.
 `falseStart` stays as its own outcome kind, untouched by this — it's a timing violation (firing before the buzz), orthogonal to where a shot lands, not folded into the zone system.
 Reaction time still gates who's even eligible to score, and separately remains the leaderboard's avg-reaction-time stat.
 
@@ -110,14 +110,16 @@ Items 3–6: see the full [fire mechanic & scoring spec](../superpowers/specs/20
 3. Feasibility-check continuous position/height tracking from the calibrated ready/shoulder reference points (accelerometer drift risk) needed to classify a shot as miss/bodyshot/headshot
 4. Android fire trigger: volume-button key intercept (native module, e.g. `react-native-volume-manager`)
 5. iOS fire trigger: on-screen tap-to-fire button (default) — see "Fire mechanic & scoring" above for the documented alternatives a teammate can swap in instead
-6. Rewrite `roundJudge.ts`/`RoundOutcome` for v2 scoring: order shots by reaction time, classify the faster shot's zone, fall through to the slower shot on a miss, keep `falseStart` as its own outcome kind
-7. Rewrite `MatchResult` and the match-level `roundLoop.ts` for strict 3-round + 1-tiebreaker matches with win/lose/draw outcomes. Confirmed the `matchResults` Firestore collection is dev-only scratch data — clear it before cutover rather than writing a migration for the old `winnerId` shape
+6. Rewrite `roundJudge.ts`/`RoundOutcome` for v2 scoring: order shots by reaction time, classify the faster shot's zone with fallthrough to the slower shot on a miss (outside the tie window), or classify both shots independently with the higher score winning (within the tie window); keep `falseStart` as its own outcome kind
+7. Rewrite `MatchResult` and the match-level `roundLoop.ts` for strict 3-round + 1-tiebreaker matches with win/lose/draw outcomes, decided by **sum of round points**, not count of rounds won — `tallyOutcome`'s accumulator needs to add each round's actual zone point value (0/1/2) instead of the current hardcoded `+= 1` / `+= pointsEach`.
+   Confirmed the `matchResults` Firestore collection is dev-only scratch data — clear it before cutover rather than writing a migration for the old `winnerId` shape
 8. Extend `PlayerStats` and `playerStatsRepository` to tally draws
 9. Remove `RoundCountSelector`'s 3/5/7 choice (round count is fixed now). Narrow the shared `ChallengeHandoff.roundCount` contract type (`src/contracts/challengeHandoff.ts`) from `3 | 5 | 7` to the literal `3` too — it flows through `App.tsx` into the duel session, so leaving it un-narrowed means TypeScript won't catch a stale caller still constructing a 5- or 7-round handoff
 
 ### Phase 2 — Missing UI
 
-10. Full-screen game-instructions step, shown right after challenge acceptance and before calibration (`UI.md`: "the Challenge tab, when the challenge is accepted, launches the game instructions screen in full screen... From that screen, the gameplay starts."). Nothing in the current challenge→duel pipeline shows this today — `DrawCalibrationScreen.tsx`'s copy is calibration-specific, not game rules.
+10. Full-screen game-instructions step, shown right after challenge acceptance and before calibration (`UI.md`: "the Challenge tab, when the challenge is accepted, launches the game instructions screen in full screen... From that screen, the gameplay starts.").
+    Nothing in the current challenge→duel pipeline shows this today — `DrawCalibrationScreen.tsx`'s copy is calibration-specific, not game rules.
 11. Leaderboard data layer (`leaderboardRepository`)
 12. Leaderboard screen with ranking-type selector (win/loss ratio, wins, losses, draws, ELO, avg reaction time)
 13. Profile & Settings screen (own stats, username edit via Firebase Auth `updateProfile`, logout moved here)
