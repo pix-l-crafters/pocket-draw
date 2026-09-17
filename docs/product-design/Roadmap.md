@@ -150,6 +150,7 @@ Items 15–25: see the full [connectivity rewrite spec](../superpowers/specs/202
 26. Average reaction time aggregation + leaderboard ranking by it (product design marks this "do only when we have time")
 27. Onboarding / empty states / demo script — flagged unassigned since `docs/task-splits-v2/README.md`
 28. Full prod-readiness device QA (Android/iOS full-loop, permission-denial recovery) — carried over from the existing prod-readiness checklist in `docs/task-splits-v2/README.md`
+29. Real aim/bearing check: compare phone compass heading against the opponent's live GPS bearing (from the map feature's presence data) at fire time, instead of the disclosed raise-height-only simplification shipped in Phase 1 — see the fire mechanic spec's "Pointing at the opponent" note for the tradeoff. Pick up only after the core roadmap ships
 
 ## Open risks to verify during implementation
 
