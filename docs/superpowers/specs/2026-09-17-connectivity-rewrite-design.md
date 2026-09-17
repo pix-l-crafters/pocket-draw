@@ -61,7 +61,7 @@ A discriminated union rather than optional `ssid`/`password` fields on one shape
 ## Testing
 
 - Unit-testable without a device: token-auth validation logic, the clock-offset RTT math, QR payload parsing/serialization for both `connection` modes — pure functions, same pattern as the existing `roundJudge`/`challengeRequestRepository` test coverage.
-- Needs real hardware, two devices: actual hotspot creation/joining on both platforms, actual WebRTC negotiation and data-channel establishment, actual mid-match disconnect/reconnect behavior. None of this is meaningfully mockable — route it through the existing prod-readiness device QA pass (Phase 4, item 27).
+- Needs real hardware, two devices: actual hotspot creation/joining on both platforms, actual WebRTC negotiation and data-channel establishment, actual mid-match disconnect/reconnect behavior. None of this is meaningfully mockable — route it through the existing prod-readiness device QA pass (Phase 4, item 28).
 
 ## Open questions
 

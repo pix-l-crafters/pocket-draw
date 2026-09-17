@@ -127,7 +127,7 @@ Items 3–6: see the full [fire mechanic & scoring spec](../superpowers/specs/20
 
 ### Phase 3 — Connectivity rewrite (core)
 
-Items 15–24: see the full [connectivity rewrite spec](../superpowers/specs/2026-09-17-connectivity-rewrite-design.md).
+Items 15–25: see the full [connectivity rewrite spec](../superpowers/specs/2026-09-17-connectivity-rewrite-design.md).
 
 15. Remove the BLE transport stack entirely
 16. QR payload carries WiFi/hotspot connection info, regenerates on network change
@@ -138,13 +138,14 @@ Items 15–24: see the full [connectivity rewrite spec](../superpowers/specs/202
 21. Local signaling server (host) + SDP/ICE exchange. Add `NSLocalNetworkUsageDescription` to iOS's `infoPlist` — any direct local-network connection on iOS 14+ needs this or the connection silently fails with no permission-denied signal to the user
 22. Authenticate the signaling connection: require the connecting peer to present the QR payload's `challengeToken`/`discoveryToken` before the host accepts an SDP exchange — on the "existing shared WiFi" mode, the signaling port isn't private to the two duelists, so an unauthenticated server would let any other device on that network hijack or deny the pairing
 23. `RTCPeerConnection`/`DataChannel`-backed `DuelChannel` implementation
-24. Clock-offset calibration folded into the pre-round calibration screen, applied in `fireSignalCoordinator`/`reactionTimer`
+24. Port `disconnectRecovery.ts` to the WebRTC transport (detect data-channel disconnection instead of BLE) and carry the in-progress `RoundLoopState` (score, round number) through a reconnect so the match resumes instead of restarting — this is what actually makes reconnection feel seamless, not the signaling-socket lifecycle
+25. Clock-offset calibration folded into the pre-round calibration screen, applied in `fireSignalCoordinator`/`reactionTimer`
 
 ### Phase 4 — Stretch
 
-25. Average reaction time aggregation + leaderboard ranking by it (product design marks this "do only when we have time")
-26. Onboarding / empty states / demo script — flagged unassigned since `docs/task-splits-v2/README.md`
-27. Full prod-readiness device QA (Android/iOS full-loop, permission-denial recovery) — carried over from the existing prod-readiness checklist in `docs/task-splits-v2/README.md`
+26. Average reaction time aggregation + leaderboard ranking by it (product design marks this "do only when we have time")
+27. Onboarding / empty states / demo script — flagged unassigned since `docs/task-splits-v2/README.md`
+28. Full prod-readiness device QA (Android/iOS full-loop, permission-denial recovery) — carried over from the existing prod-readiness checklist in `docs/task-splits-v2/README.md`
 
 ## Open risks to verify during implementation
 

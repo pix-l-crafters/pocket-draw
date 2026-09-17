@@ -22,7 +22,7 @@ This resolves the earlier open question about how the tie window interacts with 
 
 `falseStart` is untouched by any of this — it's a timing violation (firing before the buzz), orthogonal to where a shot lands, and stays its own `RoundOutcome` kind rather than being folded into the zone system.
 
-Reaction time is still captured for every shot regardless of outcome — it gates who's evaluated first above, and separately feeds the leaderboard's average-reaction-time stat (Phase 4, item 25).
+Reaction time is still captured for every shot regardless of outcome — it gates who's evaluated first above, and separately feeds the leaderboard's average-reaction-time stat (Phase 4, item 26).
 
 ### Match-level tally: sum of points, not count of rounds won
 
@@ -95,9 +95,14 @@ Without measuring arm length, using one fixed `δ` for every player is a deliber
 ## Testing
 
 - Unit-testable without a device: the `f`-to-zone classification function, and `roundJudge.ts`'s fallthrough logic (pure functions, same pattern as the existing `roundJudge.test`-style coverage).
-- Needs real hardware: pitch-angle stability/noise over an actual raise motion, and fire-trigger latency on both platforms — not mockable, add to the existing prod-readiness device QA pass (Phase 4, item 27).
+- Needs real hardware: pitch-angle stability/noise over an actual raise motion, and fire-trigger latency on both platforms — not mockable, add to the existing prod-readiness device QA pass (Phase 4, item 28).
 
 ## Open questions
 
 - Exact fractional thresholds for bodyshot/headshot zones and the `δ` headshot band — pick via playtesting, not fixed here.
 - Whether the fixed-`δ` approximation is good enough, or whether the arm-length-estimate refinement becomes necessary.
+- **"Pointing at the opponent" is never sensor-verified — open for discussion, not decided here.** `Gameplay-v2.md`'s Sensors section describes calibrating with "the phone's upper edge... point[ing] towards the opponent," implying horizontal aim/bearing matters.
+  Neither the existing implementation nor this spec's zone classification checks bearing/yaw — only vertical pitch angle (ready→shoulder) is tracked. Two ways to resolve it:
+  1. **Disclosed simplification (lower effort):** note in the spec that only raise height is measured, not aim direction — the same pattern already used for the fixed-`δ` headshot-zone approximation above. No new work.
+  2. **Build a real bearing check (higher effort):** compare the phone's compass heading against the opponent's live GPS bearing (already available from the map feature's presence data) and require them to be roughly aligned at fire time.
+     Real work with a real payoff — it would make "aim" mean something a player can actually fail at, not just "raise fast enough" — but it's never existed in this codebase (not even in the original v1 implementation) and is a meaningfully bigger scope addition than anything else in this spec.
