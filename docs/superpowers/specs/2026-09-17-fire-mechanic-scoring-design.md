@@ -90,3 +90,5 @@ Without measuring arm length, using one fixed `δ` for every player is a deliber
 
 - Exact fractional thresholds for bodyshot/headshot zones and the `δ` headshot band — pick via playtesting, not fixed here.
 - Whether the fixed-`δ` approximation is good enough, or whether the arm-length-estimate refinement becomes necessary.
+- **Unresolved:** the round-scoring section above says the existing tie-window logic "still applies for near-simultaneous shots," then describes classifying only the single faster shot.
+  Those aren't fully reconciled — does a true near-simultaneous fire (both within `TIE_WINDOW_MS`) classify _both_ shots independently, reviving the old both-score tie model just for that case, or does one of them still get picked as "faster" by whatever margin exists inside the window? Pick one before implementing `roundJudge.ts`.
