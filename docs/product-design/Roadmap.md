@@ -140,7 +140,9 @@ Items 15–25: see the full [connectivity rewrite spec](../superpowers/specs/202
 22. Authenticate the signaling connection: require the connecting peer to present the QR payload's `challengeToken`/`discoveryToken` before the host accepts an SDP exchange — on the "existing shared WiFi" mode, the signaling port isn't private to the two duelists, so an unauthenticated server would let any other device on that network hijack or deny the pairing.
     See the connectivity spec's "Token freshness on reconnect" note for how this interacts with item 24 — a deadline-driven call flagged there for confirmation, not a settled answer
 23. `RTCPeerConnection`/`DataChannel`-backed `DuelChannel` implementation
-24. Port `disconnectRecovery.ts` to the WebRTC transport (detect data-channel disconnection instead of BLE) and carry the in-progress `RoundLoopState` (score, round number) through a reconnect so the match resumes instead of restarting — this is what actually makes reconnection feel seamless, not the signaling-socket lifecycle
+24. Extend `disconnectRecovery.ts`'s `DisconnectContext`/`DisconnectRecoveryState` to carry the in-progress `RoundLoopState` (score, round number) through a reconnect, so the match resumes instead of restarting — this is what actually makes reconnection feel seamless, not the signaling-socket lifecycle.
+    `DuelDisconnectRecovery` already takes its transport as an injected `DuelChannel` + `reconnect` callback, so no separate "port to WebRTC" work is needed here — item 23's `DuelChannel` implementation just supplies its own `reconnect` callback.
+    (This item previously read "port `disconnectRecovery.ts` to the WebRTC transport" — corrected after reading the actual class; that wording would have sent someone chasing a porting task that doesn't exist.)
 25. Clock-offset calibration folded into the pre-round calibration screen, applied in `fireSignalCoordinator`/`reactionTimer`
 
 ### Phase 4 — Stretch
