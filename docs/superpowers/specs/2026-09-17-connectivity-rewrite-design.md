@@ -25,7 +25,9 @@ Per the design decision made this session, WebRTC becomes the **sole** transport
    **Token freshness on reconnect (item 24) — decided under the mid-October deadline, flag to your human before building this piece:** the QR's `challengeToken`/`discoveryToken` are only valid for `INVITE_LIFETIME_MS` (60s), meant for the initial pairing window.
    A mid-match reconnect (item 24) could happen well past that window. Three ways to handle it, in order of what a non-time-pressured team would prefer:
    1. Mint a short-lived session-local secret once the channel first establishes, exchanged over that now-trusted channel, and authenticate reconnects against that instead of the QR's own expiry — decouples reconnect auth from initial-pairing auth correctly, but is more to build.
-   2. **Selected for now:** extend `expiresAt` to cover the whole match duration instead of just initial pairing. Simpler, ships faster, but weakens the original short-lived-invite anti-replay intent for the rest of the match.
+   2. **Selected for now:** extend `expiresAt` to cover the whole match duration instead of just initial pairing.
+      This only affects the reconnect-auth validation window on the token already captured into `ChallengeHandoff` at scan time — it does not touch `QrDisplayScreen.tsx`'s own regeneration timer, which is only live during pairing and is already dismissed before a mid-match reconnect could happen.
+      Simpler, ships faster, but weakens the original short-lived-invite anti-replay intent for the rest of the match.
    3. Leave reconnect auth unspecified and decide during implementation — cheapest today, but risks shipping a reconnect that silently fails exactly when it's needed.
 
    Selected option 2 given the timeline, not because it's the strongest answer — whoever picks up this item should raise this tradeoff with their team before treating it as final.
