@@ -1,0 +1,117 @@
+version: 1
+generator: capa@2.2.1
+generatedAt: '2026-09-17T22:25:33.798Z'
+skills:
+  - id: bootstrap
+    source: github
+    repo: infragate/capa
+    skillName: bootstrap
+    requestedVersion: null
+    requestedRef: null
+    resolvedRef: e458ae5e0747cdf9c521336bf3292eec96edff1e
+    resolvedVersion: null
+  - id: capabilities-manager
+    source: github
+    repo: infragate/capa
+    skillName: capabilities-manager
+    requestedVersion: null
+    requestedRef: null
+    resolvedRef: e458ae5e0747cdf9c521336bf3292eec96edff1e
+    resolvedVersion: null
+  - id: git-commit
+    source: github
+    repo: github/awesome-copilot
+    skillName: git-commit
+    requestedVersion: null
+    requestedRef: null
+    resolvedRef: 0a66795706fffe0a2fb99a7eb1af5f9b67c6db8d
+    resolvedVersion: null
+  - id: grill-me
+    source: github
+    repo: mattpocock/skills
+    skillName: grill-me
+    requestedVersion: null
+    requestedRef: null
+    resolvedRef: 6acc160e4e0cd062dbbbd7a1b26ae92855edf07e
+    resolvedVersion: null
+  - id: grill-with-docs
+    source: github
+    repo: mattpocock/skills
+    skillName: grill-with-docs
+    requestedVersion: null
+    requestedRef: null
+    resolvedRef: 6acc160e4e0cd062dbbbd7a1b26ae92855edf07e
+    resolvedVersion: null
+  - id: grilling
+    source: github
+    repo: mattpocock/skills
+    skillName: grilling
+    requestedVersion: null
+    requestedRef: null
+    resolvedRef: 6acc160e4e0cd062dbbbd7a1b26ae92855edf07e
+    resolvedVersion: null
+  - id: to-tickets
+    source: github
+    repo: mattpocock/skills
+    skillName: to-tickets
+    requestedVersion: null
+    requestedRef: null
+    resolvedRef: 6acc160e4e0cd062dbbbd7a1b26ae92855edf07e
+    resolvedVersion: null
+plugins:
+  - id: expo
+    source: github
+    repo: expo/skills
+    subpath: plugins/expo
+    requestedSearchName: null
+    requestedVersion: null
+    requestedRef: null
+    resolvedRef: 39708666ce7014def1f8e34f3d8c93e8d3f588bb
+    resolvedVersion: null
+    manifestName: expo
+    manifestVersion: 1.13.5
+  - id: megalinter
+    source: github
+    repo: oxsecurity/megalinter
+    subpath: null
+    requestedSearchName: null
+    requestedVersion: null
+    requestedRef: null
+    resolvedRef: 9949bad031045f366be2467e00e8371a7328a2e2
+    resolvedVersion: null
+    manifestName: megalinter
+    manifestVersion: 1.0.5
+  - id: paad
+    source: github
+    repo: Ovid/paad
+    subpath: plugins/paad
+    requestedSearchName: null
+    requestedVersion: null
+    requestedRef: null
+    resolvedRef: 35783ca9a48762074128bda9c69589c4c690b57d
+    resolvedVersion: null
+    manifestName: paad
+    manifestVersion: 1.31.0
+  - id: superpowers
+    source: github
+    repo: obra/superpowers
+    subpath: null
+    requestedSearchName: null
+    requestedVersion: null
+    requestedRef: null
+    resolvedRef: b36e0829c6d0140e93cfef2ca599b1b07d4a7797
+    resolvedVersion: null
+    manifestName: superpowers
+    manifestVersion: 6.3.0
+  - id: taste-skill
+    source: github
+    repo: Leonxlnx/taste-skill
+    subpath: null
+    requestedSearchName: null
+    requestedVersion: null
+    requestedRef: null
+    resolvedRef: e79ca9ec7e071eb3a3b623c4fb752e853fc3ed58
+    resolvedVersion: null
+    manifestName: taste-skill
+    manifestVersion: 1.0.0
+hooks: []

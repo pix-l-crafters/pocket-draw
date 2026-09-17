@@ -1,29 +1,42 @@
 [env]
+EXPO_UNSTABLE_MCP_SERVER = 1
 HK_MISE = 1
 
 [hooks]
 # Automatically install/update hooks when tools are installed
 postinstall = ["hk install --mise"]
 
+[settings]
+lockfile = true
+
+[settings.github]
+use_git_credentials = true
+
 [tasks]
-ai-setup = "apm install"
+ai-setup = "capa install -y"
 check = ["hk check --all", "cog check"]
-fmt = ["hk fix --all"]
-pre-commit = "hk run pre-commit"
 prepare = ["npm install"]
+
+[tasks.fmt]
+run = ["hk fix --all", { task = "treefmt" }]
+
+[tasks.treefmt]
+run = "treefmt"
+run_windows = "echo 'Treefmt not supported on Windows'"
 
 [tools]
 android-sdk = "latest"
 apm = { postinstall = "apm install", version = "0.28" }
 "aqua:google/keep-sorted" = "latest"
-"aqua:numtide/treefmt" = { version = "latest", os = ["linux", "macos"] }
+"aqua:numtide/treefmt" = { os = ["linux", "macos"], version = "2.6.0" }
 "aqua:owenlamont/ryl" = "latest"
 betterleaks = "latest"
 cocogitto = "latest"
 cspell = "latest"
 fnox = "latest"
 git-cliff = "latest"
-hk = "latest"
+"github:infragate/capa" = { postinstall = "capa install -y", version = "2.2.1" }
+hk = "2.0.1"
 java = "21"
 ls-lint = "latest"
 node = "24"
@@ -39,3 +52,7 @@ typos = "latest"
 typstyle = "latest"
 uv = "latest"
 yq = "latest"
+
+[[watch_files]]
+patterns = ["capabilities.yaml"]
+task = "ai-setup"

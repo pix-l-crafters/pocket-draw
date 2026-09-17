@@ -12,10 +12,9 @@ pre = "alpha.*"
 pre_bump_hooks = [
   "echo 'bumping from {{latest_tag|0.0.0}} to {{version_tag|0.0.1}}'",
   "npm version {{version}} --no-git-tag-version --allow-same-version",
-  "yq -i '.version = \"{{version}}\"' apm.yml",
   "yq -i '.expo.version = \"{{version}}\"' app.json",
   "git-cliff -c .config/cliff.toml -o CHANGELOG.md --tag {{version_tag}}",
-  "hk fix CHANGELOG.md apm.yml"
+  "hk fix CHANGELOG.md"
 ]
 pre_package_bump_hooks = []
 # tombi: format.rules.array-values-order = "ascending"
@@ -53,8 +52,9 @@ tag_prefix = "v"
 
 [changelog]
 authors = [{ signature = "ask.mrdgh2821@outlook.com", username = "MRDGH2821" }]
-owner = "MRDGH2821"
+owner = "pix-l-crafters"
 path = "CHANGELOG.md"
+repository = "pocket-draw"
 template = "remote"
 
 [commit_types]
