@@ -22,12 +22,14 @@ These cut across multiple issues below, decided up front so individual issues do
 2. **Rounds are strictly 3, plus at most 1 tiebreaker.** No more variable-length (3/5/7) matches. If tied after 3 rounds, exactly one tiebreaker round plays, and the match ends after it regardless of outcome — a draw is a valid, storable match result.
 3. **Leaderboard is computed client-side.** Fetch all players' aggregated stats and sort in-memory per the selected ranking, the same full-scan-and-replay pattern `playerStatsRepository` already uses for one player. No denormalized leaderboard collection or Cloud Function — not worth the added backend responsibility at this project's scale.
 4. **Navigation stays manual state, no new nav library.** Extend `App.tsx`'s existing `AppTab` union instead of introducing `@react-navigation/bottom-tabs`. The challenge→duel→postmatch flow already works this way; four tabs instead of two doesn't change that.
-5. **WebRTC becomes the sole transport; BLE is removed entirely.** Not additive — a full replacement. The QR code becomes the WebRTC pairing point, carrying WiFi/hotspot connection info instead of (or alongside) the existing BLE discovery token. See "Connectivity architecture" below.
+5. **WebRTC becomes the sole transport; BLE is removed entirely.** Not additive — a full replacement. The QR code becomes the WebRTC pairing point, carrying WiFi/hotspot connection info instead of (or alongside) the existing BLE discovery token. See "Connectivity architecture" below and the full [connectivity rewrite spec](../superpowers/specs/2026-09-17-connectivity-rewrite-design.md).
 6. **Reaction-time fairness needs clock-offset calibration**, folded into the existing pre-round calibration step rather than shipped as a separate wait.
 7. **The Android map and the haptics-only fire cue are both fixed as part of this pass**, not left as separate untracked bugs — see the two subsections below.
-8. **The fire mechanic and round scoring are rebuilt to match Gameplay v2, not v1.** The current implementation auto-fires on a raise gesture and scores purely on reaction time (win/tie/falseStart, no headshot/bodyshot) — that's v1's model. v2 requires a manual fire trigger and height-zone-based scoring. See "Fire mechanic & scoring" below.
+8. **The fire mechanic and round scoring are rebuilt to match Gameplay v2, not v1.** The current implementation auto-fires on a raise gesture and scores purely on reaction time (win/tie/falseStart, no headshot/bodyshot) — that's v1's model. v2 requires a manual fire trigger and height-zone-based scoring. See "Fire mechanic & scoring" below and the full [fire mechanic & scoring spec](../superpowers/specs/2026-09-17-fire-mechanic-scoring-design.md).
 
 ### Connectivity architecture
+
+Full spec: [`docs/superpowers/specs/2026-09-17-connectivity-rewrite-design.md`](../superpowers/specs/2026-09-17-connectivity-rewrite-design.md).
 
 `DuelChannel`/`DuelMessage` (`src/contracts/duelChannel.ts`) already abstracts duel logic away from the transport — nothing in the duel gameplay code needs to change for this swap.
 
@@ -68,6 +70,8 @@ Fix: wire up the placeholder audio asset as a redundant cue alongside haptics, a
 
 ### Fire mechanic & scoring (Gameplay v2)
 
+Full spec: [`docs/superpowers/specs/2026-09-17-fire-mechanic-scoring-design.md`](../superpowers/specs/2026-09-17-fire-mechanic-scoring-design.md).
+
 Today, `raiseGestureDetector.ts` auto-fires purely from accelerometer magnitude crossing a threshold, and `roundJudge.ts` scores purely on who reacted faster (`"win" | "tie" | "falseStart"`, 1 point, no headshot/bodyshot).
 That's v1's model.
 v2 requires a manual fire trigger, plus height-zone scoring: a bodyshot zone (ready-height to shoulder-height, 1 point), a headshot zone (shoulder-height to +15cm above, 2 points), and misses (0 points) for anything else.
@@ -101,6 +105,8 @@ Accelerometer-based position estimation drifts — this needs its own feasibilit
 
 ### Phase 1 — Contracts & rules
 
+Items 3–6: see the full [fire mechanic & scoring spec](../superpowers/specs/2026-09-17-fire-mechanic-scoring-design.md).
+
 3. Feasibility-check continuous position/height tracking from the calibrated ready/shoulder reference points (accelerometer drift risk) needed to classify a shot as miss/bodyshot/headshot
 4. Android fire trigger: volume-button key intercept (native module, e.g. `react-native-volume-manager`)
 5. iOS fire trigger: on-screen tap-to-fire button (default) — see "Fire mechanic & scoring" above for the documented alternatives a teammate can swap in instead
@@ -118,6 +124,8 @@ Accelerometer-based position estimation drifts — this needs its own feasibilit
 14. Tab IA rewire: `Map / Challenge / Leaderboards / Profile`, drop the BLE debug tab from shipped UI
 
 ### Phase 3 — Connectivity rewrite (core)
+
+Items 15–24: see the full [connectivity rewrite spec](../superpowers/specs/2026-09-17-connectivity-rewrite-design.md).
 
 15. Remove the BLE transport stack entirely
 16. QR payload carries WiFi/hotspot connection info, regenerates on network change
