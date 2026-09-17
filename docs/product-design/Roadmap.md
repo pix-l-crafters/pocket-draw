@@ -81,7 +81,7 @@ v2 requires a manual fire trigger, plus height-zone scoring: a bodyshot zone (re
 
 **Round scoring:** order both players' shots by reaction time. Outside the tie window, classify the faster shot's landing height into miss/bodyshot/headshot — if valid, that player scores those points and the other scores 0; if the faster shot is a miss, fall through and classify the slower shot the same way; if both miss, the round is 0-0.
 Within the tie window (near-simultaneous fire), classify **both** shots independently — each player scores their own zone value regardless of the other's timing — and whoever scores higher wins the round; equal scores (including a double miss) tie, with both keeping their equal points.
-`falseStart` stays as its own outcome kind, untouched by this — it's a timing violation (firing before the buzz), orthogonal to where a shot lands, not folded into the zone system.
+`falseStart` stays as its own outcome kind — it's a timing violation (firing before the buzz), orthogonal to where a shot lands, not folded into the zone system. The non-offending player still fires and scores normally by their own zone accuracy rather than getting a flat penalty bonus; see the fire mechanic spec's "False-start point value" note for the alternatives considered.
 Reaction time still gates who's even eligible to score, and separately remains the leaderboard's avg-reaction-time stat.
 
 **Feasibility flag:** classifying a shot's height needs continuous position tracking relative to the calibrated ready/shoulder reference points, not just today's one-shot threshold-crossing raise event.
