@@ -13,11 +13,12 @@ v2 requires a manual fire trigger and height-zone-based scoring: bodyshot (1pt),
 
 ## Round scoring logic
 
-Order both players' shots by reaction time (the existing `TIE_WINDOW_MS` logic still applies for near-simultaneous shots). Classify the **faster** shot's landing zone:
+Order both players' shots by reaction time.
 
-1. If it's a hit (bodyshot or headshot), that player scores those points; the other player scores 0. Round over.
-2. If the faster shot is a miss, classify the **slower** player's shot the same way. If valid, they score instead.
-3. If both are misses, the round is 0-0.
+- **Outside the tie window:** classify the **faster** shot's landing zone. If it's a hit (bodyshot or headshot), that player scores those points and the other scores 0 — round over. If the faster shot is a miss, classify the **slower** player's shot the same way; if valid, they score instead. If both are misses, the round is 0-0.
+- **Within `TIE_WINDOW_MS`** (a near-simultaneous fire): classify **both** shots independently — each player gets their own zone score (0/1/2) regardless of the other's timing. Whoever scores higher wins the round. If both score the same (including a double-miss), the round is a tie and both players get their (equal) points.
+
+This resolves the earlier open question about how the tie window interacts with the fallthrough rule: outside the window, only the faster shot's accuracy is ever eligible to decide the round on its own; inside it, both shots' accuracy is compared directly.
 
 `falseStart` is untouched by any of this — it's a timing violation (firing before the buzz), orthogonal to where a shot lands, and stays its own `RoundOutcome` kind rather than being folded into the zone system.
 
@@ -90,5 +91,3 @@ Without measuring arm length, using one fixed `δ` for every player is a deliber
 
 - Exact fractional thresholds for bodyshot/headshot zones and the `δ` headshot band — pick via playtesting, not fixed here.
 - Whether the fixed-`δ` approximation is good enough, or whether the arm-length-estimate refinement becomes necessary.
-- **Unresolved:** the round-scoring section above says the existing tie-window logic "still applies for near-simultaneous shots," then describes classifying only the single faster shot.
-  Those aren't fully reconciled — does a true near-simultaneous fire (both within `TIE_WINDOW_MS`) classify _both_ shots independently, reviving the old both-score tie model just for that case, or does one of them still get picked as "faster" by whatever margin exists inside the window? Pick one before implementing `roundJudge.ts`.
