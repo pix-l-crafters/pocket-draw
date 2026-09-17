@@ -20,7 +20,13 @@ Order both players' shots by reaction time.
 
 This resolves the earlier open question about how the tie window interacts with the fallthrough rule: outside the window, only the faster shot's accuracy is ever eligible to decide the round on its own; inside it, both shots' accuracy is compared directly.
 
-`falseStart` is untouched by any of this — it's a timing violation (firing before the buzz), orthogonal to where a shot lands, and stays its own `RoundOutcome` kind rather than being folded into the zone system.
+`falseStart` is untouched by the classification logic above — it's a timing violation (firing before the buzz), orthogonal to where a shot lands, and stays its own `RoundOutcome` kind rather than being folded into the zone system.
+
+**False-start point value — decided, other options kept for a teammate to discuss with their team before treating as final.** `roundLoop.ts` currently hardcodes the penalty as a flat `+= 1` for the non-offending player, which only worked because every round win was worth exactly 1 under v1. Three ways to carry this into the point-sum model:
+
+1. **Selected:** the non-offending player still fires and is scored normally (0/1/2 by their own zone accuracy) — a false start just removes the offender from being eligible to score that round, it doesn't hand them a bonus. Closest mapping of the existing fallthrough philosophy ("the other shot didn't happen/doesn't count") to this new case.
+2. Flat 2 points, treating a false start as equivalent to conceding a headshot — a harsher, deterrent-style penalty, but an arbitrary constant nothing in `Gameplay-v2.md` asks for.
+3. Flat 1 point, matching the old hardcoded value — smallest diff, but "matches the old code" isn't itself a design reason under the new scoring model.
 
 Reaction time is still captured for every shot regardless of outcome — it gates who's evaluated first above, and separately feeds the leaderboard's average-reaction-time stat (Phase 4, item 26).
 

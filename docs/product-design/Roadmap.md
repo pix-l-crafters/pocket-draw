@@ -110,7 +110,8 @@ Items 3–6: see the full [fire mechanic & scoring spec](../superpowers/specs/20
 3. Feasibility-check continuous position/height tracking from the calibrated ready/shoulder reference points (accelerometer drift risk) needed to classify a shot as miss/bodyshot/headshot
 4. Android fire trigger: volume-button key intercept (native module, e.g. `react-native-volume-manager`)
 5. iOS fire trigger: on-screen tap-to-fire button (default) — see "Fire mechanic & scoring" above for the documented alternatives a teammate can swap in instead
-6. Rewrite `roundJudge.ts`/`RoundOutcome` for v2 scoring: order shots by reaction time, classify the faster shot's zone with fallthrough to the slower shot on a miss (outside the tie window), or classify both shots independently with the higher score winning (within the tie window); keep `falseStart` as its own outcome kind
+6. Rewrite `roundJudge.ts`/`RoundOutcome` for v2 scoring: order shots by reaction time, classify the faster shot's zone with fallthrough to the slower shot on a miss (outside the tie window), or classify both shots independently with the higher score winning (within the tie window).
+   Keep `falseStart` as its own outcome kind, scoring the non-offending player's own shot normally rather than a flat penalty value (see the fire mechanic spec's "False-start point value" note)
 7. Rewrite `MatchResult` and the match-level `roundLoop.ts` for strict 3-round + 1-tiebreaker matches with win/lose/draw outcomes, decided by **sum of round points**, not count of rounds won — `tallyOutcome`'s accumulator needs to add each round's actual zone point value (0/1/2) instead of the current hardcoded `+= 1` / `+= pointsEach`.
    Confirmed the `matchResults` Firestore collection is dev-only scratch data — clear it before cutover rather than writing a migration for the old `winnerId` shape
 8. Extend `PlayerStats` and `playerStatsRepository` to tally draws
