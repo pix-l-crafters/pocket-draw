@@ -85,4 +85,8 @@ skills:
       repo: mattpocock/skills@to-tickets
     id: to-tickets
     type: github
+  - def:
+      repo: cli/cli@gh
+    id: gh
+    type: github
 tools: []
