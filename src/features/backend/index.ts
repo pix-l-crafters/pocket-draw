@@ -21,11 +21,14 @@ export {
   submitMatchResult
 } from "./matchResultsService";
 export { playerStatsRepository } from "./playerStatsRepository";
+export { userProfileRepository } from "./userProfileRepository";
 export {
   DEFAULT_ELO_RATING,
   type MatchResultDocument,
   type MatchResultsRepository,
   type PlayerStatsRepository,
   type SubmitMatchResultInput,
-  type SubmitMatchResultOutcome
+  type SubmitMatchResultOutcome,
+  type UserProfile,
+  type UserProfileRepository
 } from "./types";
