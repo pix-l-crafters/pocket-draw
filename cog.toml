@@ -38,6 +38,7 @@ scopes = [
   "pre-commit",
   "presence",
   "prettier",
+  "profile",
   "qr",
   "treefmt",
   "version",
