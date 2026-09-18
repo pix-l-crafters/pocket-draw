@@ -34,8 +34,9 @@ betterleaks = "latest"
 cocogitto = "latest"
 cspell = "latest"
 fnox = "latest"
+gh = { postinstall = "gh auth login", version = "latest" }
 git-cliff = "latest"
-"github:infragate/capa" = { postinstall = "capa install -y", version = "2.2.1" }
+"github:infragate/capa" = { postinstall = "capa install -y", version = "2.2.2" }
 hk = "2.0.1"
 java = "21"
 ls-lint = "latest"
