@@ -10,8 +10,13 @@
 # ── Ignored paths ─────────────────────────────────────────────────────────
 ignore:
   # keep-sorted start
+  - .agents
+  - .claude
+  - .codex
+  - .cursor
   - .git
   - .gradle
+  - .opencode
   - .pytest_cache
   - .venv
   - __pycache__
@@ -26,11 +31,11 @@ ignore:
   # keep-sorted end
 ls:
   .cjs: kebab-case
-  .d.ts: kebab-case
+  .d.ts: camelCase
   .java: PascalCase
   .js: kebab-case
   .mjs: kebab-case
   .nix: kebab-case
   .py: snake_case
   .rs: snake_case
-  .ts: kebab-case
+  .ts: camelCase
