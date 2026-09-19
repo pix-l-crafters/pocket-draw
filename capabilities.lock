@@ -1,6 +1,6 @@
 version: 1
 generator: capa@2.2.1
-generatedAt: '2026-09-18T00:31:01.790Z'
+generatedAt: '2026-09-19T00:38:12.649Z'
 skills:
   - id: bootstrap
     source: github
@@ -25,7 +25,7 @@ skills:
     requestedVersion: null
     requestedRef: null
     resolvedRef: 0cf1092493af067646fc5f3db9421c6a6ec9c938
-    resolvedVersion: v2.101.0
+    resolvedVersion: null
   - id: git-commit
     source: github
     repo: github/awesome-copilot
