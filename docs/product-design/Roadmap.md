@@ -62,7 +62,9 @@ That's the right call, but it trades in a small amount of JS-thread scheduling j
 `app.json`'s `plugins` array has no `react-native-maps` entry and no Google Maps API key anywhere — Android's Google Maps SDK requires one to render anything, iOS's Apple Maps doesn't.
 That fully explains "works on iOS, doesn't load on Android": it's a missing config, not a library defect.
 `react-native-maps` remains the right library for 2026 — Expo's own first-party `expo-maps` is still alpha and Expo's guidance is to only use it if you can drop iOS support below iOS 17, which doesn't apply here.
-Fix is additive: register the config plugin with an `androidGoogleMapsApiKey`, get a "Maps SDK for Android" key from Google Cloud Console (needs billing enabled), inject it via an EAS secret rather than committing it.
+Fix is additive: set `expo.android.config.googleMaps.apiKey`, which Expo prebuild already turns into the `com.google.android.geo.API_KEY` manifest entry — no extra plugin needed.
+Note that `react-native-maps` 1.20.1 (the version SDK 54 pins) ships **no** Expo config plugin; the `androidGoogleMapsApiKey` plugin option only exists in later releases, so registering the package in `plugins` fails prebuild.
+Get a "Maps SDK for Android" key from Google Cloud Console (needs billing enabled; native mobile map loads are free), and inject it from a `GOOGLE_MAPS_ANDROID_API_KEY` environment variable via `app.config.ts` — from `.env` locally and from EAS environment variables on EAS builds — rather than committing it.
 
 ### Fire-signal cue (haptics-only today)
 
@@ -100,7 +102,7 @@ Accelerometer-based position estimation drifts — this needs its own feasibilit
 
 ### Phase 0 — Quick fixes
 
-1. Fix Android map: register the `react-native-maps` config plugin with an `androidGoogleMapsApiKey` (Google Cloud Maps SDK for Android key, billing enabled, injected via EAS secret)
+1. Fix Android map: set `expo.android.config.googleMaps.apiKey` from a `GOOGLE_MAPS_ANDROID_API_KEY` environment variable in `app.config.ts` (Google Cloud Maps SDK for Android key, billing enabled, injected from `.env` locally and EAS environment variables on EAS builds)
 2. Wire up the countdown audio cue alongside the existing haptics-only "buzz" signal, with iOS audio-session config to play through silent/mute mode
 
 ### Phase 1 — Contracts & rules

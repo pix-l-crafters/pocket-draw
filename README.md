@@ -47,3 +47,19 @@ This project targets **Expo SDK 54** and uses `react-native-ble-manager`, so it 
 > code to connect. On restrictive networks (e.g. university wifi with client isolation),
 > run `npm run start:tunnel` instead — it routes the connection over the internet so
 > it works even when your phone and laptop can't see each other on the LAN.
+
+### 5. View it on an Android phone
+
+The map tab on Android uses the Google Maps SDK, which needs an API key. Without one the
+map renders as a blank grey area with a Google logo and **no error is shown**.
+
+1. Copy `.env.sample` to `.env` if you have not already, and fill in
+   `GOOGLE_MAPS_ANDROID_API_KEY` with the team's "Maps SDK for Android" key (ask in the
+   team chat; it is not committed).
+2. Build and install the development client with `npx expo run:android --device`.
+3. Start Metro with `npm run start:dev-client` as above.
+
+The key is read by [app.config.ts](./app.config.ts) at build time and written into
+`AndroidManifest.xml`, so you must rebuild the development client after changing it.
+Metro reloads alone are not enough. EAS builds get the same variable from the project's
+EAS environment variables instead of `.env`.
