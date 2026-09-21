@@ -26,6 +26,9 @@ let s = createRoundLoop(["a", "b"], 3);
 s = applyRoundOutcome(s, {
   kind: "win",
   winnerId: "a",
+  winnerZone: "bodyshot",
+  winnerPoints: 1,
+  loserPoints: 0,
   reactionMs: 200,
   opponentReactionMs: 300
 });
@@ -33,6 +36,9 @@ assertEqual(isMatchDecided(s), false, "one win should not decide a best-of-3");
 s = applyRoundOutcome(s, {
   kind: "win",
   winnerId: "a",
+  winnerZone: "bodyshot",
+  winnerPoints: 1,
+  loserPoints: 0,
   reactionMs: 210,
   opponentReactionMs: 290
 });
@@ -50,6 +56,7 @@ assertEqual(isMatchDecided(s2), false, "one round loss should not decide it");
 let s3 = createRoundLoop(["a", "b"], 5);
 s3 = applyRoundOutcome(s3, {
   kind: "tie",
+  zone: "bodyshot",
   reactionMs: 250,
   opponentReactionMs: 260,
   pointsEach: 1
@@ -66,17 +73,24 @@ let s4 = createRoundLoop(["a", "b"], 3);
 s4 = applyRoundOutcome(s4, {
   kind: "win",
   winnerId: "a",
+  winnerZone: "bodyshot",
+  winnerPoints: 1,
+  loserPoints: 0,
   reactionMs: 200,
   opponentReactionMs: 300
 });
 s4 = applyRoundOutcome(s4, {
   kind: "win",
   winnerId: "b",
+  winnerZone: "bodyshot",
+  winnerPoints: 1,
+  loserPoints: 0,
   reactionMs: 200,
   opponentReactionMs: 300
 });
 s4 = applyRoundOutcome(s4, {
   kind: "tie",
+  zone: "bodyshot",
   reactionMs: 250,
   opponentReactionMs: 250,
   pointsEach: 1
@@ -90,6 +104,9 @@ assertEqual(
 s4 = applyRoundOutcome(s4, {
   kind: "win",
   winnerId: "a",
+  winnerZone: "bodyshot",
+  winnerPoints: 1,
+  loserPoints: 0,
   reactionMs: 200,
   opponentReactionMs: 300
 });

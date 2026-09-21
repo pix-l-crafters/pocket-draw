@@ -14,11 +14,20 @@ export function mockRoundOutcome(
   if (roll < 0.2) {
     return {
       kind: "tie",
+      zone: "bodyshot",
       reactionMs: 250,
       opponentReactionMs: 310,
       pointsEach: 1
     };
   }
   const winnerId = roll < 0.6 ? playerAId : playerBId;
-  return { kind: "win", winnerId, reactionMs: 220, opponentReactionMs: 280 };
+  return {
+    kind: "win",
+    winnerId,
+    winnerZone: "bodyshot",
+    winnerPoints: 1,
+    loserPoints: 0,
+    reactionMs: 220,
+    opponentReactionMs: 280
+  };
 }
