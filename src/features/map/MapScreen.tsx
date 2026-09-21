@@ -18,7 +18,10 @@ import { usePlayerStats } from "./hooks/usePlayerStats";
 import { usePresencePublisher } from "./hooks/usePresencePublisher";
 import { useSharingPreference } from "./hooks/useSharingPreference";
 import type { Coordinates, CurrentUser } from "./types/map.types";
-import { pinColorForUid } from "./utils/map.utils";
+import {
+  pinColorForUid,
+  spreadOverlappingPlayerMarkers
+} from "./utils/map.utils";
 import { colors } from "../../theme/tokens";
 
 const INITIAL_REGION: Region = {
@@ -60,6 +63,7 @@ export function MapScreen({ currentUser }: MapScreenProps) {
   const nearbyPlayersState = useNearbyPlayers(currentUser?.uid ?? null);
   const nearbyPlayers =
     nearbyPlayersState.status === "ready" ? nearbyPlayersState.players : [];
+  const displayedPlayers = spreadOverlappingPlayerMarkers(nearbyPlayers);
   const [selectedPlayerUid, setSelectedPlayerUid] = useState<string | null>(
     null
   );
@@ -117,7 +121,7 @@ export function MapScreen({ currentUser }: MapScreenProps) {
         rotateEnabled={false}
         style={StyleSheet.absoluteFillObject}
       >
-        {nearbyPlayers.map((player) => (
+        {displayedPlayers.map((player) => (
           <PlayerMarker
             key={player.uid}
             coordinate={player.coordinate}
