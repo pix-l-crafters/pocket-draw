@@ -399,6 +399,11 @@ checksum = "sha256:791aa263079aa7894e24d4e2f8e978aa6214e9dd9dbf04f79ae5f3565758f
 url = "https://github.com/orhun/git-cliff/releases/download/v2.14.1/git-cliff-2.14.1-x86_64-pc-windows-msvc.zip"
 url_api = "https://api.github.com/repos/orhun/git-cliff/releases/assets/539702434"
 
+[[tools."github:MRDGH2821/Sort-Markdown-Tables"]]
+version = "0.5.0"
+backend = "github:MRDGH2821/Sort-Markdown-Tables"
+specifiers = ["latest"]
+
 [[tools."github:infragate/capa"]]
 version = "2.2.2"
 backend = "github:infragate/capa"
@@ -602,6 +607,16 @@ url = "https://registry.npmjs.org/npm/-/npm-12.0.2.tgz"
 version = "4.0.0"
 aube = { path = ".mise/locks/npm-sort-package-json/4.0.0", digest = "sha256:2de77ad8c040659272b1d6208b2f675fb5216614eb08c1e6b481d7fd9576eb29" }
 backend = "npm:sort-package-json"
+specifiers = ["latest"]
+
+[[tools."pipx:lorenzwalthert/gitignore-tidy"]]
+version = "latest"
+backend = "pipx:lorenzwalthert/gitignore-tidy"
+specifiers = ["latest"]
+
+[[tools."pipx:toml-sort"]]
+version = "0.25.0~uv~ea08705bf41da099"
+backend = "pipx:toml-sort"
 specifiers = ["latest"]
 
 [[tools."pipx:yamlfix"]]
