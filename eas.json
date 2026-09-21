@@ -8,7 +8,8 @@
       "distribution": "internal"
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "node": "24.21.0"
     }
   },
   "cli": {

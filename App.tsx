@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { onAuthStateChanged, User } from "firebase/auth";
+import type { User } from "firebase/auth";
 import {
   Barlow_400Regular,
   useFonts as useBarlowFonts
@@ -17,14 +17,13 @@ import {
 import { PaperProvider, SegmentedButtons } from "react-native-paper";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
-import { auth } from "./src/lib/firebase";
-import { logoutUser } from "./src/lib/auth";
-import { BleScreen } from "./src/features/ble/BleScreen";
+import { useAuthUser } from "./src/lib/useAuthUser";
 import { ChallengeScreen } from "./src/features/challenge/ChallengeScreen";
 import { ConnectingScreen } from "./src/features/challenge/ConnectingScreen";
 import type { ChallengeHandoff } from "./src/contracts/challengeHandoff";
 import { DuelScreen } from "./src/features/duel/DuelScreen";
 import { MapScreen } from "./src/features/map/MapScreen";
+import { ProfileScreen } from "./src/features/profile/ProfileScreen";
 import type { CurrentUser } from "./src/features/map/types/map.types";
 import LoginScreen from "./src/screens/LoginScreen";
 import RegisterScreen from "./src/screens/RegisterScreen";
@@ -34,18 +33,14 @@ import type { ConfirmedOpponent } from "./src/features/challenge/QrScannerScreen
 import { appTheme } from "./src/theme/appTheme";
 import { colors } from "./src/theme/tokens";
 
-function toCurrentUser(user: User): CurrentUser {
-  return {
-    uid: user.uid,
-    displayName: user.displayName ?? user.email ?? "Player"
-  };
+function toCurrentUser(user: User, displayName: string): CurrentUser {
+  return { uid: user.uid, displayName };
 }
 
-type AppTab = "map" | "ble" | "challenge" | "duel";
+type AppTab = "map" | "challenge" | "duel" | "profile";
 
 export default function App() {
-  const [user, setUser] = useState<User | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const { displayName, loading: authLoading, user } = useAuthUser();
   const [showRegister, setShowRegister] = useState(false);
   const [activeTab, setActiveTab] = useState<AppTab>("map");
   const [pendingHandoff, setPendingHandoff] = useState<ChallengeHandoff | null>(
@@ -60,15 +55,6 @@ export default function App() {
   const [ibmPlexMonoLoaded] = useIBMPlexMonoFonts({ IBMPlexMono_400Regular });
   const fontsLoaded =
     barlowLoaded && barlowCondensedLoaded && ibmPlexMonoLoaded;
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setAuthLoading(false);
-    });
-
-    return unsubscribe;
-  }, []);
 
   const loading = authLoading || !fontsLoaded;
 
@@ -123,28 +109,26 @@ export default function App() {
               <SegmentedButtons
                 buttons={[
                   { value: "map", label: "Map" },
-                  { value: "ble", label: "BLE Scanner" },
                   { value: "challenge", label: "Challenge" },
-                  { value: "duel", label: "Duel" }
+                  { value: "duel", label: "Duel" },
+                  { value: "profile", label: "Profile" }
                 ]}
                 onValueChange={(val) => setActiveTab(val as AppTab)}
                 style={styles.switcher}
                 value={activeTab}
               />
-              <TouchableOpacity
-                onPress={logoutUser}
-                style={styles.logoutButton}
-              >
-                <Text style={styles.logoutButtonText}>Logout</Text>
-              </TouchableOpacity>
             </View>
             <View style={styles.screenContainer}>
               {activeTab === "map" ? (
-                <MapScreen currentUser={toCurrentUser(user)} />
-              ) : activeTab === "ble" ? (
-                <BleScreen />
+                <MapScreen currentUser={toCurrentUser(user, displayName)} />
               ) : activeTab === "duel" ? (
                 <DuelScreen />
+              ) : activeTab === "profile" ? (
+                <ProfileScreen
+                  displayName={displayName}
+                  email={user.email}
+                  uid={user.uid}
+                />
               ) : pendingHandoff ? (
                 <ConnectingScreen
                   handoff={pendingHandoff}
@@ -161,7 +145,7 @@ export default function App() {
                 />
               ) : (
                 <ChallengeScreen
-                  currentUser={toCurrentUser(user)}
+                  currentUser={toCurrentUser(user, displayName)}
                   onOpponentConfirmed={(opponent) => {
                     setPendingOpponent(opponent);
                   }}
@@ -236,15 +220,6 @@ const styles = StyleSheet.create({
   },
   switcher: {
     flex: 1
-  },
-  logoutButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8
-  },
-  logoutButtonText: {
-    color: colors.accent,
-    fontSize: 14,
-    fontWeight: "600"
   },
   screenContainer: {
     flex: 1

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
-import { mockPlayerStats } from "../../../contracts/mocks/mockPlayerStats";
-import type { PlayerStats } from "../../../contracts/playerStats";
+import { mockPlayerStats } from "../contracts/mocks/mockPlayerStats";
+import type { PlayerStats } from "../contracts/playerStats";
 
 type PlayerIdentity = {
   uid: string;
@@ -9,7 +9,8 @@ type PlayerIdentity = {
 };
 
 /**
- * Wins / losses / ELO for a player. Currently backed by `mockPlayerStats`;
+ * Wins / losses / ELO for a player, shared by the map's opponent card and the
+ * profile screen. Currently backed by `mockPlayerStats`;
  * swap for the real backend lookup once Mihir's stats work (5.1/5.4/5.5) lands
  * and delete the mock import.
  */
