@@ -29,3 +29,15 @@ export type MatchResultsRepository = {
 export type PlayerStatsRepository = {
   getPlayerStats(uid: string, displayName: string): Promise<PlayerStats>;
 };
+
+/** A player's public profile, as stored in `users/{uid}`. Never holds PII. */
+export type UserProfile = {
+  uid: string;
+  displayName: string;
+};
+
+export type UserProfileRepository = {
+  getUserProfile(uid: string): Promise<UserProfile | null>;
+  /** Writes `displayName` through to Firestore; a no-op when unchanged. */
+  syncUserProfile(uid: string, displayName: string): Promise<void>;
+};
