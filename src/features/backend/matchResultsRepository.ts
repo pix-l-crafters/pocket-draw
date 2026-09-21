@@ -19,16 +19,33 @@ function validateMatchResult(result: MatchResult, uploadedBy: string) {
     throw new Error("participantIds must be two distinct non-empty uids.");
   }
 
-  if (![3, 5, 7].includes(result.roundCount)) {
-    throw new Error("roundCount must be 3, 5, or 7.");
+  if (result.roundCount !== 3) {
+    throw new Error("roundCount must be 3.");
   }
 
-  if (!result.rounds.length || result.rounds.length > result.roundCount) {
-    throw new Error("rounds must be non-empty and not exceed roundCount.");
+  if (result.rounds.length < 3 || result.rounds.length > 4) {
+    throw new Error(
+      "rounds must contain 3 regular rounds and at most 1 tiebreaker."
+    );
   }
 
-  if (!result.participantIds.includes(result.winnerId)) {
-    throw new Error("winnerId must be one of the participants.");
+  const resultKeys = Object.keys(result.results);
+  const hasExactlyBothPlayers =
+    resultKeys.length === 2 &&
+    result.participantIds.every((participantId) =>
+      resultKeys.includes(participantId)
+    );
+  const playerAResult = result.results[playerA];
+  const playerBResult = result.results[playerB];
+  const hasValidOutcome =
+    (playerAResult === "win" && playerBResult === "lose") ||
+    (playerAResult === "lose" && playerBResult === "win") ||
+    (playerAResult === "draw" && playerBResult === "draw");
+
+  if (!hasExactlyBothPlayers || !hasValidOutcome) {
+    throw new Error(
+      "results must contain a valid outcome for both participants."
+    );
   }
 
   if (!result.completedAt.trim()) {
@@ -61,7 +78,7 @@ export const matchResultsRepository: MatchResultsRepository = {
       participantIds: result.participantIds,
       roundCount: result.roundCount,
       rounds: result.rounds,
-      winnerId: result.winnerId,
+      results: result.results,
       completedAt: result.completedAt,
       uploadedBy,
       createdAt: serverTimestamp()

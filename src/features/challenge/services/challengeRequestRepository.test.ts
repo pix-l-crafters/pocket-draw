@@ -37,7 +37,7 @@ describe("challengeRequestRepository", () => {
       challengerId: "challenger-123",
       discoveryToken: "discovery-token-123",
       matchId: "match-123",
-      roundCount: 5,
+      roundCount: 3,
       scannedPlayerId: "opponent-456",
       scannedPlayerName: "Opponent"
     });
@@ -46,7 +46,7 @@ describe("challengeRequestRepository", () => {
       challengerId: "challenger-123",
       discoveryToken: "discovery-token-123",
       matchId: "match-123",
-      roundCount: 5,
+      roundCount: 3,
       scannedPlayerId: "opponent-456",
       scannedPlayerName: "Opponent",
       status: "pending",

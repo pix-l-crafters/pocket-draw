@@ -12,12 +12,21 @@ function isMatchResultDocument(data: unknown): data is MatchResult {
   }
 
   const record = data as Record<string, unknown>;
+  const results = record.results;
 
   return (
     typeof record.matchId === "string" &&
     Array.isArray(record.participantIds) &&
     record.participantIds.length === 2 &&
-    typeof record.winnerId === "string"
+    typeof record.completedAt === "string" &&
+    !!results &&
+    typeof results === "object" &&
+    record.participantIds.every((participantId) => {
+      const result = (results as Record<string, unknown>)[
+        String(participantId)
+      ];
+      return result === "win" || result === "lose" || result === "draw";
+    })
   );
 }
 
@@ -47,16 +56,21 @@ export const playerStatsRepository: PlayerStatsRepository = {
       .sort((left, right) => left.completedAt.localeCompare(right.completedAt));
 
     for (const data of relevantResults) {
-      if (data.winnerId === uid) {
+      if (data.results[uid] === "win") {
         wins += 1;
-      } else if (data.participantIds.includes(uid)) {
+      } else if (data.results[uid] === "lose") {
         losses += 1;
       }
 
       const [playerA, playerB] = data.participantIds;
       const ratingA = ratings.get(playerA) ?? DEFAULT_ELO_RATING;
       const ratingB = ratings.get(playerB) ?? DEFAULT_ELO_RATING;
-      const outcome = data.winnerId === playerA ? "win" : "loss";
+      const outcome =
+        data.results[playerA] === "win"
+          ? "win"
+          : data.results[playerA] === "lose"
+            ? "loss"
+            : "draw";
       const [nextA, nextB] = updateEloPair(
         ratingA,
         ratingB,

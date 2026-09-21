@@ -44,18 +44,25 @@ export function MatchSummaryScreen({
   playerStats
 }: MatchSummaryScreenProps) {
   const score = scoreFromRounds(matchResult.participantIds, matchResult.rounds);
-  const winnerName = playerNames[matchResult.winnerId] ?? "Player";
+  const winnerId = matchResult.participantIds.find(
+    (id) => matchResult.results[id] === "win"
+  );
+  const title = winnerId
+    ? `${playerNames[winnerId] ?? "Player"} wins`
+    : "Match drawn";
 
   return (
     <View style={styles.container}>
-      <ScreenHeader kicker="Match complete" title={`${winnerName} wins`} />
+      <ScreenHeader kicker="Match complete" title={title} />
 
       <View style={styles.statsRow}>
         {matchResult.participantIds.map((id) => (
           <StatTile
             key={id}
             label={playerNames[id] ?? "Player"}
-            tint={id === matchResult.winnerId ? colors.accent : colors.text}
+            tint={
+              matchResult.results[id] !== "lose" ? colors.accent : colors.text
+            }
             value={String(score[id] ?? 0)}
           />
         ))}
