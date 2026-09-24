@@ -13,11 +13,15 @@ export class FireSignalCoordinator {
   constructor(
     private readonly channel: DuelChannel,
     private readonly role: DuelRole,
-    private readonly now: () => number = Date.now
+    private readonly now: () => number = Date.now,
+    private readonly getClockOffsetMs: () => number = () => 0
   ) {
     this.unsubscribeFromChannel = channel.onMessage((message) => {
       if (message.type === "fire" && this.role === "guest") {
-        this.acceptFireSignal(message);
+        this.acceptFireSignal({
+          ...message,
+          atMs: message.atMs - this.getClockOffsetMs()
+        });
       }
     });
   }
