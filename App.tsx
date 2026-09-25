@@ -27,9 +27,7 @@ import { ProfileScreen } from "./src/features/profile/ProfileScreen";
 import type { CurrentUser } from "./src/features/map/types/map.types";
 import LoginScreen from "./src/screens/LoginScreen";
 import RegisterScreen from "./src/screens/RegisterScreen";
-import { RoundCountSelector } from "./src/features/challenge/RoundCountSelector";
 import { challengeRequestRepository } from "./src/features/challenge/services/challengeRequestRepository";
-import type { ConfirmedOpponent } from "./src/features/challenge/QrScannerScreen";
 import { appTheme } from "./src/theme/appTheme";
 import { colors } from "./src/theme/tokens";
 
@@ -46,8 +44,6 @@ export default function App() {
   const [pendingHandoff, setPendingHandoff] = useState<ChallengeHandoff | null>(
     null
   );
-  const [pendingOpponent, setPendingOpponent] =
-    useState<ConfirmedOpponent | null>(null);
   const [barlowLoaded] = useBarlowFonts({ Barlow_400Regular });
   const [barlowCondensedLoaded] = useBarlowCondensedFonts({
     BarlowCondensed_700Bold
@@ -147,31 +143,23 @@ export default function App() {
                 <ChallengeScreen
                   currentUser={toCurrentUser(user, displayName)}
                   onOpponentConfirmed={(opponent) => {
-                    setPendingOpponent(opponent);
+                    const handoff: ChallengeHandoff = {
+                      ...opponent,
+                      roundCount: 3
+                    };
+                    setPendingHandoff(handoff);
+                    void challengeRequestRepository
+                      .sendChallenge(handoff)
+                      .catch((error) =>
+                        console.error(
+                          "Failed to send challenge request:",
+                          error
+                        )
+                      );
                   }}
                 />
               )}
             </View>
-            {pendingOpponent ? (
-              <RoundCountSelector
-                challengerId={pendingOpponent.challengerId}
-                discoveryToken={pendingOpponent.discoveryToken}
-                matchId={pendingOpponent.matchId}
-                onCancel={() => setPendingOpponent(null)}
-                onRoundCountSelected={(handoff) => {
-                  setPendingOpponent(null);
-                  setPendingHandoff(handoff);
-                  void challengeRequestRepository
-                    .sendChallenge(handoff)
-                    .catch((error) =>
-                      console.error("Failed to send challenge request:", error)
-                    );
-                }}
-                scannedPlayerId={pendingOpponent.scannedPlayerId}
-                scannedPlayerName={pendingOpponent.scannedPlayerName}
-                visible
-              />
-            ) : null}
           </SafeAreaView>
         )}
       </PaperProvider>
