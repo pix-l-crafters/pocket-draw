@@ -23,7 +23,6 @@ export {
   submitMatchResult
 } from "./matchResultsService";
 export { playerStatsRepository } from "./playerStatsRepository";
-export { upsertUserProfile } from "./userProfileRepository";
 export { userProfileRepository } from "./userProfileRepository";
 export {
   DEFAULT_ELO_RATING,

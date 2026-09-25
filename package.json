@@ -13,7 +13,9 @@
     "web": "expo start --web"
   },
   "jest": {
-    "modulePathIgnorePatterns": ["<rootDir>/apm_modules/"],
+    "modulePathIgnorePatterns": [
+      "<rootDir>/apm_modules/"
+    ],
     "preset": "jest-expo"
   },
   "overrides": {
