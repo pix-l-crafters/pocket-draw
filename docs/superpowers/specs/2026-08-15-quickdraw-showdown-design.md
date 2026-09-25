@@ -1,7 +1,7 @@
 # Quickdraw Showdown — Semester Feasibility and Design
 
-**Date:** 2026-08-15  
-**Sources:** `quickdraw-showdown/quickdraw-showdown-game-idea.md`, [`project-constraints.png`](../../human-plans/project-constraints.png), brainstorming session  
+**Date:** 2026-08-15
+**Sources:** `quickdraw-showdown/quickdraw-showdown-game-idea.md`, [`project-constraints.png`](../../human-plans/project-constraints.png), brainstorming session
 **Status:** Draft for team review
 
 ---

@@ -4,61 +4,73 @@ import "package://github.com/jdx/hk/releases/download/v2.0.1/hk@2.0.1#/Builtins.
 
 local linters = new Mapping<String, Step> {
   ["betterleaks"] = Builtins.betterleaks
+  ["check-merge-conflict"] = Builtins.check_merge_conflict
   ["cspell"] {
     check = "cspell --no-must-find-files --no-progress --no-summary --gitignore --files {{files}}"
     batch = false
   }
+  ["detect-private-key"] = Builtins.detect_private_key
   ["gitignore-tidy"] {
+    check = "gitignore-tidy {{files}}"
+    fix = "gitignore-tidy {{files}}"
     glob = List("**/.*ignore", ".*ignore")
-    check = "uvx git+https://github.com/lorenzwalthert/gitignore-tidy {{files}}"
-    fix = "uvx git+https://github.com/lorenzwalthert/gitignore-tidy {{files}}"
   }
   ["keep-sorted"] {
     check = "keep-sorted --mode lint {{files}}"
     fix = "keep-sorted --mode fix {{files}}"
   }
-  ["ls-lint"] {
-    check = "ls-lint ."
-    batch = false
-  }
+  ["ls-lint"] = Builtins.ls_lint
   ["mise"] = Builtins.mise
+  ["newlines"] = Builtins.newlines
+  ["pkl"] = Builtins.pkl
   ["pkl-format"] = Builtins.pkl_format
-  ["prettier"] = Builtins.prettier
+  ["prettier"] = (Builtins.prettier) {
+    // package.json has its own canonical formatter below; sort-package-json 4
+    // and Prettier 3 disagree about compact arrays.
+    exclude = List("package.json", "**/package.json")
+  }
+  ["ruff"] = (Builtins.ruff) { depends = List("ruff-format") }
   ["ruff-format"] = Builtins.ruff_format
-  ["ruff"] = (Builtins.ruff) {
-    depends = List("ruff-format")
-  }
+  ["rumdl"] = (Builtins.rumdl) { depends = List("rumdl-format") }
   ["rumdl-format"] = Builtins.rumdl_format
-  ["rumdl"] = (Builtins.rumdl) {
-    depends = List("rumdl-format")
-  }
-  ["ryl"] = (Builtins.ryl) {
-    depends = List("yamlfix")
-  }
+  ["ryl"] = (Builtins.ryl) { depends = List("yamlfix") }
+  ["ryl_markdown"] = Builtins.ryl_markdown
   ["sort-package-json"] = Builtins.sort_package_json
+  ["sort-markdown-tables"] {
+    check = "smt --check {{files}}"
+    fix = "smt --in-place {{files}}"
+    types = List("markdown")
+  }
   ["tombi"] = Builtins.tombi
   ["tombi-format"] = Builtins.tombi_format
+  ["toml-sort"] {
+    fix = "toml-sort --in-place --sort-table-keys --sort-inline-tables {{files}}"
+    check = "toml-sort --check {{files}}"
+    types = List("toml")
+  }
+  ["trailing-whitespace"] = Builtins.trailing_whitespace
   ["typos"] = Builtins.typos
   ["typstyle"] {
-    glob = List("*.typ", "**/*.typ")
     check = "typstyle -c {{files}}"
     fix = "typstyle -i {{files}}"
+    glob = List("*.typ", "**/*.typ")
   }
   ["yamlfix"] {
-    types = List("yaml")
     check = "yamlfix --check {{files}}"
-    fix = "yamlfix {{files}}"
     depends = List("prettier")
+    fix = "yamlfix {{files}}"
+    types = List("yaml")
   }
 }
 steps = linters
 hooks {
   ["commit-msg"] {
     steps {
+      ["check-conventional-commit"] = Builtins.check_conventional_commit
       ["conventional-commit"] = Builtins.cocogitto_commit_msg
       ["cspell"] {
         check =
-          "cspell --no-must-find-files --no-progress --no-summary --gitignore --files {{files}}"
+          "cspell --no-must-find-files --no-progress --no-summary --gitignore --files {{commit_msg_file}}"
       }
       ["typos"] = Builtins.typos
     }

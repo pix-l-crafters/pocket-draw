@@ -14,7 +14,6 @@ import { RecenterButton } from "./components/RecenterButton";
 import { SharingToggle } from "./components/SharingToggle";
 import { useForegroundLocation } from "./hooks/useForegroundLocation";
 import { useNearbyPlayers } from "./hooks/useNearbyPlayers";
-import { usePlayerStats } from "./hooks/usePlayerStats";
 import { usePresencePublisher } from "./hooks/usePresencePublisher";
 import { useSharingPreference } from "./hooks/useSharingPreference";
 import type { Coordinates, CurrentUser } from "./types/map.types";
@@ -22,6 +21,7 @@ import {
   pinColorForUid,
   spreadOverlappingPlayerMarkers
 } from "./utils/map.utils";
+import { usePlayerStats } from "../../hooks/usePlayerStats";
 import { colors } from "../../theme/tokens";
 
 const INITIAL_REGION: Region = {

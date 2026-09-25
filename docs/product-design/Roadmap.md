@@ -123,7 +123,9 @@ Items 3–6: see the full [fire mechanic & scoring spec](../superpowers/specs/20
 
 10. Full-screen game-instructions step, shown right after challenge acceptance and before calibration (`UI.md`: "the Challenge tab, when the challenge is accepted, launches the game instructions screen in full screen... From that screen, the gameplay starts.").
     Nothing in the current challenge→duel pipeline shows this today — `DrawCalibrationScreen.tsx`'s copy is calibration-specific, not game rules.
-11. Leaderboard data layer (`leaderboardRepository`)
+11. Leaderboard data layer (`leaderboardRepository`).
+    Read player names from `users/{uid}` (`userProfileRepository`), **not** from `presence` — a presence document is deleted whenever a player stops sharing their location, so it cannot answer uid→name for the offline players a leaderboard has to list.
+    `matchResults` stores only uids
 12. Leaderboard screen with ranking-type selector (win/loss ratio, wins, losses, draws, ELO, avg reaction time)
 13. Profile & Settings screen (own stats, username edit via Firebase Auth `updateProfile`, logout moved here)
 14. Tab IA rewire: `Map / Challenge / Leaderboards / Profile`, drop the BLE debug tab from shipped UI

@@ -18,7 +18,7 @@ check = ["hk check --all", "cog check"]
 prepare = ["npm install"]
 
 [tasks.fmt]
-run = ["hk fix --all", { task = "treefmt" }]
+run = [{ task = "treefmt" }, "hk fix --all"]
 
 [tasks.treefmt]
 run = "treefmt"
@@ -36,6 +36,7 @@ cspell = "latest"
 fnox = "latest"
 gh = { postinstall = "gh auth login", version = "latest" }
 git-cliff = "latest"
+"github:MRDGH2821/Sort-Markdown-Tables" = "latest"
 "github:infragate/capa" = { postinstall = "capa install -y", version = "2.2.2" }
 hk = "2.0.1"
 java = "21"
@@ -43,6 +44,8 @@ ls-lint = "latest"
 node = "24"
 npm = { postinstall = "npm install", version = "latest" }
 "npm:sort-package-json" = "latest"
+"pipx:lorenzwalthert/gitignore-tidy" = "latest"
+"pipx:toml-sort" = "latest"
 "pipx:yamlfix" = "latest"
 pkl = "latest"
 prettier = "latest"
@@ -51,7 +54,6 @@ rumdl = "latest"
 tombi = "latest"
 typos = "latest"
 typstyle = "latest"
-uv = "latest"
 yq = "latest"
 
 [[watch_files]]
