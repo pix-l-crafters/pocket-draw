@@ -1,4 +1,5 @@
 import type { DuelChannel } from "../../contracts/duelChannel";
+import type { RoundLoopState } from "./roundLoop";
 
 export const MAX_RECONNECT_ATTEMPTS = 2;
 export const RECONNECT_TIMEOUT_MS = 3_000;
@@ -6,11 +7,19 @@ export const RECONNECT_TIMEOUT_MS = 3_000;
 export interface DisconnectContext {
   phase: "round" | "match";
   roundNumber?: number;
+  /** In-progress score/round history, carried through so a caller can resume
+   * the match instead of restarting it once the channel reconnects. */
+  matchState?: RoundLoopState;
 }
 
 export type DisconnectRecoveryState =
-  | { status: "retrying"; attempt: number; maxAttempts: number }
-  | { status: "recovered"; attempts: number }
+  | {
+      status: "retrying";
+      attempt: number;
+      maxAttempts: number;
+      context: DisconnectContext;
+    }
+  | { status: "recovered"; attempts: number; context: DisconnectContext }
   | { status: "aborted"; attempts: number; context: DisconnectContext };
 
 export type ReconnectAttempt = (signal: AbortSignal) => Promise<boolean>;
@@ -59,18 +68,23 @@ export class DuelDisconnectRecovery {
     context: DisconnectContext
   ): Promise<DisconnectRecoveryState> {
     if (this.channel.isConnected()) {
-      return this.publish({ status: "recovered", attempts: 0 });
+      return this.publish({ status: "recovered", attempts: 0, context });
     }
 
     for (let attempt = 1; attempt <= MAX_RECONNECT_ATTEMPTS; attempt += 1) {
       this.publish({
         status: "retrying",
         attempt,
-        maxAttempts: MAX_RECONNECT_ATTEMPTS
+        maxAttempts: MAX_RECONNECT_ATTEMPTS,
+        context
       });
 
       if ((await this.runAttempt()) && this.channel.isConnected()) {
-        return this.publish({ status: "recovered", attempts: attempt });
+        return this.publish({
+          status: "recovered",
+          attempts: attempt,
+          context
+        });
       }
 
       if (this.disposed) {

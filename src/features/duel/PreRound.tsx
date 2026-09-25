@@ -1,13 +1,15 @@
 import { Accelerometer } from "expo-sensors";
-import { useAudioPlayer } from "expo-audio";
+import { setAudioModeAsync, useAudioPlayer } from "expo-audio";
 import * as Haptics from "expo-haptics";
-import { useEffect, useMemo, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
-import { Button, ProgressBar } from "react-native-paper";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Platform, StyleSheet, Text, View } from "react-native";
+import { Button, IconButton, ProgressBar } from "react-native-paper";
 
+import { CutCornerButton } from "../../components/CutCornerButton";
 import type { DuelChannel, DuelMessage } from "../../contracts/duelChannel";
 import { colors, fonts } from "../../theme/tokens";
 import { COUNTDOWN_AUDIO_SOURCE } from "./countdownAudio";
+import { ReactionTimer } from "./reactionTimer";
 
 export const SEPARATION_RSSI_THRESHOLD = -70;
 const COUNTDOWN_VALUES = [3, 2, 1] as const;
@@ -39,6 +41,9 @@ export function PreRound({ channel, readRssi }: PreRoundProps) {
   const [countdown, setCountdown] = useState<number | null>(null);
   const [buzzed, setBuzzed] = useState(false);
   const [faceDown, setFaceDown] = useState(false);
+  const [reactionMs, setReactionMs] = useState<number | null>(null);
+  const [audioMuted, setAudioMuted] = useState(false);
+  const reactionTimerRef = useRef(new ReactionTimer());
 
   useEffect(() => {
     let mounted = true;
@@ -50,6 +55,12 @@ export function PreRound({ channel, readRssi }: PreRoundProps) {
       mounted = false;
       subscription.remove();
     };
+  }, []);
+
+  useEffect(() => {
+    // The buzz cue must be audible even with the iOS silent switch on —
+    // haptic strength alone varies too much across devices to be fair timing.
+    void setAudioModeAsync({ playsInSilentMode: true });
   }, []);
 
   useEffect(() => {
@@ -66,12 +77,22 @@ export function PreRound({ channel, readRssi }: PreRoundProps) {
         void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         setCountdown(message.value);
       }
-      if (message.type === "ready") setPhase("ready");
+      if (message.type === "ready") {
+        reactionTimerRef.current.start(Date.now());
+        setPhase("ready");
+      }
     });
   }, [channel]);
 
+  const handleTapFire = () => {
+    const capture = reactionTimerRef.current.captureRaise(Date.now());
+    if (!capture) return;
+    setReactionMs(capture.reactionMs);
+    channel.send({ type: "raised", atMs: capture.raisedAtMs });
+  };
+
   const playCountdownAudio = () => {
-    if (!COUNTDOWN_AUDIO_SOURCE) return;
+    if (!COUNTDOWN_AUDIO_SOURCE || audioMuted) return;
     countdownAudio.seekTo(0);
     countdownAudio.play();
   };
@@ -127,6 +148,15 @@ export function PreRound({ channel, readRssi }: PreRoundProps) {
 
   return (
     <View style={styles.container}>
+      <IconButton
+        accessibilityLabel={
+          audioMuted ? "Turn buzz cue sound on" : "Mute buzz cue"
+        }
+        icon={audioMuted ? "volume-off" : "volume-high"}
+        iconColor={colors.textMuted60}
+        onPress={() => setAudioMuted((muted) => !muted)}
+        style={styles.muteButton}
+      />
       <Text style={styles.kicker}>PRE-ROUND RITUAL</Text>
       <Text style={styles.heading}>{status}</Text>
       <Text style={styles.detail}>
@@ -136,7 +166,10 @@ export function PreRound({ channel, readRssi }: PreRoundProps) {
           "Both players must place their phone screen-down."}
         {phase === "countdown" &&
           (countdown ? `${countdown}` : "Listen for the buzz")}
-        {phase === "ready" && "Raise only when the signal tells you to."}
+        {phase === "ready" &&
+          (reactionMs === null
+            ? "Raise only when the signal tells you to."
+            : `Reaction: ${reactionMs}ms`)}
       </Text>
       {phase === "countdown" && (
         <ProgressBar
@@ -153,6 +186,11 @@ export function PreRound({ channel, readRssi }: PreRoundProps) {
           CONFIRM
         </Button>
       )}
+      {/* Android draw trigger (accelerometer raise, ticket #37) isn't wired
+          in yet, so this on-screen control is the only fire trigger for now. */}
+      {phase === "ready" && Platform.OS === "ios" && reactionMs === null && (
+        <CutCornerButton label="Fire" onPress={handleTapFire} />
+      )}
     </View>
   );
 }
@@ -164,6 +202,11 @@ const styles = StyleSheet.create({
     gap: 18,
     justifyContent: "center",
     padding: 28
+  },
+  muteButton: {
+    position: "absolute",
+    right: 8,
+    top: 8
   },
   kicker: {
     color: colors.success,

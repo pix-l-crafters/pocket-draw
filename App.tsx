@@ -23,6 +23,7 @@ import { ConnectingScreen } from "./src/features/challenge/ConnectingScreen";
 import type { ChallengeHandoff } from "./src/contracts/challengeHandoff";
 import type { DuelChannel } from "./src/contracts/duelChannel";
 import { DuelScreen } from "./src/features/duel/DuelScreen";
+import { GameInstructionsScreen } from "./src/features/duel/GameInstructionsScreen";
 import { MapScreen } from "./src/features/map/MapScreen";
 import { ProfileScreen } from "./src/features/profile/ProfileScreen";
 import type { CurrentUser } from "./src/features/map/types/map.types";
@@ -77,9 +78,11 @@ export default function App() {
     null
   );
   const [activeDuel, setActiveDuel] = useState<ActiveDuel | null>(null);
+  const [instructionsSeen, setInstructionsSeen] = useState(false);
 
   const exitDuel = () => {
     setActiveDuel(null);
+    setInstructionsSeen(false);
     setPendingHandoff(null);
     setActiveTab("map");
   };
@@ -142,7 +145,13 @@ export default function App() {
           <SafeAreaView edges={["top", "bottom"]} style={styles.container}>
             {activeDuel ? (
               // 只有在与另一位玩家的对局中才显示 Duel 界面，不作为常驻标签。
-              <DuelScreen channel={activeDuel.channel} onExit={exitDuel} />
+              !instructionsSeen ? (
+                <GameInstructionsScreen
+                  onContinue={() => setInstructionsSeen(true)}
+                />
+              ) : (
+                <DuelScreen channel={activeDuel.channel} onExit={exitDuel} />
+              )
             ) : (
               <>
                 <View style={styles.screenContainer}>
