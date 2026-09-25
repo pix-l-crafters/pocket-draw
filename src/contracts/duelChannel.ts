@@ -9,7 +9,9 @@ export type DuelMessage =
   | { type: "countdown"; value: 3 | 2 | 1 }
   | { type: "fire"; atMs: number }
   | { type: "raised"; atMs: number }
-  | { type: "falseStart"; atMs: number };
+  | { type: "falseStart"; atMs: number }
+  | { type: "clockPing"; t0: number }
+  | { type: "clockPong"; t0: number; t1: number; t2: number };
 
 export interface DuelChannel {
   send(message: DuelMessage): void;
