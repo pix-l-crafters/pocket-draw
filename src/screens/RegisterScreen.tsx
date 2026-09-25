@@ -2,18 +2,27 @@ import { useState } from "react";
 import { Alert, StyleSheet, TextInput, View } from "react-native";
 
 import { registerUser } from "../lib/auth";
+import { USERNAME_MAX_LENGTH, validateUsername } from "../lib/username";
 import { CutCornerButton } from "../components/CutCornerButton";
 import { ScreenHeader } from "../components/ScreenHeader";
 import { colors, fonts } from "../theme/tokens";
 
 export default function RegisterScreen() {
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const handleRegister = async () => {
-    if (!email || !password || !confirmPassword) {
+    if (!username || !email || !password || !confirmPassword) {
       Alert.alert("Missing information", "Please complete all fields.");
+      return;
+    }
+
+    const validation = validateUsername(username);
+
+    if (!validation.ok) {
+      Alert.alert("Invalid username", validation.message);
       return;
     }
 
@@ -23,7 +32,7 @@ export default function RegisterScreen() {
     }
 
     try {
-      await registerUser(email.trim(), password);
+      await registerUser(email.trim(), password, validation.value);
     } catch {
       Alert.alert("Registration failed", "Please check your details.");
     }
@@ -35,6 +44,16 @@ export default function RegisterScreen() {
         kicker="Pocket Draw"
         subtitle="Join Pocket Draw and challenge nearby players"
         title="Create Account"
+      />
+
+      <TextInput
+        autoCapitalize="none"
+        maxLength={USERNAME_MAX_LENGTH}
+        onChangeText={setUsername}
+        placeholder="Username"
+        placeholderTextColor={colors.textMuted45}
+        style={styles.input}
+        value={username}
       />
 
       <TextInput

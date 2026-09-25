@@ -1,9 +1,9 @@
 # Quickdraw Showdown — Implementation Design
 
-**Date:** 2026-08-21  
-**Product design:** [`2026-08-15-quickdraw-showdown-design.md`](./2026-08-15-quickdraw-showdown-design.md)  
-**Constraints:** [`../../human-plans/project-constraints.png`](../../human-plans/project-constraints.png)  
-**Status:** Approved in brainstorming; ready for implementation plan  
+**Date:** 2026-08-21
+**Product design:** [`2026-08-15-quickdraw-showdown-design.md`](./2026-08-15-quickdraw-showdown-design.md)
+**Constraints:** [`../../human-plans/project-constraints.png`](../../human-plans/project-constraints.png)
+**Status:** Approved in brainstorming; ready for implementation plan
 **Deadline:** 1 October 2026 (~41 days from design date)
 
 ---

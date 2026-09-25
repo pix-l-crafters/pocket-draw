@@ -11,6 +11,12 @@ import {
   type RaiseMonitorStartResult
 } from "./accelerometerRaiseMonitor";
 import { RAISE_GESTURE_SPEC } from "./gestureSpec";
+import { PitchMonitor, type PitchCalibration } from "./pitchMonitor";
+
+// ponytail: fixed settle delay before sampling theta_ready, so the
+// 20ms-interval DeviceMotion listener has at least one reading in. Replace
+// with a first-sample promise if this proves flaky on real devices.
+const PITCH_SETTLE_DELAY_MS = 100;
 
 type CalibrationStatus =
   | "idle"
@@ -21,7 +27,7 @@ type CalibrationStatus =
   | "error";
 
 type DrawCalibrationScreenProps = {
-  onComplete: () => void;
+  onComplete: (calibration: PitchCalibration) => void;
 };
 
 const statusCopy: Record<CalibrationStatus, string> = {
@@ -39,27 +45,71 @@ export function DrawCalibrationScreen({
 }: DrawCalibrationScreenProps) {
   const [status, setStatus] = useState<CalibrationStatus>("idle");
   const monitorRef = useRef<AccelerometerRaiseMonitor | null>(null);
+  const pitchMonitorRef = useRef<PitchMonitor | null>(null);
+  const calibrationRef = useRef<PitchCalibration | null>(null);
 
-  useEffect(() => () => monitorRef.current?.stop(), []);
+  useEffect(
+    () => () => {
+      monitorRef.current?.stop();
+      pitchMonitorRef.current?.stop();
+    },
+    []
+  );
 
   const startCalibration = async () => {
     monitorRef.current?.stop();
+    pitchMonitorRef.current?.stop();
     setStatus("listening");
+
+    const pitchMonitor = new PitchMonitor();
+    pitchMonitorRef.current = pitchMonitor;
+    let thetaReady: number | null = null;
 
     const monitor = new AccelerometerRaiseMonitor(() => {
       monitor.stop();
+      const thetaShoulder = pitchMonitor.currentTheta();
+      pitchMonitor.stop();
+      if (thetaReady === null || thetaShoulder === null) {
+        setStatus("error");
+        return;
+      }
+      calibrationRef.current = { thetaReady, thetaShoulder };
       setStatus("passed");
     });
     monitorRef.current = monitor;
 
     try {
+      const pitchResult = await pitchMonitor.start();
+      if (pitchResult !== "started") {
+        setStatus(pitchResult);
+        return;
+      }
+
+      await new Promise((resolve) =>
+        setTimeout(resolve, PITCH_SETTLE_DELAY_MS)
+      );
+      thetaReady = pitchMonitor.currentTheta();
+      if (thetaReady === null) {
+        pitchMonitor.stop();
+        setStatus("error");
+        return;
+      }
+
       const result: RaiseMonitorStartResult = await monitor.start();
       if (result !== "started") {
+        pitchMonitor.stop();
         setStatus(result);
       }
     } catch {
       monitor.stop();
+      pitchMonitor.stop();
       setStatus("error");
+    }
+  };
+
+  const handleContinue = () => {
+    if (calibrationRef.current) {
+      onComplete(calibrationRef.current);
     }
   };
 
@@ -115,7 +165,7 @@ export function DrawCalibrationScreen({
         <CutCornerButton
           disabled={status === "listening"}
           label={buttonLabel}
-          onPress={status === "passed" ? onComplete : startCalibration}
+          onPress={status === "passed" ? handleContinue : startCalibration}
         />
       </View>
     </View>

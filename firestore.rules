@@ -114,5 +114,17 @@ service cloud.firestore {
         && hasValidMatchResultValues(request.resource.data, matchId);
       allow update, delete: if false;
     }
+
+    // Directory of uid -> displayName, used to resolve names on the
+    // leaderboard (matchResults only stores uids).
+    match /users/{uid} {
+      allow read: if isSignedIn();
+      allow create, update: if isPresenceOwner(uid)
+        && request.resource.data.keys().hasOnly(['displayName'])
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() > 0
+        && request.resource.data.displayName.size() <= 100;
+      allow delete: if false;
+    }
   }
 }
