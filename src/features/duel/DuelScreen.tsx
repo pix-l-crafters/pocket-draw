@@ -1,5 +1,7 @@
 import { useMemo } from "react";
+import { StyleSheet, View } from "react-native";
 
+import { CutCornerButton } from "../../components/CutCornerButton";
 import type { DuelChannel } from "../../contracts/duelChannel";
 import { createMockDuelChannelPair } from "../../contracts/mocks/mockDuelChannel";
 import { PreRound, type RssiReader } from "./PreRound";
@@ -11,18 +13,40 @@ import { PreRound, type RssiReader } from "./PreRound";
 type DuelScreenProps = {
   channel?: DuelChannel;
   readRssi?: RssiReader;
+  onExit?: () => void;
 };
 
 export function DuelScreen({
   channel: providedChannel,
-  readRssi
+  readRssi,
+  onExit
 }: DuelScreenProps = {}) {
   const mockChannel = useMemo(() => createMockDuelChannelPair()[0], []);
 
   return (
-    <PreRound
-      channel={providedChannel ?? mockChannel}
-      readRssi={readRssi ?? (async () => -75)}
-    />
+    <View style={styles.container}>
+      <PreRound
+        channel={providedChannel ?? mockChannel}
+        readRssi={readRssi ?? (async () => -75)}
+      />
+      {/* No round-loop/postmatch wiring exists yet (PreRound ends at "ready"
+          with nowhere to go), so this is the only way out of a duel for now. */}
+      {onExit && (
+        <View style={styles.exitRow}>
+          <CutCornerButton label="Exit" onPress={onExit} />
+        </View>
+      )}
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1
+  },
+  exitRow: {
+    position: "absolute",
+    right: 16,
+    top: 16
+  }
+});

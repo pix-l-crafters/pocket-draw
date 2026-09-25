@@ -14,13 +14,14 @@ import {
   IBMPlexMono_400Regular,
   useFonts as useIBMPlexMonoFonts
 } from "@expo-google-fonts/ibm-plex-mono";
-import { PaperProvider, SegmentedButtons } from "react-native-paper";
+import { BottomNavigation, PaperProvider } from "react-native-paper";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
 import { useAuthUser } from "./src/lib/useAuthUser";
 import { ChallengeScreen } from "./src/features/challenge/ChallengeScreen";
 import { ConnectingScreen } from "./src/features/challenge/ConnectingScreen";
 import type { ChallengeHandoff } from "./src/contracts/challengeHandoff";
+import type { DuelChannel } from "./src/contracts/duelChannel";
 import { DuelScreen } from "./src/features/duel/DuelScreen";
 import { MapScreen } from "./src/features/map/MapScreen";
 import { ProfileScreen } from "./src/features/profile/ProfileScreen";
@@ -35,7 +36,38 @@ function toCurrentUser(user: User, displayName: string): CurrentUser {
   return { uid: user.uid, displayName };
 }
 
-type AppTab = "map" | "challenge" | "duel" | "profile";
+type AppTab = "map" | "challenge" | "profile";
+
+type ActiveDuel = {
+  channel: DuelChannel;
+  handoff: ChallengeHandoff;
+};
+
+const NAV_ROUTES: {
+  key: AppTab;
+  title: string;
+  focusedIcon: string;
+  unfocusedIcon: string;
+}[] = [
+  {
+    key: "map",
+    title: "Map",
+    focusedIcon: "map-marker",
+    unfocusedIcon: "map-marker-outline"
+  },
+  {
+    key: "challenge",
+    title: "Challenge",
+    focusedIcon: "sword-cross",
+    unfocusedIcon: "sword-cross"
+  },
+  {
+    key: "profile",
+    title: "Profile",
+    focusedIcon: "account-circle",
+    unfocusedIcon: "account-circle-outline"
+  }
+];
 
 export default function App() {
   const { displayName, loading: authLoading, user } = useAuthUser();
@@ -44,6 +76,13 @@ export default function App() {
   const [pendingHandoff, setPendingHandoff] = useState<ChallengeHandoff | null>(
     null
   );
+  const [activeDuel, setActiveDuel] = useState<ActiveDuel | null>(null);
+
+  const exitDuel = () => {
+    setActiveDuel(null);
+    setPendingHandoff(null);
+    setActiveTab("map");
+  };
   const [barlowLoaded] = useBarlowFonts({ Barlow_400Regular });
   const [barlowCondensedLoaded] = useBarlowCondensedFonts({
     BarlowCondensed_700Bold
@@ -100,66 +139,61 @@ export default function App() {
           )
         ) : (
           // 用户已经登录，因此显示应用主界面。
-          <SafeAreaView edges={["top"]} style={styles.container}>
-            <View style={styles.switcherContainer}>
-              <SegmentedButtons
-                buttons={[
-                  { value: "map", label: "Map" },
-                  { value: "challenge", label: "Challenge" },
-                  { value: "duel", label: "Duel" },
-                  { value: "profile", label: "Profile" }
-                ]}
-                onValueChange={(val) => setActiveTab(val as AppTab)}
-                style={styles.switcher}
-                value={activeTab}
-              />
-            </View>
-            <View style={styles.screenContainer}>
-              {activeTab === "map" ? (
-                <MapScreen currentUser={toCurrentUser(user, displayName)} />
-              ) : activeTab === "duel" ? (
-                <DuelScreen />
-              ) : activeTab === "profile" ? (
-                <ProfileScreen
-                  displayName={displayName}
-                  email={user.email}
-                  uid={user.uid}
-                />
-              ) : pendingHandoff ? (
-                <ConnectingScreen
-                  handoff={pendingHandoff}
-                  onConnected={(_channel, handoff) => {
-                    // TODO(4.x): hand the channel to the duel screens once they
-                    // exist (Tanachat/Tianze). For now the session just proves
-                    // it can connect.
-                    console.log(
-                      "Duel channel ready for match",
-                      handoff.matchId
-                    );
+          <SafeAreaView edges={["top", "bottom"]} style={styles.container}>
+            {activeDuel ? (
+              // 只有在与另一位玩家的对局中才显示 Duel 界面，不作为常驻标签。
+              <DuelScreen channel={activeDuel.channel} onExit={exitDuel} />
+            ) : (
+              <>
+                <View style={styles.screenContainer}>
+                  {activeTab === "map" ? (
+                    <MapScreen currentUser={toCurrentUser(user, displayName)} />
+                  ) : activeTab === "profile" ? (
+                    <ProfileScreen
+                      displayName={displayName}
+                      email={user.email}
+                      uid={user.uid}
+                    />
+                  ) : pendingHandoff ? (
+                    <ConnectingScreen
+                      handoff={pendingHandoff}
+                      onConnected={(channel, handoff) =>
+                        setActiveDuel({ channel, handoff })
+                      }
+                      onExit={() => setPendingHandoff(null)}
+                    />
+                  ) : (
+                    <ChallengeScreen
+                      currentUser={toCurrentUser(user, displayName)}
+                      onOpponentConfirmed={(opponent) => {
+                        const handoff: ChallengeHandoff = {
+                          ...opponent,
+                          roundCount: 3
+                        };
+                        setPendingHandoff(handoff);
+                        void challengeRequestRepository
+                          .sendChallenge(handoff)
+                          .catch((error) =>
+                            console.error(
+                              "Failed to send challenge request:",
+                              error
+                            )
+                          );
+                      }}
+                    />
+                  )}
+                </View>
+                <BottomNavigation.Bar
+                  navigationState={{
+                    index: NAV_ROUTES.findIndex(
+                      (route) => route.key === activeTab
+                    ),
+                    routes: NAV_ROUTES
                   }}
-                  onExit={() => setPendingHandoff(null)}
+                  onTabPress={({ route }) => setActiveTab(route.key)}
                 />
-              ) : (
-                <ChallengeScreen
-                  currentUser={toCurrentUser(user, displayName)}
-                  onOpponentConfirmed={(opponent) => {
-                    const handoff: ChallengeHandoff = {
-                      ...opponent,
-                      roundCount: 3
-                    };
-                    setPendingHandoff(handoff);
-                    void challengeRequestRepository
-                      .sendChallenge(handoff)
-                      .catch((error) =>
-                        console.error(
-                          "Failed to send challenge request:",
-                          error
-                        )
-                      );
-                  }}
-                />
-              )}
-            </View>
+              </>
+            )}
           </SafeAreaView>
         )}
       </PaperProvider>
@@ -196,17 +230,6 @@ const styles = StyleSheet.create({
   },
   container: {
     backgroundColor: colors.background,
-    flex: 1
-  },
-  switcherContainer: {
-    alignItems: "center",
-    backgroundColor: colors.background,
-    flexDirection: "row",
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 8
-  },
-  switcher: {
     flex: 1
   },
   screenContainer: {
