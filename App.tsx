@@ -28,7 +28,6 @@ import type { CurrentUser } from "./src/features/map/types/map.types";
 import LoginScreen from "./src/screens/LoginScreen";
 import RegisterScreen from "./src/screens/RegisterScreen";
 import { RoundCountSelector } from "./src/features/challenge/RoundCountSelector";
-import { challengeRequestRepository } from "./src/features/challenge/services/challengeRequestRepository";
 import type { ConfirmedOpponent } from "./src/features/challenge/QrScannerScreen";
 import { appTheme } from "./src/theme/appTheme";
 import { colors } from "./src/theme/tokens";
@@ -132,14 +131,9 @@ export default function App() {
               ) : pendingHandoff ? (
                 <ConnectingScreen
                   handoff={pendingHandoff}
-                  onConnected={(_channel, handoff) => {
-                    // TODO(4.x): hand the channel to the duel screens once they
-                    // exist (Tanachat/Tianze). For now the session just proves
-                    // it can connect.
-                    console.log(
-                      "Duel channel ready for match",
-                      handoff.matchId
-                    );
+                  onConnected={() => {
+                    setPendingHandoff(null);
+                    setActiveTab("duel");
                   }}
                   onExit={() => setPendingHandoff(null)}
                 />
@@ -161,11 +155,6 @@ export default function App() {
                 onRoundCountSelected={(handoff) => {
                   setPendingOpponent(null);
                   setPendingHandoff(handoff);
-                  void challengeRequestRepository
-                    .sendChallenge(handoff)
-                    .catch((error) =>
-                      console.error("Failed to send challenge request:", error)
-                    );
                 }}
                 scannedPlayerId={pendingOpponent.scannedPlayerId}
                 scannedPlayerName={pendingOpponent.scannedPlayerName}
