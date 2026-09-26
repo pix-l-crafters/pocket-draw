@@ -56,7 +56,7 @@ jobs:
           - ios
           - android
   notify:
-    if: always()
+    if: always() && needs.build.result != 'skipped'
     name: Notify
     needs:
       - build
