@@ -12,7 +12,6 @@ import type {
 } from "../types/map.types";
 import { presenceRepository } from "../services/presenceRepository";
 import { coarsenCoordinate } from "../utils/map.utils";
-import { upsertUserProfile } from "../../backend/userProfileRepository";
 
 type UsePresencePublisherInput = {
   currentUser: CurrentUser | null;
@@ -100,9 +99,6 @@ export function usePresencePublisher({
 
       try {
         await presenceRepository.publishPresence(input);
-        // Best effort: leaderboard name resolution shouldn't block/retry on
-        // presence publishing.
-        void upsertUserProfile(uid, displayName).catch(() => undefined);
 
         if (cancelled) {
           return;

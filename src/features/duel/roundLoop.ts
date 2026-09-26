@@ -1,57 +1,48 @@
-// 4.17 — round loop / match-decided logic: tracks round points across a
-// best-of-3/5/7 match and decides when it's over.
-//
-// Round rules (matches src/features/duel/roundJudge.ts, the real producer of
-// RoundOutcome):
-// - "win": winnerId gets 1 point.
-// - "falseStart": the false-starting player loses the round (opponent gets
-//   1 point); the match continues.
-// - "tie": both players get `pointsEach` (roundJudge.ts's approved tie rule
-//   — reactions within the tie window score for both). If that pushes both
-//   players to the win threshold in the same round, the match is NOT decided
-//   — a tied leaderboard always plays a sudden-death decider round.
+// Match-level structure: exactly three regular rounds, followed by one
+// tiebreaker only when the total points are level. The match ends after the
+// tiebreaker even if the final result is a draw.
 
 import type { RoundOutcome } from "../../contracts/roundOutcome";
-import type { MatchResult } from "../../contracts/matchResult";
+import type {
+  MatchResult,
+  PlayerMatchResult
+} from "../../contracts/matchResult";
+import { scoreRoundOutcome } from "./roundJudge.ts";
+
+export const REGULAR_ROUND_COUNT = 3;
+export const MAX_ROUND_COUNT = 4;
 
 export interface RoundLoopState {
   participantIds: [string, string];
-  roundCount: 3 | 5 | 7;
+  roundCount: 3;
   rounds: RoundOutcome[];
-  wins: Record<string, number>;
+  scores: Record<string, number>;
 }
 
 export function createRoundLoop(
-  participantIds: [string, string],
-  roundCount: 3 | 5 | 7
+  participantIds: [string, string]
 ): RoundLoopState {
   const [a, b] = participantIds;
   return {
     participantIds,
-    roundCount,
+    roundCount: REGULAR_ROUND_COUNT,
     rounds: [],
-    wins: { [a]: 0, [b]: 0 }
+    scores: { [a]: 0, [b]: 0 }
   };
 }
 
 function tallyOutcome(
-  wins: Record<string, number>,
+  scores: Record<string, number>,
   participantIds: [string, string],
   outcome: RoundOutcome
 ): Record<string, number> {
-  if (outcome.kind === "win") {
-    return { ...wins, [outcome.winnerId]: (wins[outcome.winnerId] ?? 0) + 1 };
-  }
-  if (outcome.kind === "falseStart") {
-    const opponentId = participantIds.find((id) => id !== outcome.playerId);
-    if (!opponentId) return wins;
-    return { ...wins, [opponentId]: (wins[opponentId] ?? 0) + 1 };
-  }
   const [a, b] = participantIds;
+  const [scoreA, scoreB] = scoreRoundOutcome(outcome, a, b);
+
   return {
-    ...wins,
-    [a]: (wins[a] ?? 0) + outcome.pointsEach,
-    [b]: (wins[b] ?? 0) + outcome.pointsEach
+    ...scores,
+    [a]: (scores[a] ?? 0) + scoreA.points,
+    [b]: (scores[b] ?? 0) + scoreB.points
   };
 }
 
@@ -59,10 +50,14 @@ export function applyRoundOutcome(
   state: RoundLoopState,
   outcome: RoundOutcome
 ): RoundLoopState {
+  if (isMatchDecided(state)) {
+    throw new Error("Cannot add a round after the match has ended.");
+  }
+
   return {
     ...state,
     rounds: [...state.rounds, outcome],
-    wins: tallyOutcome(state.wins, state.participantIds, outcome)
+    scores: tallyOutcome(state.scores, state.participantIds, outcome)
   };
 }
 
@@ -75,27 +70,51 @@ export function scoreFromRounds(
 ): Record<string, number> {
   const [a, b] = participantIds;
   return rounds.reduce(
-    (wins, outcome) => tallyOutcome(wins, participantIds, outcome),
+    (scores, outcome) => tallyOutcome(scores, participantIds, outcome),
     { [a]: 0, [b]: 0 }
   );
 }
 
-function winsNeeded(roundCount: 3 | 5 | 7): number {
-  return Math.ceil(roundCount / 2);
+function scoresAreLevel(state: RoundLoopState): boolean {
+  const [a, b] = state.participantIds;
+  return (state.scores[a] ?? 0) === (state.scores[b] ?? 0);
 }
 
 export function matchWinnerId(state: RoundLoopState): string | undefined {
-  const needed = winsNeeded(state.roundCount);
+  if (!isMatchDecided(state) || scoresAreLevel(state)) {
+    return undefined;
+  }
+
   const [a, b] = state.participantIds;
-  const scoreA = state.wins[a] ?? 0;
-  const scoreB = state.wins[b] ?? 0;
-  if (scoreA === scoreB) return undefined;
-  const [leader, leaderScore] = scoreA > scoreB ? [a, scoreA] : [b, scoreB];
-  return leaderScore >= needed ? leader : undefined;
+  return (state.scores[a] ?? 0) > (state.scores[b] ?? 0) ? a : b;
 }
 
 export function isMatchDecided(state: RoundLoopState): boolean {
-  return matchWinnerId(state) !== undefined;
+  if (state.rounds.length < REGULAR_ROUND_COUNT) {
+    return false;
+  }
+
+  return !scoresAreLevel(state) || state.rounds.length >= MAX_ROUND_COUNT;
+}
+
+export function matchResults(
+  state: RoundLoopState
+): Record<string, PlayerMatchResult> | undefined {
+  if (!isMatchDecided(state)) {
+    return undefined;
+  }
+
+  const [a, b] = state.participantIds;
+  const scoreA = state.scores[a] ?? 0;
+  const scoreB = state.scores[b] ?? 0;
+
+  if (scoreA === scoreB) {
+    return { [a]: "draw", [b]: "draw" };
+  }
+
+  return scoreA > scoreB
+    ? { [a]: "win", [b]: "lose" }
+    : { [a]: "lose", [b]: "win" };
 }
 
 export function toMatchResult(
@@ -103,8 +122,8 @@ export function toMatchResult(
   matchId: string,
   completedAt: string = new Date().toISOString()
 ): MatchResult {
-  const winnerId = matchWinnerId(state);
-  if (!winnerId) {
+  const results = matchResults(state);
+  if (!results) {
     throw new Error("toMatchResult called before the match was decided");
   }
   return {
@@ -112,7 +131,7 @@ export function toMatchResult(
     participantIds: state.participantIds,
     roundCount: state.roundCount,
     rounds: state.rounds,
-    winnerId,
+    results,
     completedAt
   };
 }

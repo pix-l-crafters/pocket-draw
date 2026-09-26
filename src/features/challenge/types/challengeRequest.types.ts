@@ -5,7 +5,10 @@ import type { ChallengeHandoff } from "../../../contracts/challengeHandoff";
 import type { Timestamp } from "firebase/firestore";
 
 export type ChallengeRequestStatus = "pending" | "accepted" | "declined";
-export interface ChallengeRequest extends ChallengeHandoff {
+export interface ChallengeRequest extends Omit<
+  ChallengeHandoff,
+  "challengeToken" | "discoveryToken" | "connection"
+> {
   id: string;
   status: ChallengeRequestStatus;
   createdAt: Timestamp; //调用的是类型

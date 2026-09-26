@@ -1,5 +1,6 @@
 import type { AudioSource } from "expo-audio";
 
-// Replace `null` with require("../../../assets/audio/countdown.wav") when the
-// approved countdown asset is added. Playback remains local to each device.
-export const COUNTDOWN_AUDIO_SOURCE: AudioSource | null = null;
+// Placeholder: assets/audio/countdown.mp3 is a silent stub so the bundler
+// has something to require. Overwrite that file with the approved countdown
+// cue (same filename, or update this path) — no code change needed either way.
+export const COUNTDOWN_AUDIO_SOURCE: AudioSource | null = require("../../../assets/audio/countdown.mp3");

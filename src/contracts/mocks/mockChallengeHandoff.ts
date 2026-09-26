@@ -10,7 +10,13 @@ export function mockChallengeHandoff(
   scannedPlayerId: string
 ): ChallengeHandoff {
   return {
+    challengeToken: "0123456789abcdef0123456789abcdef",
     challengerId,
+    connection: {
+      mode: "existingWifi",
+      hostIp: "192.168.1.10",
+      signalPort: 43123
+    },
     scannedPlayerId,
     scannedPlayerName: "Mock Opponent",
     roundCount: 3,

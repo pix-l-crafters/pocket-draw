@@ -3,12 +3,14 @@
 
 import type { RoundOutcome } from "./roundOutcome";
 
+export type PlayerMatchResult = "win" | "lose" | "draw";
+
 export interface MatchResult {
   matchId: string;
   participantIds: [string, string];
-  roundCount: 3 | 5 | 7;
+  roundCount: 3;
   rounds: RoundOutcome[];
-  winnerId: string;
+  results: Record<string, PlayerMatchResult>;
   completedAt: string; // ISO timestamp
 }
 

@@ -24,7 +24,11 @@ local linters = new Mapping<String, Step> {
   ["newlines"] = Builtins.newlines
   ["pkl"] = Builtins.pkl
   ["pkl-format"] = Builtins.pkl_format
-  ["prettier"] = Builtins.prettier
+  ["prettier"] = (Builtins.prettier) {
+    // package.json has its own canonical formatter below; sort-package-json 4
+    // and Prettier 3 disagree about compact arrays.
+    exclude = List("package.json", "**/package.json")
+  }
   ["ruff"] = (Builtins.ruff) { depends = List("ruff-format") }
   ["ruff-format"] = Builtins.ruff_format
   ["rumdl"] = (Builtins.rumdl) { depends = List("rumdl-format") }

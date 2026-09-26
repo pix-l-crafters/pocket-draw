@@ -49,7 +49,7 @@ service cloud.firestore {
         'participantIds',
         'roundCount',
         'rounds',
-        'winnerId',
+        'results',
         'completedAt',
         'uploadedBy',
         'createdAt'
@@ -58,7 +58,7 @@ service cloud.firestore {
         'participantIds',
         'roundCount',
         'rounds',
-        'winnerId',
+        'results',
         'completedAt',
         'uploadedBy',
         'createdAt'
@@ -77,12 +77,21 @@ service cloud.firestore {
         && data.participantIds[1].size() > 0
         && data.participantIds[0] != data.participantIds[1]
         && data.roundCount is int
-        && (data.roundCount == 3 || data.roundCount == 5 || data.roundCount == 7)
+        && data.roundCount == 3
         && data.rounds is list
-        && data.rounds.size() > 0
-        && data.rounds.size() <= data.roundCount
-        && data.winnerId is string
-        && (data.winnerId == data.participantIds[0] || data.winnerId == data.participantIds[1])
+        && data.rounds.size() >= 3
+        && data.rounds.size() <= 4
+        && data.results is map
+        && data.results.keys().hasOnly(data.participantIds)
+        && data.results.keys().hasAll(data.participantIds)
+        && (
+          (data.results[data.participantIds[0]] == 'win'
+            && data.results[data.participantIds[1]] == 'lose')
+          || (data.results[data.participantIds[0]] == 'lose'
+            && data.results[data.participantIds[1]] == 'win')
+          || (data.results[data.participantIds[0]] == 'draw'
+            && data.results[data.participantIds[1]] == 'draw')
+        )
         && data.completedAt is string
         && data.completedAt.size() > 0
         && data.completedAt.size() <= 40
@@ -105,6 +114,53 @@ service cloud.firestore {
         && hasValidPresenceFields(request.resource.data)
         && hasValidPresenceValues(request.resource.data);
       allow delete: if isPresenceOwner(uid);
+    }
+
+    function hasValidChallengeRequestFields(data) {
+      return data.keys().hasAll([
+        'challengerId',
+        'scannedPlayerId',
+        'scannedPlayerName',
+        'roundCount',
+        'matchId',
+        'status',
+        'createdAt',
+        'expiresAt'
+      ]) && data.keys().hasOnly([
+        'challengerId',
+        'scannedPlayerId',
+        'scannedPlayerName',
+        'roundCount',
+        'matchId',
+        'status',
+        'createdAt',
+        'expiresAt'
+      ]);
+    }
+
+    function hasValidChallengeRequestValues(data) {
+      return data.challengerId is string
+        && data.challengerId == request.auth.uid
+        && data.scannedPlayerId is string
+        && data.scannedPlayerId.size() > 0
+        && data.challengerId != data.scannedPlayerId
+        && data.scannedPlayerName is string
+        && data.scannedPlayerName.size() > 0
+        && data.roundCount is int
+        && data.roundCount == 3
+        && data.matchId is string
+        && data.matchId.size() > 0
+        && data.status == 'pending'
+        && data.createdAt == request.time
+        && data.expiresAt is timestamp;
+    }
+
+    match /challengeRequests/{requestId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && hasValidChallengeRequestFields(request.resource.data)
+        && hasValidChallengeRequestValues(request.resource.data);
+      allow update, delete: if false;
     }
 
     match /matchResults/{matchId} {

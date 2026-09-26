@@ -7,6 +7,9 @@ import {
 
 import { challengeRequestRepository } from "./challengeRequestRepository";
 
+// Test-only hotspot passphrase.
+const FIXTURE_PASSPHRASE = "draw-4821";
+
 jest.mock("firebase/firestore", () => ({
   addDoc: jest.fn(),
   collection: jest.fn(),
@@ -34,19 +37,26 @@ describe("challengeRequestRepository", () => {
     } as never);
 
     const result = await challengeRequestRepository.sendChallenge({
+      challengeToken: "0123456789abcdef0123456789abcdef",
       challengerId: "challenger-123",
+      connection: {
+        mode: "hotspot",
+        ssid: "PocketDraw-A1B2",
+        password: FIXTURE_PASSPHRASE,
+        hostIp: "192.168.43.1",
+        signalPort: 43123
+      },
       discoveryToken: "discovery-token-123",
       matchId: "match-123",
-      roundCount: 5,
+      roundCount: 3,
       scannedPlayerId: "opponent-456",
       scannedPlayerName: "Opponent"
     });
 
     expect(addDoc).toHaveBeenCalledWith(collectionReference, {
       challengerId: "challenger-123",
-      discoveryToken: "discovery-token-123",
       matchId: "match-123",
-      roundCount: 5,
+      roundCount: 3,
       scannedPlayerId: "opponent-456",
       scannedPlayerName: "Opponent",
       status: "pending",

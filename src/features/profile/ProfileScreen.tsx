@@ -8,6 +8,7 @@ import { StatTile } from "../../components/StatTile";
 import { usePlayerStats } from "../../hooks/usePlayerStats";
 import { logoutUser } from "../../lib/auth";
 import { colors, fonts } from "../../theme/tokens";
+import { LeaderboardScreen } from "../leaderboard/LeaderboardScreen";
 import { ChangePasswordDialog } from "./ChangePasswordDialog";
 import { EditUsernameDialog } from "./EditUsernameDialog";
 
@@ -25,6 +26,7 @@ export function ProfileScreen({ displayName, email, uid }: ProfileScreenProps) {
     null
   );
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
   const stats = usePlayerStats({ uid, displayName });
 
   const format = (value: number | undefined) =>
@@ -40,6 +42,10 @@ export function ProfileScreen({ displayName, email, uid }: ProfileScreenProps) {
       Alert.alert("Logout failed", "Please try again.");
     }
   };
+
+  if (showLeaderboard) {
+    return <LeaderboardScreen onBack={() => setShowLeaderboard(false)} />;
+  }
 
   return (
     <ScrollView contentContainerStyle={styles.content} style={styles.container}>
@@ -73,6 +79,10 @@ export function ProfileScreen({ displayName, email, uid }: ProfileScreenProps) {
         </View>
 
         <View style={styles.actions}>
+          <CutCornerButton
+            label="Leaderboard"
+            onPress={() => setShowLeaderboard(true)}
+          />
           <CutCornerButton
             label="Edit Username"
             onPress={() => setOpenDialog("username")}

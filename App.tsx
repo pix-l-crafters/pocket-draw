@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import type { User } from "firebase/auth";
@@ -14,22 +14,28 @@ import {
   IBMPlexMono_400Regular,
   useFonts as useIBMPlexMonoFonts
 } from "@expo-google-fonts/ibm-plex-mono";
-import { PaperProvider, SegmentedButtons } from "react-native-paper";
+import { BottomNavigation, PaperProvider } from "react-native-paper";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
 import { useAuthUser } from "./src/lib/useAuthUser";
 import { ChallengeScreen } from "./src/features/challenge/ChallengeScreen";
 import { ConnectingScreen } from "./src/features/challenge/ConnectingScreen";
+import {
+  IncomingChallengeScreen,
+  type Challenger
+} from "./src/features/challenge/IncomingChallengeScreen";
 import type { ChallengeHandoff } from "./src/contracts/challengeHandoff";
-import { DuelScreen } from "./src/features/duel/DuelScreen";
+import type { DuelChannel } from "./src/contracts/duelChannel";
+import { DuelScreen, type DuelPlayer } from "./src/features/duel/DuelScreen";
+import type { DuelRole } from "./src/features/duel/fireSignalCoordinator";
+import { GameInstructionsScreen } from "./src/features/duel/GameInstructionsScreen";
 import { MapScreen } from "./src/features/map/MapScreen";
 import { ProfileScreen } from "./src/features/profile/ProfileScreen";
 import type { CurrentUser } from "./src/features/map/types/map.types";
+import type { QrInvitePayload } from "./src/features/qr/types/qr.types";
 import LoginScreen from "./src/screens/LoginScreen";
 import RegisterScreen from "./src/screens/RegisterScreen";
-import { RoundCountSelector } from "./src/features/challenge/RoundCountSelector";
 import { challengeRequestRepository } from "./src/features/challenge/services/challengeRequestRepository";
-import type { ConfirmedOpponent } from "./src/features/challenge/QrScannerScreen";
 import { appTheme } from "./src/theme/appTheme";
 import { colors } from "./src/theme/tokens";
 
@@ -37,7 +43,47 @@ function toCurrentUser(user: User, displayName: string): CurrentUser {
   return { uid: user.uid, displayName };
 }
 
-type AppTab = "map" | "challenge" | "duel" | "profile";
+type AppTab = "map" | "challenge" | "profile";
+
+type ActiveDuel = {
+  channel: DuelChannel;
+  matchId: string;
+  opponent: DuelPlayer;
+  role: DuelRole;
+  self: DuelPlayer;
+};
+
+/** A guest has opened the duel channel and is waiting on this player's answer. */
+type IncomingChallenge = {
+  channel: DuelChannel;
+  matchId: string;
+};
+
+const NAV_ROUTES: {
+  key: AppTab;
+  title: string;
+  focusedIcon: string;
+  unfocusedIcon: string;
+}[] = [
+  {
+    key: "map",
+    title: "Map",
+    focusedIcon: "map-marker",
+    unfocusedIcon: "map-marker-outline"
+  },
+  {
+    key: "challenge",
+    title: "Challenge",
+    focusedIcon: "sword-cross",
+    unfocusedIcon: "sword-cross"
+  },
+  {
+    key: "profile",
+    title: "Profile",
+    focusedIcon: "account-circle",
+    unfocusedIcon: "account-circle-outline"
+  }
+];
 
 export default function App() {
   const { displayName, loading: authLoading, user } = useAuthUser();
@@ -46,8 +92,58 @@ export default function App() {
   const [pendingHandoff, setPendingHandoff] = useState<ChallengeHandoff | null>(
     null
   );
-  const [pendingOpponent, setPendingOpponent] =
-    useState<ConfirmedOpponent | null>(null);
+  const [activeDuel, setActiveDuel] = useState<ActiveDuel | null>(null);
+  const [incomingChallenge, setIncomingChallenge] =
+    useState<IncomingChallenge | null>(null);
+  const [instructionsSeen, setInstructionsSeen] = useState(false);
+
+  const exitDuel = () => {
+    setActiveDuel(null);
+    setIncomingChallenge(null);
+    setInstructionsSeen(false);
+    setPendingHandoff(null);
+    setActiveTab("map");
+  };
+
+  const self: DuelPlayer = { id: user?.uid ?? "", name: displayName };
+
+  // Stable identity matters: QrDisplayScreen keys its host-server effect on
+  // this, so a new function each render would tear the signaling server down
+  // and restart it, dropping any guest mid-join. The guest is connected but
+  // not yet accepted here — the popup that follows is what starts the duel.
+  const onHostConnected = useCallback(
+    (channel: DuelChannel, invite: QrInvitePayload) =>
+      setIncomingChallenge({ channel, matchId: invite.matchId }),
+    []
+  );
+
+  // The guest side: the host has already accepted by the time this runs.
+  const onGuestConnected = useCallback(
+    (channel: DuelChannel, handoff: ChallengeHandoff) =>
+      setActiveDuel({
+        channel,
+        matchId: handoff.matchId,
+        opponent: {
+          id: handoff.scannedPlayerId,
+          name: handoff.scannedPlayerName
+        },
+        role: "guest",
+        self: { id: handoff.challengerId, name: displayName }
+      }),
+    [displayName]
+  );
+
+  const acceptChallenge = (challenger: Challenger) => {
+    if (!incomingChallenge) return;
+    setActiveDuel({
+      channel: incomingChallenge.channel,
+      matchId: incomingChallenge.matchId,
+      opponent: { id: challenger.playerId, name: challenger.playerName },
+      role: "host",
+      self
+    });
+    setIncomingChallenge(null);
+  };
   const [barlowLoaded] = useBarlowFonts({ Barlow_400Regular });
   const [barlowCondensedLoaded] = useBarlowCondensedFonts({
     BarlowCondensed_700Bold
@@ -104,74 +200,80 @@ export default function App() {
           )
         ) : (
           // 用户已经登录，因此显示应用主界面。
-          <SafeAreaView edges={["top"]} style={styles.container}>
-            <View style={styles.switcherContainer}>
-              <SegmentedButtons
-                buttons={[
-                  { value: "map", label: "Map" },
-                  { value: "challenge", label: "Challenge" },
-                  { value: "duel", label: "Duel" },
-                  { value: "profile", label: "Profile" }
-                ]}
-                onValueChange={(val) => setActiveTab(val as AppTab)}
-                style={styles.switcher}
-                value={activeTab}
-              />
-            </View>
-            <View style={styles.screenContainer}>
-              {activeTab === "map" ? (
-                <MapScreen currentUser={toCurrentUser(user, displayName)} />
-              ) : activeTab === "duel" ? (
-                <DuelScreen />
-              ) : activeTab === "profile" ? (
-                <ProfileScreen
-                  displayName={displayName}
-                  email={user.email}
-                  uid={user.uid}
-                />
-              ) : pendingHandoff ? (
-                <ConnectingScreen
-                  handoff={pendingHandoff}
-                  onConnected={(_channel, handoff) => {
-                    // TODO(4.x): hand the channel to the duel screens once they
-                    // exist (Tanachat/Tianze). For now the session just proves
-                    // it can connect.
-                    console.log(
-                      "Duel channel ready for match",
-                      handoff.matchId
-                    );
-                  }}
-                  onExit={() => setPendingHandoff(null)}
+          <SafeAreaView edges={["top", "bottom"]} style={styles.container}>
+            {activeDuel ? (
+              // 只有在与另一位玩家的对局中才显示 Duel 界面，不作为常驻标签。
+              !instructionsSeen ? (
+                <GameInstructionsScreen
+                  onContinue={() => setInstructionsSeen(true)}
                 />
               ) : (
-                <ChallengeScreen
-                  currentUser={toCurrentUser(user, displayName)}
-                  onOpponentConfirmed={(opponent) => {
-                    setPendingOpponent(opponent);
-                  }}
+                <DuelScreen
+                  channel={activeDuel.channel}
+                  matchId={activeDuel.matchId}
+                  onExit={exitDuel}
+                  opponent={activeDuel.opponent}
+                  role={activeDuel.role}
+                  self={activeDuel.self}
                 />
-              )}
-            </View>
-            {pendingOpponent ? (
-              <RoundCountSelector
-                challengerId={pendingOpponent.challengerId}
-                discoveryToken={pendingOpponent.discoveryToken}
-                matchId={pendingOpponent.matchId}
-                onCancel={() => setPendingOpponent(null)}
-                onRoundCountSelected={(handoff) => {
-                  setPendingOpponent(null);
-                  setPendingHandoff(handoff);
-                  void challengeRequestRepository
-                    .sendChallenge(handoff)
-                    .catch((error) =>
-                      console.error("Failed to send challenge request:", error)
-                    );
-                }}
-                scannedPlayerId={pendingOpponent.scannedPlayerId}
-                scannedPlayerName={pendingOpponent.scannedPlayerName}
-                visible
+              )
+            ) : incomingChallenge ? (
+              <IncomingChallengeScreen
+                channel={incomingChallenge.channel}
+                onAccept={acceptChallenge}
+                onDecline={() => setIncomingChallenge(null)}
               />
-            ) : null}
+            ) : (
+              <>
+                <View style={styles.screenContainer}>
+                  {activeTab === "map" ? (
+                    <MapScreen currentUser={toCurrentUser(user, displayName)} />
+                  ) : activeTab === "profile" ? (
+                    <ProfileScreen
+                      displayName={displayName}
+                      email={user.email}
+                      uid={user.uid}
+                    />
+                  ) : pendingHandoff ? (
+                    <ConnectingScreen
+                      currentUser={{ displayName, uid: user.uid }}
+                      handoff={pendingHandoff}
+                      onConnected={onGuestConnected}
+                      onExit={() => setPendingHandoff(null)}
+                    />
+                  ) : (
+                    <ChallengeScreen
+                      currentUser={toCurrentUser(user, displayName)}
+                      onHostConnected={onHostConnected}
+                      onOpponentConfirmed={(opponent) => {
+                        const handoff: ChallengeHandoff = {
+                          ...opponent,
+                          roundCount: 3
+                        };
+                        setPendingHandoff(handoff);
+                        void challengeRequestRepository
+                          .sendChallenge(handoff)
+                          .catch((error) =>
+                            console.error(
+                              "Failed to send challenge request:",
+                              error
+                            )
+                          );
+                      }}
+                    />
+                  )}
+                </View>
+                <BottomNavigation.Bar
+                  navigationState={{
+                    index: NAV_ROUTES.findIndex(
+                      (route) => route.key === activeTab
+                    ),
+                    routes: NAV_ROUTES
+                  }}
+                  onTabPress={({ route }) => setActiveTab(route.key)}
+                />
+              </>
+            )}
           </SafeAreaView>
         )}
       </PaperProvider>
@@ -208,17 +310,6 @@ const styles = StyleSheet.create({
   },
   container: {
     backgroundColor: colors.background,
-    flex: 1
-  },
-  switcherContainer: {
-    alignItems: "center",
-    backgroundColor: colors.background,
-    flexDirection: "row",
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 8
-  },
-  switcher: {
     flex: 1
   },
   screenContainer: {

@@ -51,6 +51,7 @@
     "paad",
     "pgpr",
     "pipx",
+    "pixlcrafters",
     "pycache",
     "pytest",
     "qrcode",
@@ -60,7 +61,7 @@
     "rqcc",
     "RSSI",
     "rumdl",
-    "siheng",
+    "Siheng",
     "Siheng's",
     "sihengm",
     "sihengma",
@@ -80,8 +81,12 @@
     "Vulns",
     "Walid",
     "webrtc",
+    "wlan",
     "wutianze",
     "yamlfix",
-    "zizmor"
+    "zizmor",
+    "θfire",
+    "θready",
+    "θshoulder"
   ]
 }

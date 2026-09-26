@@ -3,6 +3,12 @@
 // active or that a token was securely generated.
 
 import type { QrInvitePayload, QrValidationResult } from "../types/qr.types";
+import {
+  isUsableIpv4Address,
+  isValidHotspotPassword,
+  isValidSignalPort,
+  isValidWifiSsid
+} from "./ip.validation";
 
 const MAX_QR_PAYLOAD_LENGTH = 550;
 const INVITE_LIFETIME_MS = 60_000;
@@ -70,27 +76,41 @@ export function hasValidChallengeToken(value: unknown): boolean {
   );
 }
 
-/** Check the nested BLE routing hint: 4 bytes encoded as 8 lowercase hexadecimal characters. */
+/** Check the local-session routing secret: 4 bytes encoded as 8 lowercase hexadecimal characters. */
 export function hasValidDiscoveryToken(value: unknown): boolean {
   if (!isRecord(value)) {
     return false;
   }
-  // Validate the nested object before accessing discoveryToken.
-  if (!isRecord(value.ble)) {
-    return false;
-  }
   return (
-    typeof value.ble.discoveryToken === "string" &&
-    /^[0-9a-f]{8}$/.test(value.ble.discoveryToken)
+    typeof value.discoveryToken === "string" &&
+    /^[0-9a-f]{8}$/.test(value.discoveryToken)
   );
 }
 
-/** Accept only BLE transport for the current invite protocol. */
+/** Accept only WebRTC transport for the current invite protocol. */
 export function hasSupportedTransport(value: unknown): boolean {
   if (!isRecord(value)) {
     return false;
   }
-  return value.transport === "ble";
+  return value.transport === "webrtc";
+}
+
+export function hasValidConnection(value: unknown): boolean {
+  if (!isRecord(value) || !isRecord(value.connection)) return false;
+  if (
+    !isUsableIpv4Address(value.connection.hostIp) ||
+    !isValidSignalPort(value.connection.signalPort)
+  ) {
+    return false;
+  }
+  if (value.connection.mode === "existingWifi") return true;
+  if (value.connection.mode === "hotspot") {
+    return (
+      isValidWifiSsid(value.connection.ssid) &&
+      isValidHotspotPassword(value.connection.password)
+    );
+  }
+  return false;
 }
 
 /** Accept UUID v4 syntax with either lowercase or uppercase hexadecimal characters. */
@@ -154,7 +174,8 @@ export function validateQrInvite(
     !hasValidHostPlayerId(value) ||
     !hasValidHostPlayerName(value) ||
     !hasValidChallengeToken(value) ||
-    !hasValidDiscoveryToken(value)
+    !hasValidDiscoveryToken(value) ||
+    !hasValidConnection(value)
   ) {
     return { ok: false, code: "INVALID_PAYLOAD" };
   }

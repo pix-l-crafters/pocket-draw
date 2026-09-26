@@ -1,3 +1,5 @@
+import type { DuelConnectionInfo } from "../../../contracts/duelConnection";
+
 /** Payload encoded into a player's QR invite, decoded by whoever scans it. */
 export type QrInvitePayload = {
   type: "pocket-draw/invite";
@@ -6,12 +8,11 @@ export type QrInvitePayload = {
   hostPlayerId: string;
   hostPlayerName?: string;
   challengeToken: string;
+  discoveryToken: string;
   issuedAt: number;
   expiresAt: number;
-  transport: "ble";
-  ble: {
-    discoveryToken: string;
-  };
+  transport: "webrtc";
+  connection: DuelConnectionInfo;
 };
 
 /** Reasons a QR invite payload can fail validation, reported back to the caller. */
