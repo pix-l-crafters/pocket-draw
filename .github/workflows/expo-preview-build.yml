@@ -1,0 +1,65 @@
+---
+concurrency:
+  cancel-in-progress: true
+  group: pr-${{ github.event.pull_request.number }}-${{ github.workflow }}
+jobs:
+  build:
+    if: github.event.pull_request.merged == true
+    name: Build ${{ matrix.platform }}
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          cache: npm
+          node-version: 24
+      - name: Install dependencies
+        run: npm ci
+      - name: Setup Expo and EAS
+        uses: expo/expo-github-action@eab7a230208c952974db8c3245cfd78402c7b385 # v9.0.0
+        with:
+          packager: npm
+          token: ${{ secrets.EXPO_TOKEN }}
+      - id: build
+        name: Build ${{ matrix.platform }} (preview profile)
+        run: |
+          eas build --platform "${{ matrix.platform }}" --profile preview --non-interactive --wait --json > build-output.json
+      - if: always()
+        name: Write result file
+        run: |
+          url=""
+          if [ -s build-output.json ]; then
+            url=$(jq -r '.[0].buildUrl // empty' build-output.json)
+          fi
+          jq -n \
+            --arg platform "${{ matrix.platform }}" \
+            --arg status "${{ steps.build.outcome }}" \
+            --arg url "$url" \
+            '{platform: $platform, status: $status, url: $url}' > result.json
+      - if: always()
+        name: Upload result
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: build-result-${{ matrix.platform }}
+          path: result.json
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - ios
+          - android
+name: Expo Preview Build
+on: # yamllint disable-line rule:truthy
+  pull_request:
+    branches:
+      - dev
+    types:
+      - closed
+permissions: {}
