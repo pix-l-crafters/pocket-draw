@@ -242,7 +242,14 @@ function negotiateWebRtcDuel(
     );
     cleanups.push(
       socket.onClose(() => {
-        if (!settled) fail(new Error("Signaling connection closed too early."));
+        // The host can close signaling after its DataChannel opens before
+        // the guest receives the channel event. Its answer is already sent.
+        if (
+          !settled &&
+          !(role === "guest" && peer.localDescription?.type === "answer")
+        ) {
+          fail(new Error("Signaling connection closed too early."));
+        }
       })
     );
 

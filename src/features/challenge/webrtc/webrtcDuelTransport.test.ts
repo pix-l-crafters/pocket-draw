@@ -17,6 +17,7 @@ const auth = {
 class MemorySocket implements SignalingSocket {
   peer: MemorySocket | null = null;
   closed = false;
+  propagateClose = false;
   private messageHandlers = new Set<(message: string) => void>();
   private closeHandlers = new Set<() => void>();
 
@@ -39,8 +40,10 @@ class MemorySocket implements SignalingSocket {
   }
 
   close() {
+    if (this.closed) return;
     this.closed = true;
     for (const handler of this.closeHandlers) handler();
+    if (this.propagateClose) queueMicrotask(() => this.peer?.close());
   }
 }
 
@@ -88,6 +91,8 @@ class FakePeer implements PeerConnectionLike {
   counterpart: FakePeer | null = null;
   hostChannel: PairedDataChannel | null = null;
   guestChannel: PairedDataChannel | null = null;
+  delayGuestChannelOpen = false;
+  delayDataChannelEvent = false;
   private handlers = new Map<PeerEvent, Set<(event: any) => void>>();
 
   addEventListener(type: PeerEvent, handler: (event: any) => void) {
@@ -139,13 +144,31 @@ class FakePeer implements PeerConnectionLike {
     this.remoteDescription = description;
     if (description.type === "offer") {
       const hostPeer = this.counterpart;
-      this.emit("datachannel", { channel: hostPeer?.guestChannel });
+      if (this.delayDataChannelEvent) {
+        setTimeout(
+          () => this.emit("datachannel", { channel: hostPeer?.guestChannel }),
+          0
+        );
+      } else {
+        this.emit("datachannel", { channel: hostPeer?.guestChannel });
+      }
     }
     if (description.type === "answer") {
       this.connectionState = "connected";
-      if (this.counterpart) this.counterpart.connectionState = "connected";
+      if (this.counterpart) {
+        this.counterpart.connectionState = this.delayGuestChannelOpen
+          ? "connecting"
+          : "connected";
+      }
       this.hostChannel?.open();
-      this.guestChannel?.open();
+      if (this.delayGuestChannelOpen) {
+        setTimeout(() => {
+          if (this.counterpart) this.counterpart.connectionState = "connected";
+          this.guestChannel?.open();
+        }, 0);
+      } else {
+        this.guestChannel?.open();
+      }
     }
   }
 
@@ -204,6 +227,36 @@ describe("WebRTC duel session signaling", () => {
     expect(guestPeer.addedCandidates).toHaveLength(1);
     expect(hostSocket.closed).toBe(true);
     expect(guestSocket.closed).toBe(true);
+  });
+
+  it("lets the guest DataChannel open after the host closes signaling", async () => {
+    const [hostSocket, guestSocket] = socketPair();
+    hostSocket.propagateClose = true;
+    const [hostPeer, guestPeer] = peerPair();
+    hostPeer.delayGuestChannelOpen = true;
+    guestPeer.delayDataChannelEvent = true;
+
+    const [hostConnection, guestConnection] = await Promise.all([
+      hostWebRtcDuelSession(hostSocket, auth, new AbortController().signal, {
+        createPeerConnection: () => hostPeer
+      }),
+      connectWebRtcDuelGuest(guestSocket, auth, new AbortController().signal, {
+        createPeerConnection: () => guestPeer
+      })
+    ]);
+
+    const received: unknown[] = [];
+    hostConnection.channel.onMessage((message) => received.push(message));
+    guestConnection.channel.send({
+      type: "challenge",
+      playerId: "guest-id",
+      playerName: "Guest"
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(received).toEqual([
+      { type: "challenge", playerId: "guest-id", playerName: "Guest" }
+    ]);
   });
 
   it("rejects a peer with the wrong QR secret before creating an offer", async () => {
