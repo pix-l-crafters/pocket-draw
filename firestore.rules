@@ -116,6 +116,53 @@ service cloud.firestore {
       allow delete: if isPresenceOwner(uid);
     }
 
+    function hasValidChallengeRequestFields(data) {
+      return data.keys().hasAll([
+        'challengerId',
+        'scannedPlayerId',
+        'scannedPlayerName',
+        'roundCount',
+        'matchId',
+        'status',
+        'createdAt',
+        'expiresAt'
+      ]) && data.keys().hasOnly([
+        'challengerId',
+        'scannedPlayerId',
+        'scannedPlayerName',
+        'roundCount',
+        'matchId',
+        'status',
+        'createdAt',
+        'expiresAt'
+      ]);
+    }
+
+    function hasValidChallengeRequestValues(data) {
+      return data.challengerId is string
+        && data.challengerId == request.auth.uid
+        && data.scannedPlayerId is string
+        && data.scannedPlayerId.size() > 0
+        && data.challengerId != data.scannedPlayerId
+        && data.scannedPlayerName is string
+        && data.scannedPlayerName.size() > 0
+        && data.roundCount is int
+        && data.roundCount == 3
+        && data.matchId is string
+        && data.matchId.size() > 0
+        && data.status == 'pending'
+        && data.createdAt == request.time
+        && data.expiresAt is timestamp;
+    }
+
+    match /challengeRequests/{requestId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && hasValidChallengeRequestFields(request.resource.data)
+        && hasValidChallengeRequestValues(request.resource.data);
+      allow update, delete: if false;
+    }
+
     match /matchResults/{matchId} {
       allow read: if isSignedIn();
       allow create: if isMatchResultUploader()

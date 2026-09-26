@@ -31,7 +31,11 @@ export const challengeRequestRepository: ChallengeRequestRepository = {
       throw new Error("A player cannot challenge themselves.");
     }
     const requestDocument = await addDoc(collection(db, "challengeRequests"), {
-      ...handoff,
+      challengerId: handoff.challengerId,
+      scannedPlayerId: handoff.scannedPlayerId,
+      scannedPlayerName: handoff.scannedPlayerName,
+      roundCount: handoff.roundCount,
+      matchId: handoff.matchId,
       status: "pending",
       createdAt: serverTimestamp(),
       expiresAt: Timestamp.fromMillis(

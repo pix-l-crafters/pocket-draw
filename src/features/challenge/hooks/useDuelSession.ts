@@ -35,8 +35,8 @@ function getParamsKey(params: DuelSessionParams | null) {
  * Opens a duel connection for a handed-off challenge and owns the retry policy:
  * the first attempt plus `DUEL_CONNECT_MAX_AUTO_RETRIES` automatic retries, then
  * `failed` until the user retries manually. A drop after connecting surfaces as
- * `disconnected`. Currently backed by `mockDuelSessionTransport` — swap for the
- * real BLE transport once design doc §9 is solved.
+ * `disconnected`. The mock remains the default for isolated consumers; the QR
+ * connecting screen injects the native WebRTC transport.
  */
 export function useDuelSession(
   params: DuelSessionParams | null,

@@ -10,6 +10,13 @@ jest.mock("../../lib/auth", () => ({
   updateUsername: jest.fn().mockResolvedValue(undefined)
 }));
 
+// LeaderboardScreen pulls in the real (Firestore-backed) leaderboardRepository,
+// which this suite has no reason to load — it only exercises ProfileScreen's
+// own concerns (stats, logout, username edit).
+jest.mock("../leaderboard/LeaderboardScreen", () => ({
+  LeaderboardScreen: () => null
+}));
+
 const displayName = "Quick Draw";
 const email = "player@example.com";
 const uid = "player-123";

@@ -41,7 +41,6 @@ type AppTab = "map" | "challenge" | "profile";
 
 type ActiveDuel = {
   channel: DuelChannel;
-  handoff: ChallengeHandoff;
 };
 
 const NAV_ROUTES: {
@@ -166,14 +165,13 @@ export default function App() {
                   ) : pendingHandoff ? (
                     <ConnectingScreen
                       handoff={pendingHandoff}
-                      onConnected={(channel, handoff) =>
-                        setActiveDuel({ channel, handoff })
-                      }
+                      onConnected={(channel) => setActiveDuel({ channel })}
                       onExit={() => setPendingHandoff(null)}
                     />
                   ) : (
                     <ChallengeScreen
                       currentUser={toCurrentUser(user, displayName)}
+                      onHostConnected={(channel) => setActiveDuel({ channel })}
                       onOpponentConfirmed={(opponent) => {
                         const handoff: ChallengeHandoff = {
                           ...opponent,

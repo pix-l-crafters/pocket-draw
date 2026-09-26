@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { StyleSheet, View } from "react-native";
 import { ActivityIndicator } from "react-native-paper";
 
@@ -9,7 +9,9 @@ import type { ChallengeHandoff } from "../../contracts/challengeHandoff";
 import type { DuelChannel } from "../../contracts/duelChannel";
 import { colors } from "../../theme/tokens";
 import { useDuelSession } from "./hooks/useDuelSession";
+import { withNetworkPreparation } from "./network/hotspot";
 import { DUEL_CONNECT_MAX_AUTO_RETRIES } from "./session/duelSession.constants";
+import { createNativeWebRtcGuestTransport } from "./webrtc/nativeWebRtcTransport";
 
 type ConnectingScreenProps = {
   handoff: ChallengeHandoff;
@@ -23,12 +25,23 @@ export function ConnectingScreen({
   onExit
 }: ConnectingScreenProps) {
   const opponentName = handoff.scannedPlayerName;
-  const { state, retry, cancel } = useDuelSession({
-    role: "guest",
-    matchId: handoff.matchId,
-    discoveryToken: handoff.discoveryToken,
-    opponentId: handoff.scannedPlayerId
-  });
+  const transport = useMemo(() => {
+    const webRtcTransport = createNativeWebRtcGuestTransport({
+      hostIp: handoff.connection.hostIp,
+      signalPort: handoff.connection.signalPort,
+      challengeToken: handoff.challengeToken
+    });
+    return withNetworkPreparation(handoff.connection, webRtcTransport);
+  }, [handoff.challengeToken, handoff.connection]);
+  const { state, retry, cancel } = useDuelSession(
+    {
+      role: "guest",
+      matchId: handoff.matchId,
+      discoveryToken: handoff.discoveryToken,
+      opponentId: handoff.scannedPlayerId
+    },
+    transport
+  );
 
   useEffect(() => {
     if (state.status === "connected") {
