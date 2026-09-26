@@ -7,12 +7,15 @@ import { CutCornerSurface } from "../../components/CutCornerSurface";
 import { DisplayHeading } from "../../components/DisplayHeading";
 import { KickerLabel } from "../../components/KickerLabel";
 import type { ChallengeHandoff } from "../../contracts/challengeHandoff";
+import type { DuelConnectionInfo } from "../../contracts/duelConnection";
 import { colors, fonts } from "../../theme/tokens";
 
 type RoundCount = ChallengeHandoff["roundCount"];
 
 type RoundCountSelectorProps = {
+  challengeToken: string;
   challengerId: string;
+  connection: DuelConnectionInfo;
   discoveryToken: string;
   matchId: string;
   onCancel: () => void;
@@ -37,7 +40,9 @@ function toRoundCount(value: string): RoundCount | null {
 }
 
 export function RoundCountSelector({
+  challengeToken,
   challengerId,
+  connection,
   discoveryToken,
   matchId,
   onCancel,
@@ -60,7 +65,9 @@ export function RoundCountSelector({
     }
 
     onRoundCountSelected({
+      challengeToken,
       challengerId,
+      connection,
       discoveryToken,
       matchId,
       roundCount,
@@ -68,7 +75,9 @@ export function RoundCountSelector({
       scannedPlayerName
     });
   }, [
+    challengeToken,
     challengerId,
+    connection,
     discoveryToken,
     matchId,
     onRoundCountSelected,

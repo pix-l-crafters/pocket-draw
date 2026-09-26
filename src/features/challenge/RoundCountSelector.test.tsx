@@ -5,6 +5,12 @@ import { appTheme } from "../../theme/appTheme";
 import { RoundCountSelector } from "./RoundCountSelector";
 
 const challengerId = "challenger-123";
+const challengeToken = "0123456789abcdef0123456789abcdef";
+const connection = {
+  mode: "existingWifi" as const,
+  hostIp: "192.168.1.42",
+  signalPort: 43123
+};
 const discoveryToken = "discovery-token-123";
 const matchId = "match-123";
 const scannedPlayerId = "opponent-456";
@@ -17,7 +23,9 @@ describe("RoundCountSelector", () => {
     const screen = await render(
       <PaperProvider theme={appTheme}>
         <RoundCountSelector
+          challengeToken={challengeToken}
           challengerId={challengerId}
+          connection={connection}
           discoveryToken={discoveryToken}
           matchId={matchId}
           onCancel={jest.fn()}
@@ -33,7 +41,9 @@ describe("RoundCountSelector", () => {
     await user.press(screen.getByText("Continue"));
 
     expect(onRoundCountSelected).toHaveBeenCalledWith({
+      challengeToken,
       challengerId,
+      connection,
       discoveryToken,
       matchId,
       roundCount: 5,
@@ -48,7 +58,9 @@ describe("RoundCountSelector", () => {
     const screen = await render(
       <PaperProvider theme={appTheme}>
         <RoundCountSelector
+          challengeToken={challengeToken}
           challengerId={challengerId}
+          connection={connection}
           discoveryToken={discoveryToken}
           matchId={matchId}
           onCancel={onCancel}

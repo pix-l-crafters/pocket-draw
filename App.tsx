@@ -146,6 +146,12 @@ export default function App() {
               ) : (
                 <ChallengeScreen
                   currentUser={toCurrentUser(user, displayName)}
+                  onHostConnected={(_channel, invite) => {
+                    console.log(
+                      "Host duel channel ready for match",
+                      invite.matchId
+                    );
+                  }}
                   onOpponentConfirmed={(opponent) => {
                     setPendingOpponent(opponent);
                   }}
@@ -154,7 +160,9 @@ export default function App() {
             </View>
             {pendingOpponent ? (
               <RoundCountSelector
+                challengeToken={pendingOpponent.challengeToken}
                 challengerId={pendingOpponent.challengerId}
+                connection={pendingOpponent.connection}
                 discoveryToken={pendingOpponent.discoveryToken}
                 matchId={pendingOpponent.matchId}
                 onCancel={() => setPendingOpponent(null)}

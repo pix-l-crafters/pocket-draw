@@ -1,7 +1,6 @@
-// Contract between the Challenge/BLE session (Siheng, ticket 3.8) and the
+// Contract between the Challenge/local-network session and the
 // Duel game logic (Tanachat, Tianze, Mobark). Duel code should depend on
-// this interface, not on BleScreen/react-native-ble-manager directly, so it
-// can be built and tested before the real BLE session exists.
+// this interface, not on a WebRTC or signaling implementation directly.
 
 export type DuelMessage =
   | { type: "ready" }
@@ -17,9 +16,5 @@ export interface DuelChannel {
   isConnected(): boolean;
 }
 
-// 3.8: the session layer lives in src/features/challenge/session/. It currently
-// hands back a real DuelChannel over mockDuelSessionTransport (an in-process
-// channel) because BLE peripheral-mode discovery is unsolved — see the map-duel
-// design doc §9 and session/bleDuelSessionTransport.ts. Duel logic still depends
-// only on this interface. mocks/mockDuelChannel.ts stays until a real transport
-// exists.
+// Production QR connections hand back a WebRTC DataChannel implementation;
+// isolated screens and tests can still use an in-process mock transport.

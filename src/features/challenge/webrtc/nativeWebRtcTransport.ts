@@ -6,6 +6,7 @@ import {
 } from "react-native-webrtc";
 
 import type { DuelTransportConnection } from "../session/duelSessionTransport";
+import type { DuelSessionTransport } from "../session/duelSessionTransport";
 import type { RtcDataChannelLike } from "./duelDataChannel";
 import type {
   PeerConnectionLike,
@@ -180,6 +181,7 @@ export async function startNativeWebRtcDuelHost(
   auth: WebRtcSessionAuth,
   options: { port?: number; signal?: AbortSignal } = {}
 ): Promise<WebRtcDuelHost> {
+  if (options.signal?.aborted) throw createAbortError();
   const controller = new AbortController();
   const externalSignal = options.signal;
   const abortFromExternal = () => controller.abort();
@@ -210,9 +212,15 @@ export async function startNativeWebRtcDuelHost(
 
   const port = await new Promise<number>((resolve, reject) => {
     const onError = (error: Error) => reject(error);
+    const onAbort = () => {
+      server.close();
+      reject(createAbortError());
+    };
     server.once("error", onError);
+    controller.signal.addEventListener("abort", onAbort, { once: true });
     server.listen({ port: options.port ?? 0, host: "0.0.0.0" }, () => {
       server.off("error", onError);
+      controller.signal.removeEventListener("abort", onAbort);
       const address = server.address();
       if (!address) {
         reject(new Error("Local signaling server did not expose a port."));
@@ -230,9 +238,18 @@ export async function startNativeWebRtcDuelHost(
   };
   controller.signal.addEventListener(
     "abort",
-    () => rejectConnection(createAbortError()),
+    () => {
+      if (server.listening) server.close();
+      if (activeSocket && !activeSocket.destroyed) activeSocket.destroy();
+      rejectConnection(createAbortError());
+    },
     { once: true }
   );
+
+  if (controller.signal.aborted) {
+    stop();
+    throw createAbortError();
+  }
 
   return { port, connection, stop };
 }
@@ -286,4 +303,25 @@ export function connectNativeWebRtcDuelGuest(
     socket.on("error", onError);
     signal.addEventListener("abort", onAbort, { once: true });
   });
+}
+
+export function createNativeWebRtcGuestTransport(target: {
+  hostIp: string;
+  signalPort: number;
+  challengeToken: string;
+}): DuelSessionTransport {
+  return {
+    connect(params, signal) {
+      return connectNativeWebRtcDuelGuest(
+        target.hostIp,
+        target.signalPort,
+        {
+          matchId: params.matchId,
+          challengeToken: target.challengeToken,
+          discoveryToken: params.discoveryToken
+        },
+        signal
+      );
+    }
+  };
 }

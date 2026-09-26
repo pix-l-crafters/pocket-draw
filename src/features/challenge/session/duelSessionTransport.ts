@@ -1,6 +1,9 @@
 import type { DuelChannel } from "../../../contracts/duelChannel";
 import type { DuelSessionParams } from "./duelSession.types";
 
+// Production QR handoffs use WebRTC. This interface remains transport-neutral
+// so tests and isolated screens can inject an in-process transport.
+
 export type DuelTransportConnection = {
   channel: DuelChannel;
   /** Registers a callback for an unexpected drop after connect succeeded. */

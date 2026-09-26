@@ -2,18 +2,22 @@ import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { SegmentedButtons } from "react-native-paper";
 
+import type { DuelChannel } from "../../contracts/duelChannel";
 import { colors } from "../../theme/tokens";
+import type { QrInvitePayload } from "../qr/types/qr.types";
 import { QrDisplayScreen } from "./QrDisplayScreen";
 import type { ConfirmedOpponent } from "./QrScannerScreen";
 import { QrScannerScreen } from "./QrScannerScreen";
 
 type ChallengeScreenProps = {
   currentUser: { displayName: string; uid: string };
+  onHostConnected?: (channel: DuelChannel, invite: QrInvitePayload) => void;
   onOpponentConfirmed: (opponent: ConfirmedOpponent) => void;
 };
 
 export function ChallengeScreen({
   currentUser,
+  onHostConnected,
   onOpponentConfirmed
 }: ChallengeScreenProps) {
   const [mode, setMode] = useState<"myQr" | "scan">("myQr");
@@ -31,7 +35,10 @@ export function ChallengeScreen({
       />
       <View style={styles.screen}>
         {mode === "myQr" ? (
-          <QrDisplayScreen currentUser={currentUser} />
+          <QrDisplayScreen
+            currentUser={currentUser}
+            onHostConnected={onHostConnected}
+          />
         ) : (
           <QrScannerScreen
             currentUser={currentUser}

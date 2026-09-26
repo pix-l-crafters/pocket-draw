@@ -9,6 +9,7 @@ import { StatusTag } from "../../components/StatusTag";
 import { colors } from "../../theme/tokens";
 import { parseQrInvite } from "../qr/utils/qr.validation";
 import type { QrValidationErrorCode } from "../qr/types/qr.types";
+import type { DuelConnectionInfo } from "../../contracts/duelConnection";
 import { OpponentPopup } from "./components/OpponentPopup";
 
 const ERROR_MESSAGES: Record<QrValidationErrorCode, string> = {
@@ -23,7 +24,9 @@ const ERROR_MESSAGES: Record<QrValidationErrorCode, string> = {
 };
 
 export type ConfirmedOpponent = {
+  challengeToken: string;
   challengerId: string;
+  connection: DuelConnectionInfo;
   scannedPlayerId: string;
   scannedPlayerName: string;
   matchId: string;
@@ -49,6 +52,8 @@ export function QrScannerScreen({
     hostPlayerId: string;
     hostPlayerName: string;
     matchId: string;
+    challengeToken: string;
+    connection: DuelConnectionInfo;
     discoveryToken: string;
   } | null>(null);
 
@@ -69,7 +74,9 @@ export function QrScannerScreen({
         hostPlayerId: result.value.hostPlayerId,
         hostPlayerName: result.value.hostPlayerName ?? "Player",
         matchId: result.value.matchId,
-        discoveryToken: result.value.ble.discoveryToken
+        challengeToken: result.value.challengeToken,
+        connection: result.value.connection,
+        discoveryToken: result.value.discoveryToken
       });
     },
     [currentUser.uid, scannedInvite]
@@ -85,7 +92,9 @@ export function QrScannerScreen({
       return;
     }
     onOpponentConfirmed({
+      challengeToken: scannedInvite.challengeToken,
       challengerId: currentUser.uid,
+      connection: scannedInvite.connection,
       scannedPlayerId: scannedInvite.hostPlayerId,
       scannedPlayerName: scannedInvite.hostPlayerName,
       matchId: scannedInvite.matchId,

@@ -34,7 +34,13 @@ describe("challengeRequestRepository", () => {
     } as never);
 
     const result = await challengeRequestRepository.sendChallenge({
+      challengeToken: "0123456789abcdef0123456789abcdef",
       challengerId: "challenger-123",
+      connection: {
+        mode: "existingWifi",
+        hostIp: "192.168.1.42",
+        signalPort: 43123
+      },
       discoveryToken: "discovery-token-123",
       matchId: "match-123",
       roundCount: 5,
@@ -43,7 +49,13 @@ describe("challengeRequestRepository", () => {
     });
 
     expect(addDoc).toHaveBeenCalledWith(collectionReference, {
+      challengeToken: "0123456789abcdef0123456789abcdef",
       challengerId: "challenger-123",
+      connection: {
+        mode: "existingWifi",
+        hostIp: "192.168.1.42",
+        signalPort: 43123
+      },
       discoveryToken: "discovery-token-123",
       matchId: "match-123",
       roundCount: 5,
