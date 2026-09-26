@@ -37,13 +37,14 @@ on:
 The build job only runs `if: github.event.pull_request.merged == true` —
 this catches actual merges, not closed-without-merging PRs.
 
-Concurrency group is keyed on the PR number, matching the pattern already
-used in `mega-linter.yml`:
+Concurrency group is keyed on the workflow name alone — since this workflow
+only ever triggers on `branches: [dev]`, that's enough to dedupe every merge
+into `dev`:
 
 ```yaml
 concurrency:
-  group: pr-${{ github.event.pull_request.number }}-${{ github.workflow }}
   cancel-in-progress: true
+  group: ${{ github.workflow }}
 ```
 
 If a second PR merges into `dev` while a build for an earlier merge is still
@@ -65,7 +66,10 @@ Steps:
 4. `expo/expo-github-action` — installs `eas-cli` and wires up the
    `EXPO_TOKEN` secret as the CLI's auth token.
 5. `eas build --platform ${{ matrix.platform }} --profile preview --non-interactive --wait --json`.
-6. Parse the JSON output for the build URL and expose it as a job output.
+6. Parse the JSON output for the build URL and write it to a per-platform
+   `result.json`, uploaded as an artifact (not a job output — GitHub Actions
+   only retains the _last-completed_ matrix leg's value for a matrix job's
+   `outputs:`, which would silently drop one platform's result).
 
 Job `permissions: { contents: read }`. The `notify` job additionally needs
 `pull-requests: write` to post its comment.
@@ -78,7 +82,7 @@ Runs once regardless of whether `build` succeeded or failed
 - Writes both platforms' build links (or failure status) to
   `$GITHUB_STEP_SUMMARY`.
 - Posts one comment on the merged PR (via `actions/github-script`) with
-  both install links/QRs, or a "build failed, check the Actions run" message
+  both install links, or a "build failed, check the Actions run" message
   if either matrix leg failed.
 
 ## Prerequisites (one-time, manual, outside CI)

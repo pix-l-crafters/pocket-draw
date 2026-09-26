@@ -1,7 +1,7 @@
 ---
 concurrency:
   cancel-in-progress: true
-  group: pr-${{ github.event.pull_request.number }}-${{ github.workflow }}
+  group: ${{ github.workflow }}
 jobs:
   build:
     if: github.event.pull_request.merged == true
@@ -25,6 +25,7 @@ jobs:
       - name: Setup Expo and EAS
         uses: expo/expo-github-action@eab7a230208c952974db8c3245cfd78402c7b385 # v9.0.0
         with:
+          eas-version: latest
           packager: npm
           token: ${{ secrets.EXPO_TOKEN }}
       - id: build
@@ -40,7 +41,7 @@ jobs:
           fi
           jq -n \
             --arg platform "${{ matrix.platform }}" \
-            --arg status "${{ steps.build.outcome }}" \
+            --arg status "${{ steps.build.outcome || 'failure' }}" \
             --arg url "$url" \
             '{platform: $platform, status: $status, url: $url}' > result.json
       - if: always()
@@ -56,7 +57,7 @@ jobs:
           - ios
           - android
   notify:
-    if: always() && needs.build.result != 'skipped'
+    if: always() && needs.build.result != 'skipped' && needs.build.result != 'cancelled'
     name: Notify
     needs:
       - build
@@ -84,8 +85,10 @@ jobs:
                 platform=$(jq -r '.platform' "$f")
                 status=$(jq -r '.status' "$f")
                 url=$(jq -r '.url' "$f")
-                if [ "$status" = "success" ]; then
+                if [ "$status" = "success" ] && [ -n "$url" ]; then
                   echo "- **$platform**: [Install]($url)"
+                elif [ "$status" = "success" ]; then
+                  echo "- **$platform**: build succeeded but no install URL was parsed — check the Actions run"
                 else
                   echo "- **$platform**: build $status — check the Actions run"
                 fi
