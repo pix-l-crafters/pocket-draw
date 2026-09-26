@@ -26,7 +26,8 @@
     "ios": {
       "bundleIdentifier": "com.anonymous.pocketdraw",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSLocalNetworkUsageDescription": "Allow Pocket Draw to connect directly to a nearby opponent for a duel."
       },
       "supportsTablet": true
     },
@@ -62,7 +63,8 @@
       ],
       "expo-font",
       "expo-audio",
-      "expo-asset"
+      "expo-asset",
+      "@config-plugins/react-native-webrtc"
     ],
     "slug": "pocket-draw",
     "userInterfaceStyle": "light",
