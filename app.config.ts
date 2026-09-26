@@ -12,9 +12,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     config: {
       ...config.android?.config,
       googleMaps: {
-        // Maps SDK for Android renders a blank grey map without this key.
+        // An empty value makes Expo omit com.google.android.geo.API_KEY, and
+        // MapView then crashes on launch. A placeholder keeps the process up;
+        // tiles stay grey until GOOGLE_MAPS_ANDROID_API_KEY is set.
         // Not EXPO_PUBLIC_: it belongs in AndroidManifest.xml, not the JS bundle.
-        apiKey: process.env.GOOGLE_MAPS_ANDROID_API_KEY
+        apiKey: process.env.GOOGLE_MAPS_ANDROID_API_KEY || "dev-placeholder"
       }
     }
   }
