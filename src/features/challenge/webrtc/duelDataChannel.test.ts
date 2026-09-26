@@ -32,9 +32,11 @@ describe("WebRTC DuelChannel adapter", () => {
     const rtcChannel = new FakeDataChannel();
     const connection = createDuelDataChannelConnection(rtcChannel);
 
-    connection.channel.send({ type: "raised", atMs: 1234 });
+    connection.channel.send({ type: "raised", atMs: 1234, reactionMs: 420 });
 
-    expect(rtcChannel.sent).toEqual(['{"type":"raised","atMs":1234}']);
+    expect(rtcChannel.sent).toEqual([
+      '{"type":"raised","atMs":1234,"reactionMs":420}'
+    ]);
     expect(connection.channel.isConnected()).toBe(true);
   });
 

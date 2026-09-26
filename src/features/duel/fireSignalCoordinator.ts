@@ -47,9 +47,11 @@ export class FireSignalCoordinator {
       throw new Error("The FIRE signal has already triggered for this round.");
     }
 
+    // Send before accepting locally: it costs the host its own head start of a
+    // tick, and a send that throws leaves no local-only FIRE behind.
     const signal: FireSignal = { type: "fire", atMs: this.now() };
-    this.acceptFireSignal(signal);
     this.channel.send(signal);
+    this.acceptFireSignal(signal);
 
     return signal;
   }

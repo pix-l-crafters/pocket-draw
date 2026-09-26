@@ -12,6 +12,9 @@ import { mockPlayerStats } from "../../../contracts/mocks/mockPlayerStats";
 import { colors } from "../../../theme/tokens";
 
 type OpponentPopupProps = {
+  cancelLabel?: string;
+  confirmLabel?: string;
+  kicker?: string;
   onCancel: () => void;
   onChallenge: () => void;
   scannedPlayerId: string;
@@ -24,6 +27,9 @@ function getOpponentStats(uid: string, displayName: string): PlayerStats {
 }
 
 export function OpponentPopup({
+  cancelLabel = "Cancel",
+  confirmLabel = "Send Challenge",
+  kicker = "Opponent Found",
   onCancel,
   onChallenge,
   scannedPlayerId,
@@ -41,7 +47,7 @@ export function OpponentPopup({
     >
       <View style={styles.backdrop}>
         <CutCornerSurface corner="large" style={styles.card}>
-          <KickerLabel>Opponent Found</KickerLabel>
+          <KickerLabel>{kicker}</KickerLabel>
           <DisplayHeading size={26} style={styles.name}>
             {stats.displayName}
           </DisplayHeading>
@@ -55,8 +61,8 @@ export function OpponentPopup({
             <StatTile label="Elo" value={String(stats.eloRating)} />
           </View>
           <View style={styles.actions}>
-            <CutCornerButton label="Send Challenge" onPress={onChallenge} />
-            <CutCornerButton label="Cancel" onPress={onCancel} />
+            <CutCornerButton label={confirmLabel} onPress={onChallenge} />
+            <CutCornerButton label={cancelLabel} onPress={onCancel} />
           </View>
         </CutCornerSurface>
       </View>

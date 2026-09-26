@@ -20,13 +20,19 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { useAuthUser } from "./src/lib/useAuthUser";
 import { ChallengeScreen } from "./src/features/challenge/ChallengeScreen";
 import { ConnectingScreen } from "./src/features/challenge/ConnectingScreen";
+import {
+  IncomingChallengeScreen,
+  type Challenger
+} from "./src/features/challenge/IncomingChallengeScreen";
 import type { ChallengeHandoff } from "./src/contracts/challengeHandoff";
 import type { DuelChannel } from "./src/contracts/duelChannel";
-import { DuelScreen } from "./src/features/duel/DuelScreen";
+import { DuelScreen, type DuelPlayer } from "./src/features/duel/DuelScreen";
+import type { DuelRole } from "./src/features/duel/fireSignalCoordinator";
 import { GameInstructionsScreen } from "./src/features/duel/GameInstructionsScreen";
 import { MapScreen } from "./src/features/map/MapScreen";
 import { ProfileScreen } from "./src/features/profile/ProfileScreen";
 import type { CurrentUser } from "./src/features/map/types/map.types";
+import type { QrInvitePayload } from "./src/features/qr/types/qr.types";
 import LoginScreen from "./src/screens/LoginScreen";
 import RegisterScreen from "./src/screens/RegisterScreen";
 import { challengeRequestRepository } from "./src/features/challenge/services/challengeRequestRepository";
@@ -41,6 +47,16 @@ type AppTab = "map" | "challenge" | "profile";
 
 type ActiveDuel = {
   channel: DuelChannel;
+  matchId: string;
+  opponent: DuelPlayer;
+  role: DuelRole;
+  self: DuelPlayer;
+};
+
+/** A guest has opened the duel channel and is waiting on this player's answer. */
+type IncomingChallenge = {
+  channel: DuelChannel;
+  matchId: string;
 };
 
 const NAV_ROUTES: {
@@ -77,22 +93,57 @@ export default function App() {
     null
   );
   const [activeDuel, setActiveDuel] = useState<ActiveDuel | null>(null);
+  const [incomingChallenge, setIncomingChallenge] =
+    useState<IncomingChallenge | null>(null);
   const [instructionsSeen, setInstructionsSeen] = useState(false);
 
   const exitDuel = () => {
     setActiveDuel(null);
+    setIncomingChallenge(null);
     setInstructionsSeen(false);
     setPendingHandoff(null);
     setActiveTab("map");
   };
 
+  const self: DuelPlayer = { id: user?.uid ?? "", name: displayName };
+
   // Stable identity matters: QrDisplayScreen keys its host-server effect on
   // this, so a new function each render would tear the signaling server down
-  // and restart it, dropping any guest mid-join.
-  const startDuel = useCallback(
-    (channel: DuelChannel) => setActiveDuel({ channel }),
+  // and restart it, dropping any guest mid-join. The guest is connected but
+  // not yet accepted here — the popup that follows is what starts the duel.
+  const onHostConnected = useCallback(
+    (channel: DuelChannel, invite: QrInvitePayload) =>
+      setIncomingChallenge({ channel, matchId: invite.matchId }),
     []
   );
+
+  // The guest side: the host has already accepted by the time this runs.
+  const onGuestConnected = useCallback(
+    (channel: DuelChannel, handoff: ChallengeHandoff) =>
+      setActiveDuel({
+        channel,
+        matchId: handoff.matchId,
+        opponent: {
+          id: handoff.scannedPlayerId,
+          name: handoff.scannedPlayerName
+        },
+        role: "guest",
+        self: { id: handoff.challengerId, name: displayName }
+      }),
+    [displayName]
+  );
+
+  const acceptChallenge = (challenger: Challenger) => {
+    if (!incomingChallenge) return;
+    setActiveDuel({
+      channel: incomingChallenge.channel,
+      matchId: incomingChallenge.matchId,
+      opponent: { id: challenger.playerId, name: challenger.playerName },
+      role: "host",
+      self
+    });
+    setIncomingChallenge(null);
+  };
   const [barlowLoaded] = useBarlowFonts({ Barlow_400Regular });
   const [barlowCondensedLoaded] = useBarlowCondensedFonts({
     BarlowCondensed_700Bold
@@ -157,8 +208,21 @@ export default function App() {
                   onContinue={() => setInstructionsSeen(true)}
                 />
               ) : (
-                <DuelScreen channel={activeDuel.channel} onExit={exitDuel} />
+                <DuelScreen
+                  channel={activeDuel.channel}
+                  matchId={activeDuel.matchId}
+                  onExit={exitDuel}
+                  opponent={activeDuel.opponent}
+                  role={activeDuel.role}
+                  self={activeDuel.self}
+                />
               )
+            ) : incomingChallenge ? (
+              <IncomingChallengeScreen
+                channel={incomingChallenge.channel}
+                onAccept={acceptChallenge}
+                onDecline={() => setIncomingChallenge(null)}
+              />
             ) : (
               <>
                 <View style={styles.screenContainer}>
@@ -172,14 +236,15 @@ export default function App() {
                     />
                   ) : pendingHandoff ? (
                     <ConnectingScreen
+                      currentUser={{ displayName, uid: user.uid }}
                       handoff={pendingHandoff}
-                      onConnected={startDuel}
+                      onConnected={onGuestConnected}
                       onExit={() => setPendingHandoff(null)}
                     />
                   ) : (
                     <ChallengeScreen
                       currentUser={toCurrentUser(user, displayName)}
-                      onHostConnected={startDuel}
+                      onHostConnected={onHostConnected}
                       onOpponentConfirmed={(opponent) => {
                         const handoff: ChallengeHandoff = {
                           ...opponent,

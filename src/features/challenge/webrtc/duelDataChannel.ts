@@ -15,6 +15,10 @@ function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0;
+}
+
 export function isDuelMessage(value: unknown): value is DuelMessage {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     return false;
@@ -22,13 +26,24 @@ export function isDuelMessage(value: unknown): value is DuelMessage {
   const message = value as Record<string, unknown>;
   switch (message.type) {
     case "ready":
+    case "challengeAccepted":
+    case "challengeDeclined":
       return true;
-    case "buzz":
-      return isFiniteNumber(message.delayMs) && message.delayMs >= 0;
+    case "challenge":
+      return (
+        isNonEmptyString(message.playerId) &&
+        isNonEmptyString(message.playerName)
+      );
     case "countdown":
       return message.value === 3 || message.value === 2 || message.value === 1;
-    case "fire":
     case "raised":
+      return (
+        isFiniteNumber(message.atMs) &&
+        message.atMs >= 0 &&
+        isFiniteNumber(message.reactionMs) &&
+        message.reactionMs >= 0
+      );
+    case "fire":
     case "falseStart":
       return isFiniteNumber(message.atMs) && message.atMs >= 0;
     case "clockPing":
