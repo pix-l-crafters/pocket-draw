@@ -5,7 +5,7 @@
         "backgroundColor": "#000000",
         "foregroundImage": "./assets/icon.png"
       },
-      "package": "com.anonymous.pocketdraw",
+      "package": "com.pixlcrafters.pocketdraw",
       "permissions": [
         "android.permission.BLUETOOTH",
         "android.permission.BLUETOOTH_ADMIN",
@@ -27,7 +27,7 @@
     },
     "icon": "./assets/icon.png",
     "ios": {
-      "bundleIdentifier": "com.anonymous.pocketdraw",
+      "bundleIdentifier": "com.pix-l-crafters.pocketdraw",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSLocalNetworkUsageDescription": "Allow Pocket Draw to connect directly to a nearby opponent for a duel."
