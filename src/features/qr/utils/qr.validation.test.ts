@@ -1,6 +1,9 @@
 import type { QrInvitePayload } from "../types/qr.types";
 import { parseQrInvite, validateQrInvite } from "./qr.validation";
 
+// Test-only hotspot passphrase.
+const FIXTURE_PASSPHRASE = "draw-4821";
+
 const now = 1_800_000_000_000;
 
 const validInvite: QrInvitePayload = {
@@ -55,5 +58,46 @@ describe("WebRTC QR invite validation", () => {
         now
       )
     ).toEqual({ ok: false, code: "UNSUPPORTED_TRANSPORT" });
+  });
+
+  it("accepts a hotspot invite with credentials and a signaling target", () => {
+    const hotspotInvite: QrInvitePayload = {
+      ...validInvite,
+      connection: {
+        mode: "hotspot",
+        ssid: "PocketDraw-A1B2",
+        password: FIXTURE_PASSPHRASE,
+        hostIp: "192.168.43.1",
+        signalPort: 43123
+      }
+    };
+
+    expect(validateQrInvite(hotspotInvite, "guest-456", now)).toEqual({
+      ok: true,
+      value: hotspotInvite
+    });
+  });
+
+  it.each([
+    { ssid: "", password: FIXTURE_PASSPHRASE },
+    { ssid: "PocketDraw-A1B2", password: "x".repeat(7) },
+    { ssid: "x".repeat(33), password: FIXTURE_PASSPHRASE }
+  ])("rejects unusable hotspot credentials %#", ({ ssid, password }) => {
+    expect(
+      validateQrInvite(
+        {
+          ...validInvite,
+          connection: {
+            mode: "hotspot",
+            ssid,
+            password,
+            hostIp: "192.168.43.1",
+            signalPort: 43123
+          }
+        },
+        "guest-456",
+        now
+      )
+    ).toEqual({ ok: false, code: "INVALID_PAYLOAD" });
   });
 });

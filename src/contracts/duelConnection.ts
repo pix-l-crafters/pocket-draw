@@ -4,4 +4,12 @@ export type ExistingWifiConnection = {
   signalPort: number;
 };
 
-export type DuelConnectionInfo = ExistingWifiConnection;
+export type HotspotConnection = {
+  mode: "hotspot";
+  ssid: string;
+  password: string;
+  hostIp: string;
+  signalPort: number;
+};
+
+export type DuelConnectionInfo = ExistingWifiConnection | HotspotConnection;

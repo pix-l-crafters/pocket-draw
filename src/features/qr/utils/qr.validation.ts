@@ -3,7 +3,12 @@
 // active or that a token was securely generated.
 
 import type { QrInvitePayload, QrValidationResult } from "../types/qr.types";
-import { isUsableIpv4Address, isValidSignalPort } from "./ip.validation";
+import {
+  isUsableIpv4Address,
+  isValidHotspotPassword,
+  isValidSignalPort,
+  isValidWifiSsid
+} from "./ip.validation";
 
 const MAX_QR_PAYLOAD_LENGTH = 550;
 const INVITE_LIFETIME_MS = 60_000;
@@ -92,11 +97,20 @@ export function hasSupportedTransport(value: unknown): boolean {
 
 export function hasValidConnection(value: unknown): boolean {
   if (!isRecord(value) || !isRecord(value.connection)) return false;
-  return (
-    value.connection.mode === "existingWifi" &&
-    isUsableIpv4Address(value.connection.hostIp) &&
-    isValidSignalPort(value.connection.signalPort)
-  );
+  if (
+    !isUsableIpv4Address(value.connection.hostIp) ||
+    !isValidSignalPort(value.connection.signalPort)
+  ) {
+    return false;
+  }
+  if (value.connection.mode === "existingWifi") return true;
+  if (value.connection.mode === "hotspot") {
+    return (
+      isValidWifiSsid(value.connection.ssid) &&
+      isValidHotspotPassword(value.connection.password)
+    );
+  }
+  return false;
 }
 
 /** Accept UUID v4 syntax with either lowercase or uppercase hexadecimal characters. */

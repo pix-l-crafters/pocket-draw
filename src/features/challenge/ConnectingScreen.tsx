@@ -9,6 +9,7 @@ import type { ChallengeHandoff } from "../../contracts/challengeHandoff";
 import type { DuelChannel } from "../../contracts/duelChannel";
 import { colors } from "../../theme/tokens";
 import { useDuelSession } from "./hooks/useDuelSession";
+import { withNetworkPreparation } from "./network/hotspot";
 import { DUEL_CONNECT_MAX_AUTO_RETRIES } from "./session/duelSession.constants";
 import { createNativeWebRtcGuestTransport } from "./webrtc/nativeWebRtcTransport";
 
@@ -24,15 +25,14 @@ export function ConnectingScreen({
   onExit
 }: ConnectingScreenProps) {
   const opponentName = handoff.scannedPlayerName;
-  const transport = useMemo(
-    () =>
-      createNativeWebRtcGuestTransport({
-        hostIp: handoff.connection.hostIp,
-        signalPort: handoff.connection.signalPort,
-        challengeToken: handoff.challengeToken
-      }),
-    [handoff.challengeToken, handoff.connection]
-  );
+  const transport = useMemo(() => {
+    const webRtcTransport = createNativeWebRtcGuestTransport({
+      hostIp: handoff.connection.hostIp,
+      signalPort: handoff.connection.signalPort,
+      challengeToken: handoff.challengeToken
+    });
+    return withNetworkPreparation(handoff.connection, webRtcTransport);
+  }, [handoff.challengeToken, handoff.connection]);
   const { state, retry, cancel } = useDuelSession(
     {
       role: "guest",

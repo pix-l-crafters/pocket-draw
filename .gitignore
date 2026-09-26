@@ -29,9 +29,9 @@ opencode.json
 
 # expo
 .expo/
-android/
+/android/
+/ios/
 expo-env.d.ts
-ios/
 web-build/
 
 # design references (local scratch, not shipped app source)

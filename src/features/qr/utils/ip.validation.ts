@@ -21,3 +21,13 @@ export function isValidSignalPort(value: unknown): value is number {
     Number.isInteger(value) && Number(value) >= 1 && Number(value) <= 65_535
   );
 }
+
+export function isValidWifiSsid(value: unknown): value is string {
+  return (
+    typeof value === "string" && value.trim().length > 0 && value.length <= 32
+  );
+}
+
+export function isValidHotspotPassword(value: unknown): value is string {
+  return typeof value === "string" && value.length >= 8 && value.length <= 63;
+}
