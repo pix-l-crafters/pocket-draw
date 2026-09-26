@@ -21,6 +21,13 @@ type UseDuelSessionResult = {
   retry: () => void;
   /** Give up: abort any in-flight attempt and settle on `idle`. */
   cancel: () => void;
+  /**
+   * Transfer ownership of a connected channel to the caller, so unmounting
+   * this hook no longer tears the connection down. Required when the duel
+   * outlives the screen that opened it — otherwise the DataChannel closes and
+   * the first `channel.send` of the round throws.
+   */
+  handOff: () => void;
 };
 
 function getParamsKey(params: DuelSessionParams | null) {
@@ -45,6 +52,7 @@ export function useDuelSession(
   const [state, setState] = useState<DuelSessionState>({ status: "idle" });
   const [attemptEpoch, setAttemptEpoch] = useState(0);
   const [cancelled, setCancelled] = useState(false);
+  const handedOff = useRef(false);
 
   // Callers pass a fresh `params` object each render; the string key is the
   // stable identity the connect effect keys on.
@@ -56,6 +64,7 @@ export function useDuelSession(
   useEffect(() => {
     setCancelled(false);
     setAttemptEpoch(0);
+    handedOff.current = false;
   }, [paramsKey]);
 
   useEffect(() => {
@@ -126,7 +135,9 @@ export function useDuelSession(
     return () => {
       disposed = true;
       controller.abort();
-      connection?.disconnect();
+      if (!handedOff.current) {
+        connection?.disconnect();
+      }
     };
   }, [paramsKey, attemptEpoch, cancelled, transport]);
 
@@ -139,5 +150,9 @@ export function useDuelSession(
     setCancelled(true);
   }, []);
 
-  return { state, retry, cancel };
+  const handOff = useCallback(() => {
+    handedOff.current = true;
+  }, []);
+
+  return { state, retry, cancel, handOff };
 }
