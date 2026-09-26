@@ -43,7 +43,36 @@ export function PreRound({ channel, readRssi }: PreRoundProps) {
   const [faceDown, setFaceDown] = useState(false);
   const [reactionMs, setReactionMs] = useState<number | null>(null);
   const [audioMuted, setAudioMuted] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const reactionTimerRef = useRef(new ReactionTimer());
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  // Countdown timers fire up to ~3s after the buzz. Without this, leaving the
+  // duel mid-countdown sends on a closed channel and throws inside setTimeout,
+  // which React Native surfaces as a crash rather than a caught error.
+  useEffect(
+    () => () => {
+      timersRef.current.forEach(clearTimeout);
+      timersRef.current = [];
+    },
+    []
+  );
+
+  const later = (handler: () => void, delayMs: number) => {
+    timersRef.current.push(setTimeout(handler, delayMs));
+  };
+
+  // A dropped peer makes `send` throw; inside a timer that would be an
+  // unhandled crash, so surface it as a visible state instead.
+  const safeSend = (message: DuelMessage) => {
+    try {
+      channel.send(message);
+      return true;
+    } catch {
+      setSendError("Lost the connection to your opponent.");
+      return false;
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -88,7 +117,7 @@ export function PreRound({ channel, readRssi }: PreRoundProps) {
     const capture = reactionTimerRef.current.captureRaise(Date.now());
     if (!capture) return;
     setReactionMs(capture.reactionMs);
-    channel.send({ type: "raised", atMs: capture.raisedAtMs });
+    safeSend({ type: "raised", atMs: capture.raisedAtMs });
   };
 
   const playCountdownAudio = () => {
@@ -125,18 +154,18 @@ export function PreRound({ channel, readRssi }: PreRoundProps) {
   const advance = () => {
     if (phase === "separate" && separated) setPhase("faceDown");
     else if (phase === "faceDown" && faceDown) {
-      channel.send({ type: "ready" });
+      if (!safeSend({ type: "ready" })) return;
       const delayMs = 1000 + Math.floor(Math.random() * 2000);
-      setTimeout(() => {
-        channel.send({ type: "buzz", delayMs });
+      later(() => {
+        if (!safeSend({ type: "buzz", delayMs })) return;
         void Haptics.notificationAsync(
           Haptics.NotificationFeedbackType.Success
         );
         setBuzzed(true);
         setPhase("countdown");
         COUNTDOWN_VALUES.forEach((value, index) => {
-          setTimeout(() => {
-            channel.send({ type: "countdown", value });
+          later(() => {
+            if (!safeSend({ type: "countdown", value })) return;
             playCountdownAudio();
             void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             setCountdown(value);
@@ -158,7 +187,7 @@ export function PreRound({ channel, readRssi }: PreRoundProps) {
         style={styles.muteButton}
       />
       <Text style={styles.kicker}>PRE-ROUND RITUAL</Text>
-      <Text style={styles.heading}>{status}</Text>
+      <Text style={styles.heading}>{sendError ?? status}</Text>
       <Text style={styles.detail}>
         {phase === "separate" &&
           `BLE signal: ${rssi === null ? "—" : `${rssi} dBm`}`}

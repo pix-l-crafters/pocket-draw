@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import type { User } from "firebase/auth";
@@ -85,6 +85,14 @@ export default function App() {
     setPendingHandoff(null);
     setActiveTab("map");
   };
+
+  // Stable identity matters: QrDisplayScreen keys its host-server effect on
+  // this, so a new function each render would tear the signaling server down
+  // and restart it, dropping any guest mid-join.
+  const startDuel = useCallback(
+    (channel: DuelChannel) => setActiveDuel({ channel }),
+    []
+  );
   const [barlowLoaded] = useBarlowFonts({ Barlow_400Regular });
   const [barlowCondensedLoaded] = useBarlowCondensedFonts({
     BarlowCondensed_700Bold
@@ -165,13 +173,13 @@ export default function App() {
                   ) : pendingHandoff ? (
                     <ConnectingScreen
                       handoff={pendingHandoff}
-                      onConnected={(channel) => setActiveDuel({ channel })}
+                      onConnected={startDuel}
                       onExit={() => setPendingHandoff(null)}
                     />
                   ) : (
                     <ChallengeScreen
                       currentUser={toCurrentUser(user, displayName)}
-                      onHostConnected={(channel) => setActiveDuel({ channel })}
+                      onHostConnected={startDuel}
                       onOpponentConfirmed={(opponent) => {
                         const handoff: ChallengeHandoff = {
                           ...opponent,

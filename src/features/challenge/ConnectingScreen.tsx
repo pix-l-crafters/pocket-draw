@@ -33,7 +33,7 @@ export function ConnectingScreen({
     });
     return withNetworkPreparation(handoff.connection, webRtcTransport);
   }, [handoff.challengeToken, handoff.connection]);
-  const { state, retry, cancel } = useDuelSession(
+  const { state, retry, cancel, handOff } = useDuelSession(
     {
       role: "guest",
       matchId: handoff.matchId,
@@ -45,9 +45,12 @@ export function ConnectingScreen({
 
   useEffect(() => {
     if (state.status === "connected") {
+      // Hand off before notifying: the caller swaps this screen out for the
+      // duel, and the unmount must not close the channel the duel just got.
+      handOff();
       onConnected(state.channel, handoff);
     }
-  }, [state, handoff, onConnected]);
+  }, [state, handoff, onConnected, handOff]);
 
   const isBusy = state.status === "connecting" || state.status === "retrying";
   const totalAttempts = DUEL_CONNECT_MAX_AUTO_RETRIES + 1;

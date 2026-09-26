@@ -31,6 +31,14 @@ export function isDuelMessage(value: unknown): value is DuelMessage {
     case "raised":
     case "falseStart":
       return isFiniteNumber(message.atMs) && message.atMs >= 0;
+    case "clockPing":
+      return isFiniteNumber(message.t0);
+    case "clockPong":
+      return (
+        isFiniteNumber(message.t0) &&
+        isFiniteNumber(message.t1) &&
+        isFiniteNumber(message.t2)
+      );
     default:
       return false;
   }

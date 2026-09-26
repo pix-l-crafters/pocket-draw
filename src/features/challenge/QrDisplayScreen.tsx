@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Platform, StyleSheet, Text, TextInput, View } from "react-native";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View
+} from "react-native";
 import { SegmentedButtons } from "react-native-paper";
 import QRCode from "react-native-qrcode-svg";
 
@@ -264,91 +272,102 @@ export function QrDisplayScreen({
     (!isValidWifiSsid(manualSsid) || !isValidHotspotPassword(manualPassword));
 
   return (
-    <View style={styles.container}>
-      <ScreenHeader
-        kicker="Challenge"
-        subtitle={
-          connectionMode === "existingWifi"
-            ? "Keep both devices on the same Wi-Fi, then have your opponent scan this code."
-            : "Create or enable a hotspot, then have your opponent scan to join it."
-        }
-        title="Your QR Code"
-      />
-      <SegmentedButtons
-        buttons={[
-          { value: "existingWifi", label: "Shared Wi-Fi" },
-          { value: "hotspot", label: "Hotspot" }
-        ]}
-        onValueChange={changeConnectionMode}
-        value={connectionMode}
-      />
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      style={styles.container}
+    >
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
+        <ScreenHeader
+          kicker="Challenge"
+          subtitle={
+            connectionMode === "existingWifi"
+              ? "Keep both devices on the same Wi-Fi, then have your opponent scan this code."
+              : "No shared Wi-Fi? Your phone becomes the network, and the QR code carries the details so they can join it."
+          }
+          title="Your QR Code"
+        />
+        <SegmentedButtons
+          buttons={[
+            { value: "existingWifi", label: "Shared Wi-Fi" },
+            { value: "hotspot", label: "Hotspot" }
+          ]}
+          onValueChange={changeConnectionMode}
+          value={connectionMode}
+        />
 
-      {connectionMode === "hotspot" && Platform.OS === "ios" ? (
-        <CutCornerSurface corner="small" style={styles.instructionsCard}>
-          <Text style={styles.instructions}>
-            Enable Personal Hotspot in iOS Settings, then enter its Wi-Fi name
-            and password below.
-          </Text>
-          <TextInput
-            accessibilityLabel="Personal Hotspot Wi-Fi name"
-            autoCapitalize="none"
-            onChangeText={setManualSsid}
-            placeholder="Hotspot Wi-Fi name"
-            placeholderTextColor={colors.textMuted60}
-            style={styles.input}
-            value={manualSsid}
-          />
-          <TextInput
-            accessibilityLabel="Personal Hotspot password"
-            autoCapitalize="none"
-            onChangeText={setManualPassword}
-            placeholder="Password (8–63 characters)"
-            placeholderTextColor={colors.textMuted60}
-            secureTextEntry
-            style={styles.input}
-            value={manualPassword}
-          />
-        </CutCornerSurface>
-      ) : null}
-
-      <CutCornerSurface corner="large" style={styles.qrCard}>
-        {invite ? (
-          <View style={styles.qrWrapper}>
-            <QRCode
-              backgroundColor={colors.text}
-              color={colors.background}
-              size={220}
-              value={JSON.stringify(invite)}
+        {connectionMode === "hotspot" && Platform.OS === "ios" ? (
+          <CutCornerSurface corner="small" style={styles.instructionsCard}>
+            <Text style={styles.instructions}>
+              Enable Personal Hotspot in iOS Settings, then enter its Wi-Fi name
+              and password below.
+            </Text>
+            <TextInput
+              accessibilityLabel="Personal Hotspot Wi-Fi name"
+              autoCapitalize="none"
+              onChangeText={setManualSsid}
+              placeholder="Hotspot Wi-Fi name"
+              placeholderTextColor={colors.textMuted60}
+              style={styles.input}
+              value={manualSsid}
             />
-          </View>
+            <TextInput
+              accessibilityLabel="Personal Hotspot password"
+              autoCapitalize="none"
+              onChangeText={setManualPassword}
+              placeholder="Password (8–63 characters)"
+              placeholderTextColor={colors.textMuted60}
+              secureTextEntry
+              style={styles.input}
+              value={manualPassword}
+            />
+          </CutCornerSurface>
         ) : null}
-        {setupError ? (
-          <StatusTag tone="warning">{setupError}</StatusTag>
-        ) : waitingForIosDetails ? (
-          <StatusTag>Enter your Personal Hotspot details above.</StatusTag>
-        ) : invite ? (
-          <StatusTag tone={secondsLeft <= 10 ? "warning" : "muted"}>
-            {`${invite.connection.mode === "hotspot" ? `${invite.connection.ssid} · ` : ""}${invite.connection.hostIp}:${invite.connection.signalPort} · refreshes in ${secondsLeft}s`}
-          </StatusTag>
-        ) : (
-          <StatusTag>
-            {connectionMode === "hotspot" && Platform.OS === "android"
-              ? "Creating Android hotspot…"
-              : "Starting local connection…"}
-          </StatusTag>
-        )}
-      </CutCornerSurface>
-      <CutCornerButton label="Generate New Code" onPress={regenerate} />
-    </View>
+
+        <CutCornerSurface corner="large" style={styles.qrCard}>
+          {invite ? (
+            <View style={styles.qrWrapper}>
+              <QRCode
+                backgroundColor={colors.text}
+                color={colors.background}
+                size={220}
+                value={JSON.stringify(invite)}
+              />
+            </View>
+          ) : null}
+          {setupError ? (
+            <StatusTag tone="warning">{setupError}</StatusTag>
+          ) : waitingForIosDetails ? (
+            <StatusTag>Enter your Personal Hotspot details above.</StatusTag>
+          ) : invite ? (
+            <StatusTag tone={secondsLeft <= 10 ? "warning" : "muted"}>
+              {`${invite.connection.mode === "hotspot" ? `${invite.connection.ssid} · ` : ""}${invite.connection.hostIp}:${invite.connection.signalPort} · refreshes in ${secondsLeft}s`}
+            </StatusTag>
+          ) : (
+            <StatusTag>
+              {connectionMode === "hotspot" && Platform.OS === "android"
+                ? "Creating Android hotspot…"
+                : "Starting local connection…"}
+            </StatusTag>
+          )}
+        </CutCornerSurface>
+        <CutCornerButton label="Generate New Code" onPress={regenerate} />
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     backgroundColor: colors.background,
-    flex: 1,
+    flex: 1
+  },
+  content: {
     gap: 16,
-    padding: 16
+    padding: 16,
+    paddingBottom: 32
   },
   input: {
     borderColor: colors.textMuted60,
