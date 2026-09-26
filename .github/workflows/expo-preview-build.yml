@@ -36,7 +36,7 @@ jobs:
         run: |
           url=""
           if [ -s build-output.json ]; then
-            url=$(jq -r '.[0].buildUrl // empty' build-output.json)
+            url=$(jq -r '.[0].buildUrl // empty' build-output.json 2>/dev/null || echo "")
           fi
           jq -n \
             --arg platform "${{ matrix.platform }}" \
