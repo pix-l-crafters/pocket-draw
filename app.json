@@ -32,12 +32,21 @@
         "ITSAppUsesNonExemptEncryption": false,
         "NSLocalNetworkUsageDescription": "Allow Pocket Draw to connect directly to a nearby opponent for a duel."
       },
-      "supportsTablet": true
+      "supportsTablet": true,
+      "appleTeamId": "UTGWLD7896"
     },
     "name": "Pocket Draw",
     "orientation": "portrait",
     "owner": "pix-l-crafters",
     "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "enableSceneSupport": true
+          }
+        }
+      ],
       [
         "react-native-ble-manager",
         {
