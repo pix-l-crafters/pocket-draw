@@ -40,15 +40,6 @@
     "owner": "pix-l-crafters",
     "plugins": [
       [
-        "expo-build-properties",
-        {
-          "ios": {
-            "enableSceneSupport": true,
-            "usePrecompiledModules": false
-          }
-        }
-      ],
-      [
         "react-native-ble-manager",
         {
           "bluetoothAlwaysPermission": "This app requires Bluetooth access.",
