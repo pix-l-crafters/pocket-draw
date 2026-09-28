@@ -52,6 +52,7 @@ Quickdraw Showdown.html
 .worktrees
 __MACOSX
 __pycache__
+build-*.ipa
 dist/
 firebase-debug.log
 megalinter-reports/
