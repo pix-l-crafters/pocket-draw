@@ -268,7 +268,7 @@ url_api = "https://api.github.com/repos/cocogitto/cocogitto/releases/assets/3666
 
 [[tools.cspell]]
 version = "10.3.3"
-aube = { path = ".mise/locks/cspell/10.3.3", digest = "sha256:584cf3551a7f3c16bc2ec3e2941282eada12d2b4919fc6c01f18530a4b38632c" }
+aube = { path = ".mise/locks/cspell/10.3.3", digest = "sha256:686ab5b2e39ce851225283209ed6f8ba6ed8abd346eaf8160132ffcf19a98800" }
 backend = "npm:cspell"
 specifiers = ["latest"]
 
@@ -479,6 +479,46 @@ checksum = "sha256:e77764c30b2585f02fd3b4345bd0b49f84d62f793d0c37e538b7f0fdbf4ed
 url = "https://github.com/infragate/capa/releases/download/v2.2.2/capa-x86_64-pc-windows-msvc.exe"
 url_api = "https://api.github.com/repos/infragate/capa/releases/assets/571287901"
 
+[[tools.gradle]]
+version = "9.3.1"
+backend = "aqua:gradle/gradle-distributions"
+specifiers = ["9.3.1"]
+
+[tools.gradle."platforms.linux-arm64"]
+checksum = "sha256:b266d5ff6b90eada6dc3b20cb090e3731302e553a27c5d3e4df1f0d76beaff06"
+url = "https://github.com/gradle/gradle-distributions/releases/download/v9.3.1/gradle-9.3.1-bin.zip"
+url_api = "https://api.github.com/repos/gradle/gradle-distributions/releases/assets/347704202"
+
+[tools.gradle."platforms.linux-arm64-musl"]
+checksum = "sha256:b266d5ff6b90eada6dc3b20cb090e3731302e553a27c5d3e4df1f0d76beaff06"
+url = "https://github.com/gradle/gradle-distributions/releases/download/v9.3.1/gradle-9.3.1-bin.zip"
+url_api = "https://api.github.com/repos/gradle/gradle-distributions/releases/assets/347704202"
+
+[tools.gradle."platforms.linux-x64"]
+checksum = "sha256:b266d5ff6b90eada6dc3b20cb090e3731302e553a27c5d3e4df1f0d76beaff06"
+url = "https://github.com/gradle/gradle-distributions/releases/download/v9.3.1/gradle-9.3.1-bin.zip"
+url_api = "https://api.github.com/repos/gradle/gradle-distributions/releases/assets/347704202"
+
+[tools.gradle."platforms.linux-x64-musl"]
+checksum = "sha256:b266d5ff6b90eada6dc3b20cb090e3731302e553a27c5d3e4df1f0d76beaff06"
+url = "https://github.com/gradle/gradle-distributions/releases/download/v9.3.1/gradle-9.3.1-bin.zip"
+url_api = "https://api.github.com/repos/gradle/gradle-distributions/releases/assets/347704202"
+
+[tools.gradle."platforms.macos-arm64"]
+checksum = "sha256:b266d5ff6b90eada6dc3b20cb090e3731302e553a27c5d3e4df1f0d76beaff06"
+url = "https://github.com/gradle/gradle-distributions/releases/download/v9.3.1/gradle-9.3.1-bin.zip"
+url_api = "https://api.github.com/repos/gradle/gradle-distributions/releases/assets/347704202"
+
+[tools.gradle."platforms.macos-x64"]
+checksum = "sha256:b266d5ff6b90eada6dc3b20cb090e3731302e553a27c5d3e4df1f0d76beaff06"
+url = "https://github.com/gradle/gradle-distributions/releases/download/v9.3.1/gradle-9.3.1-bin.zip"
+url_api = "https://api.github.com/repos/gradle/gradle-distributions/releases/assets/347704202"
+
+[tools.gradle."platforms.windows-x64"]
+checksum = "sha256:b266d5ff6b90eada6dc3b20cb090e3731302e553a27c5d3e4df1f0d76beaff06"
+url = "https://github.com/gradle/gradle-distributions/releases/download/v9.3.1/gradle-9.3.1-bin.zip"
+url_api = "https://api.github.com/repos/gradle/gradle-distributions/releases/assets/347704202"
+
 [[tools.hk]]
 version = "2.0.1"
 backend = "packslip:github.com/jdx/hk"
@@ -653,13 +693,13 @@ specifiers = ["latest"]
 version = "0.25.0"
 backend = "pipx:toml-sort"
 specifiers = ["latest"]
-uv = { path = ".mise/locks/pipx-toml-sort/0.25.0", digest = "sha256:2ce8a8ae1a83818188d3fe83a10441a19283431b71116d856501dd2a5c147cd3" }
+uv = { path = ".mise/locks/pipx-toml-sort/0.25.0", digest = "sha256:f38e97f74b29b6e61132ffba80f16f3e26bf222037889bd71e32c41d3349ab2e" }
 
 [[tools."pipx:yamlfix"]]
 version = "1.19.1"
 backend = "pipx:yamlfix"
 specifiers = ["latest"]
-uv = { path = ".mise/locks/pipx-yamlfix/1.19.1", digest = "sha256:2a40740865ce4960faf4ae3dc893aed3a6c82bef95259540187e625fdbc6f930" }
+uv = { path = ".mise/locks/pipx-yamlfix/1.19.1", digest = "sha256:1388bb5eb5879c569494dfd7f1aa5317d09841866f085a2dc013d35b78dc4283" }
 
 [[tools.pkl]]
 version = "0.32.1"

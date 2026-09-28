@@ -38,6 +38,7 @@ gh = { postinstall = "gh auth login", version = "latest" }
 git-cliff = "latest"
 "github:MRDGH2821/Sort-Markdown-Tables" = "latest"
 "github:infragate/capa" = { postinstall = "capa install -y", version = "2.2.2" }
+gradle = "9.3.1"
 hk = "2.0.1"
 java = "21"
 ls-lint = "latest"
