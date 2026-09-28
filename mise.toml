@@ -27,7 +27,6 @@ run_windows = "echo 'Treefmt not supported on Windows'"
 
 [tools]
 android-sdk = "latest"
-apm = { postinstall = "apm install", version = "0.28" }
 "aqua:google/keep-sorted" = "latest"
 "aqua:numtide/treefmt" = { os = ["linux", "macos"], version = "2.6.0" }
 "aqua:owenlamont/ryl" = "latest"
