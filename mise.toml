@@ -18,10 +18,10 @@ check = ["hk check --all", "cog check"]
 prepare = ["npm install"]
 
 [tasks.build-android]
-run = "eas build --platform android --profile production --local"
+run = "npx eas-cli@latest build --platform android --profile production --local"
 
 [tasks.build-ios]
-run = "eas build --platform ios --profile production --local"
+run = "npx eas-cli@latest build --platform ios --profile production --local"
 
 [tasks.format]
 alias = "fmt"
