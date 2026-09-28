@@ -404,6 +404,41 @@ version = "0.5.0"
 backend = "github:MRDGH2821/Sort-Markdown-Tables"
 specifiers = ["latest"]
 
+[tools."github:MRDGH2821/Sort-Markdown-Tables"."platforms.linux-arm64"]
+checksum = "sha256:cd44c36195a0ee4f7f3f80807e34b8a01fbae7c70a1a38d1a516c225c8c60ff3"
+url = "https://github.com/MRDGH2821/Sort-Markdown-Tables/releases/download/v0.5.0/smt-aarch64-unknown-linux-gnu"
+url_api = "https://api.github.com/repos/MRDGH2821/Sort-Markdown-Tables/releases/assets/501255362"
+
+[tools."github:MRDGH2821/Sort-Markdown-Tables"."platforms.linux-arm64-musl"]
+checksum = "sha256:f49bd676961d78b9669f4742c02d21af0451818b74ffde39ab01330fd2a8def9"
+url = "https://github.com/MRDGH2821/Sort-Markdown-Tables/releases/download/v0.5.0/smt-aarch64-unknown-linux-musl"
+url_api = "https://api.github.com/repos/MRDGH2821/Sort-Markdown-Tables/releases/assets/501255368"
+
+[tools."github:MRDGH2821/Sort-Markdown-Tables"."platforms.linux-x64"]
+checksum = "sha256:73595d22527e12678e8ce4166af6ca08a838833ea46f9f54f8e5d246f687770d"
+url = "https://github.com/MRDGH2821/Sort-Markdown-Tables/releases/download/v0.5.0/smt-x86_64-unknown-linux-gnu"
+url_api = "https://api.github.com/repos/MRDGH2821/Sort-Markdown-Tables/releases/assets/501255331"
+
+[tools."github:MRDGH2821/Sort-Markdown-Tables"."platforms.linux-x64-musl"]
+checksum = "sha256:d9a98280f8d64c466998635b634302ecd9c613b9cba11a7a5b4ae622a388bc6c"
+url = "https://github.com/MRDGH2821/Sort-Markdown-Tables/releases/download/v0.5.0/smt-x86_64-unknown-linux-musl"
+url_api = "https://api.github.com/repos/MRDGH2821/Sort-Markdown-Tables/releases/assets/501255330"
+
+[tools."github:MRDGH2821/Sort-Markdown-Tables"."platforms.macos-arm64"]
+checksum = "sha256:04834f9e729a0fd26e0f7d07c05fe8d9e992a4f49a3a5a9e4052df4294402e4c"
+url = "https://github.com/MRDGH2821/Sort-Markdown-Tables/releases/download/v0.5.0/smt-aarch64-apple-darwin"
+url_api = "https://api.github.com/repos/MRDGH2821/Sort-Markdown-Tables/releases/assets/501255372"
+
+[tools."github:MRDGH2821/Sort-Markdown-Tables"."platforms.macos-x64"]
+checksum = "sha256:4d8c4f8a3210ad7d7a19548d91cb2afe8cf846f6c7aa86640a90300d17515861"
+url = "https://github.com/MRDGH2821/Sort-Markdown-Tables/releases/download/v0.5.0/smt-x86_64-apple-darwin"
+url_api = "https://api.github.com/repos/MRDGH2821/Sort-Markdown-Tables/releases/assets/501255358"
+
+[tools."github:MRDGH2821/Sort-Markdown-Tables"."platforms.windows-x64"]
+checksum = "sha256:9acd1a8c91fe01b07339cc4e12abfde63ec11430ef6460b828b7520502013a04"
+url = "https://github.com/MRDGH2821/Sort-Markdown-Tables/releases/download/v0.5.0/smt-x86_64-pc-windows-msvc.exe"
+url_api = "https://api.github.com/repos/MRDGH2821/Sort-Markdown-Tables/releases/assets/501255336"
+
 [[tools."github:infragate/capa"]]
 version = "2.2.2"
 backend = "github:infragate/capa"
@@ -615,15 +650,16 @@ backend = "pipx:lorenzwalthert/gitignore-tidy"
 specifiers = ["latest"]
 
 [[tools."pipx:toml-sort"]]
-version = "0.25.0~uv~ea08705bf41da099"
+version = "0.25.0"
 backend = "pipx:toml-sort"
 specifiers = ["latest"]
+uv = { path = ".mise/locks/pipx-toml-sort/0.25.0", digest = "sha256:2ce8a8ae1a83818188d3fe83a10441a19283431b71116d856501dd2a5c147cd3" }
 
 [[tools."pipx:yamlfix"]]
 version = "1.19.1"
 backend = "pipx:yamlfix"
 specifiers = ["latest"]
-uv = { path = ".mise/locks/pipx-yamlfix/1.19.1", digest = "sha256:5e525df1d4168cb1dcf6672f365dc0fd3fb52e99b9dab36a859da8b626dcd6ac" }
+uv = { path = ".mise/locks/pipx-yamlfix/1.19.1", digest = "sha256:2a40740865ce4960faf4ae3dc893aed3a6c82bef95259540187e625fdbc6f930" }
 
 [[tools.pkl]]
 version = "0.32.1"
@@ -886,53 +922,6 @@ url_api = "https://api.github.com/repos/typstyle-rs/typstyle/releases/assets/498
 checksum = "sha256:5bed3082e1668561c95e976888d694699650dd194ac23e0d08d4106c7496a48f"
 url = "https://github.com/typstyle-rs/typstyle/releases/download/v0.15.1/typstyle-x86_64-pc-windows-msvc.exe"
 url_api = "https://api.github.com/repos/typstyle-rs/typstyle/releases/assets/498612929"
-
-[[tools.uv]]
-version = "0.12.15"
-backend = "aqua:astral-sh/uv"
-specifiers = ["latest"]
-
-[tools.uv."platforms.linux-arm64"]
-checksum = "sha256:0e9a3499b0587d449c9ff684c0160da607826e4af1cee220bc87f378702d3e08"
-url = "https://github.com/astral-sh/uv/releases/download/0.12.15/uv-aarch64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/565630758"
-provenance = "github-attestations"
-
-[tools.uv."platforms.linux-arm64-musl"]
-checksum = "sha256:93b801abb146e6431fb0434346a0162e65d3f0d1cd7360144d04c43488fd7f7d"
-url = "https://github.com/astral-sh/uv/releases/download/0.12.15/uv-aarch64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/565630769"
-provenance = "github-attestations"
-
-[tools.uv."platforms.linux-x64"]
-checksum = "sha256:f97935763c04be3e692460a7aaeaaab8fc3b78fcf8b389da820b38ae7423a638"
-url = "https://github.com/astral-sh/uv/releases/download/0.12.15/uv-x86_64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/565630898"
-provenance = "github-attestations"
-
-[tools.uv."platforms.linux-x64-musl"]
-checksum = "sha256:999c0c3da986953e508985c3932d283d2c62eb167b4f8d81e79f565e34104959"
-url = "https://github.com/astral-sh/uv/releases/download/0.12.15/uv-x86_64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/565630904"
-provenance = "github-attestations"
-
-[tools.uv."platforms.macos-arm64"]
-checksum = "sha256:dc304b9ed1b24174572290fba60ac3f6fe63c73a671f0439e62a91375841964d"
-url = "https://github.com/astral-sh/uv/releases/download/0.12.15/uv-aarch64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/565630750"
-provenance = "github-attestations"
-
-[tools.uv."platforms.macos-x64"]
-checksum = "sha256:e9ca61775532368fe518ab03e7a354c7ecab8ccb3c7d941c775fcc4a362b801b"
-url = "https://github.com/astral-sh/uv/releases/download/0.12.15/uv-x86_64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/565630871"
-provenance = "github-attestations"
-
-[tools.uv."platforms.windows-x64"]
-checksum = "sha256:477bd99a84e34891f2bd4c9152ddeb74e971accccbc59c0f0301f11f08a32d46"
-url = "https://github.com/astral-sh/uv/releases/download/0.12.15/uv-x86_64-pc-windows-msvc.zip"
-url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/565630896"
-provenance = "github-attestations"
 
 [[tools.yq]]
 version = "4.53.6"
