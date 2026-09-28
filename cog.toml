@@ -1,3 +1,4 @@
+# :schema https://docs.cocogitto.io/cog-schema.json
 branch_whitelist = []
 disable_bump_commit = false
 disable_changelog = true
@@ -5,7 +6,7 @@ from_latest_tag = false
 generate_mono_repository_global_tag = true
 generate_mono_repository_package_tags = true
 ignore_fixup_commits = false
-ignore_merge_commits = false
+ignore_merge_commits = true
 post_bump_hooks = []
 post_package_bump_hooks = []
 pre = "alpha.*"
@@ -55,6 +56,7 @@ tag_prefix = "v"
 authors = [{ signature = "ask.mrdgh2821@outlook.com", username = "MRDGH2821" }]
 owner = "pix-l-crafters"
 path = "CHANGELOG.md"
+remote = "https://github.com/pix-l-crafters/pocket-draw"
 repository = "pocket-draw"
 template = "remote"
 

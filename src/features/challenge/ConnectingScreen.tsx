@@ -146,7 +146,10 @@ export function ConnectingScreen({
 
       <View style={styles.actions}>
         {state.status === "failed" ? (
-          <CutCornerButton label="Try Again" onPress={retry} />
+          <CutCornerButton
+            label="Try Again"
+            onPress={retry}
+          />
         ) : null}
 
         {isBusy ? (
@@ -158,7 +161,10 @@ export function ConnectingScreen({
             }}
           />
         ) : (
-          <CutCornerButton label="Back" onPress={onExit} />
+          <CutCornerButton
+            label="Back"
+            onPress={onExit}
+          />
         )}
       </View>
     </View>

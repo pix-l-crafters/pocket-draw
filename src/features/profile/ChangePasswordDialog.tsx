@@ -96,7 +96,10 @@ export function ChangePasswordDialog({
       visible={visible}
     >
       <View style={styles.backdrop}>
-        <CutCornerSurface corner="large" style={styles.card}>
+        <CutCornerSurface
+          corner="large"
+          style={styles.card}
+        >
           <KickerLabel>Security</KickerLabel>
           <DisplayHeading size={30}>Change Password</DisplayHeading>
           <Text style={styles.description}>

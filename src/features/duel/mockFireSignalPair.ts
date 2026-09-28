@@ -1,5 +1,4 @@
 import { createMockDuelChannelPair } from "../../contracts/mocks/mockDuelChannel";
-
 import { FireSignalCoordinator } from "./fireSignalCoordinator";
 
 export interface MockFireSignalPair {
@@ -7,9 +6,7 @@ export interface MockFireSignalPair {
   host: FireSignalCoordinator;
 }
 
-/**
- * Local two-player stand-in until the BLE-backed DuelChannel is available.
- */
+/** Local two-player stand-in until the BLE-backed DuelChannel is available. */
 export function createMockFireSignalPair(
   now: () => number = Date.now
 ): MockFireSignalPair {

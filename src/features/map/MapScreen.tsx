@@ -5,6 +5,8 @@ import MapView, { type Region } from "react-native-maps";
 import { ActivityIndicator, Surface, Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { usePlayerStats } from "../../hooks/usePlayerStats";
+import { colors } from "../../theme/tokens";
 import { LocationStatusCard } from "./components/LocationStatusCard";
 import { MapStatusCard } from "./components/MapStatusCard";
 import { PlayerMarker } from "./components/PlayerMarker";
@@ -21,8 +23,6 @@ import {
   pinColorForUid,
   spreadOverlappingPlayerMarkers
 } from "./utils/map.utils";
-import { usePlayerStats } from "../../hooks/usePlayerStats";
-import { colors } from "../../theme/tokens";
 
 const INITIAL_REGION: Region = {
   latitude: -33.8688,
@@ -140,7 +140,10 @@ export function MapScreen({ currentUser }: MapScreenProps) {
         ) : null}
       </MapView>
 
-      <SafeAreaView pointerEvents="box-none" style={styles.overlay}>
+      <SafeAreaView
+        pointerEvents="box-none"
+        style={styles.overlay}
+      >
         <View pointerEvents="none">
           <MapStatusCard
             isAuthenticated={currentUser !== null}
@@ -151,7 +154,10 @@ export function MapScreen({ currentUser }: MapScreenProps) {
         </View>
 
         <View style={styles.sharingToggle}>
-          <SharingToggle isSharing={isSharing} onToggle={toggleSharing} />
+          <SharingToggle
+            isSharing={isSharing}
+            onToggle={toggleSharing}
+          />
         </View>
 
         <LocationStatusCard
@@ -183,8 +189,14 @@ export function MapScreen({ currentUser }: MapScreenProps) {
       />
 
       {!isMapReady ? (
-        <View accessibilityLiveRegion="polite" style={styles.loadingOverlay}>
-          <Surface elevation={4} style={styles.loadingCard}>
+        <View
+          accessibilityLiveRegion="polite"
+          style={styles.loadingOverlay}
+        >
+          <Surface
+            elevation={4}
+            style={styles.loadingCard}
+          >
             <ActivityIndicator size="large" />
             <Text variant="titleSmall">Loading map...</Text>
           </Surface>

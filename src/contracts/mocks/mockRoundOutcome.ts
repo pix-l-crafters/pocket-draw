@@ -2,8 +2,8 @@ import type { RoundOutcome } from "../roundOutcome";
 
 /**
  * Randomized stand-in for the real gesture-detection pipeline, so the round
- * loop (4.17) can be built and demoed before 4.10-4.15 exist. Delete once
- * the real detection pipeline lands.
+ * loop (4.17) can be built and demoed before 4.10-4.15 exist. Delete once the
+ * real detection pipeline lands.
  */
 export function mockRoundOutcome(
   playerAId: string,

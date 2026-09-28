@@ -82,7 +82,10 @@ export function IncomingChallengeScreen({
       </View>
 
       <View style={styles.actions}>
-        <CutCornerButton label="Decline" onPress={() => respond(false)} />
+        <CutCornerButton
+          label="Decline"
+          onPress={() => respond(false)}
+        />
       </View>
 
       {challenger ? (

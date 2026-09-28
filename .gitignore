@@ -1,4 +1,5 @@
 # agents
+.agent-talk/
 .agent/skills
 .agents/mcp_config.json
 .agents/skills
@@ -12,6 +13,7 @@
 .cursor/hooks.json
 .cursor/mcp.json
 .cursor/skills
+.gemini/settings.json
 .github/skills
 .mcp.json
 .opencode/agents
@@ -43,11 +45,11 @@ Quickdraw Showdown.html
 .devenv
 .direnv
 .git
-.mise
 .pre-commit-config.yaml
 .svn
 .trivycache/
 .venv/
+.worktrees
 __MACOSX
 __pycache__
 dist/

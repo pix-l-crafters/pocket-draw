@@ -1,8 +1,8 @@
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 
+import { userProfileRepository } from "../features/backend/userProfileRepository";
 import { registerUser, syncUserProfileFromAuth, updateUsername } from "./auth";
 import { auth } from "./firebase";
-import { userProfileRepository } from "../features/backend/userProfileRepository";
 
 jest.mock("firebase/auth", () => ({
   createUserWithEmailAndPassword: jest.fn(),

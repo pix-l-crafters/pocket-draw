@@ -6,8 +6,9 @@ import {
   serverTimestamp,
   Timestamp
 } from "firebase/firestore";
-import { db } from "../../../lib/firebase";
+
 import type { ChallengeHandoff } from "../../../contracts/challengeHandoff";
+import { db } from "../../../lib/firebase";
 
 const CHALLENGE_LIFETIME_MS = 60_000;
 

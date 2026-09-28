@@ -2,11 +2,11 @@
 // tiebreaker only when the total points are level. The match ends after the
 // tiebreaker even if the final result is a draw.
 
-import type { RoundOutcome } from "../../contracts/roundOutcome";
 import type {
   MatchResult,
   PlayerMatchResult
 } from "../../contracts/matchResult";
+import type { RoundOutcome } from "../../contracts/roundOutcome";
 import { scoreRoundOutcome } from "./roundJudge.ts";
 
 export const REGULAR_ROUND_COUNT = 3;

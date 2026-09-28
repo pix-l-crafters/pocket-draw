@@ -73,14 +73,23 @@ export function MapStatusCard({
   presenceState
 }: MapStatusCardProps) {
   return (
-    <Surface elevation={3} style={styles.card}>
-      <Text style={styles.eyebrow} variant="labelSmall">
+    <Surface
+      elevation={3}
+      style={styles.card}
+    >
+      <Text
+        style={styles.eyebrow}
+        variant="labelSmall"
+      >
         MAP PREVIEW
       </Text>
       <Text variant="headlineSmall">
         {getNearbyHeadline(nearbyPlayersState)}
       </Text>
-      <Text style={styles.subtitle} variant="bodySmall">
+      <Text
+        style={styles.subtitle}
+        variant="bodySmall"
+      >
         {getMapSummary(locationState, isAuthenticated, presenceState)}
       </Text>
     </Surface>

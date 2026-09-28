@@ -30,9 +30,7 @@ function isMatchResultDocument(data: unknown): data is MatchResult {
   );
 }
 
-/**
- * Aggregates wins/losses and replays completed matches to derive current ELO.
- */
+/** Aggregates wins/losses and replays completed matches to derive current ELO. */
 export const playerStatsRepository: PlayerStatsRepository = {
   async getPlayerStats(uid, displayName): Promise<PlayerStats> {
     if (!uid.trim()) {

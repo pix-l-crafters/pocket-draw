@@ -14,7 +14,10 @@ export function ScreenHeader({ kicker, subtitle, title }: ScreenHeaderProps) {
   return (
     <View style={styles.container}>
       <KickerLabel>{kicker}</KickerLabel>
-      <DisplayHeading size={34} style={styles.title}>
+      <DisplayHeading
+        size={34}
+        style={styles.title}
+      >
         {title}
       </DisplayHeading>
       {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}

@@ -1,10 +1,10 @@
 /**
  * Connectivity helpers for offline match-result upload (5.3).
  *
- * TODO(mihir): add `@react-native-community/netinfo` via
- * `npx expo install @react-native-community/netinfo` and replace the
- * optimistic fallback below. Without NetInfo we assume online and rely on
- * Firestore write failures to enqueue.
+ * TODO(mihir): add `@react-native-community/netinfo` via `npx expo install
+ * @react-native-community/netinfo` and replace the optimistic fallback below.
+ * Without NetInfo we assume online and rely on Firestore write failures to
+ * enqueue.
  */
 
 export async function isNetworkAvailable(): Promise<boolean> {

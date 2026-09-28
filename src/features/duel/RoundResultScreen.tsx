@@ -9,8 +9,8 @@ import { CutCornerButton } from "../../components/CutCornerButton";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { StatTile } from "../../components/StatTile";
 import { StatusTag } from "../../components/StatusTag";
-import { colors } from "../../theme/tokens";
 import type { RoundOutcome } from "../../contracts/roundOutcome";
+import { colors } from "../../theme/tokens";
 
 type RoundResultScreenProps = {
   continueLabel?: string;
@@ -85,7 +85,10 @@ export function RoundResultScreen({
       ) : null}
 
       <View style={styles.continueButton}>
-        <CutCornerButton label={continueLabel} onPress={onContinue} />
+        <CutCornerButton
+          label={continueLabel}
+          onPress={onContinue}
+        />
       </View>
     </View>
   );

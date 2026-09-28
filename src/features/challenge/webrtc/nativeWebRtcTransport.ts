@@ -9,6 +9,11 @@ import type { DuelTransportConnection } from "../session/duelSessionTransport";
 import type { DuelSessionTransport } from "../session/duelSessionTransport";
 import type { RtcDataChannelLike } from "./duelDataChannel";
 import type {
+  IceCandidateDescription,
+  SessionDescription,
+  WebRtcSessionAuth
+} from "./signalingProtocol";
+import type {
   PeerConnectionLike,
   SignalingSocket,
   WebRtcSessionDependencies
@@ -17,11 +22,6 @@ import {
   connectWebRtcDuelGuest,
   hostWebRtcDuelSession
 } from "./webrtcDuelTransport";
-import type {
-  IceCandidateDescription,
-  SessionDescription,
-  WebRtcSessionAuth
-} from "./signalingProtocol";
 
 type NativeSocket = ReturnType<typeof TcpSocket.createConnection>;
 type NativePeer = InstanceType<typeof RTCPeerConnection>;

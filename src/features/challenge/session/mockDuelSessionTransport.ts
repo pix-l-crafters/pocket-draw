@@ -4,9 +4,15 @@ import { abortableDelay } from "./sessionUtils";
 
 // Tunables for exercising the connection UI without a real peer.
 const MOCK_CONNECT_LATENCY_MS = 1200;
-/** Fraction of attempts that fail, so the auto-retry / manual-retry UI is reachable. */
+/**
+ * Fraction of attempts that fail, so the auto-retry / manual-retry UI is
+ * reachable.
+ */
 const MOCK_CONNECT_FAILURE_RATE = 0.35;
-/** If set, the link drops this long after connecting (tests the abort UI). `null` disables. */
+/**
+ * If set, the link drops this long after connecting (tests the abort UI).
+ * `null` disables.
+ */
 const MOCK_DROP_AFTER_MS: number | null = null;
 
 /**
