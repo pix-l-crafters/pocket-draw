@@ -22,11 +22,18 @@ export function PlayerStatsCard({
     value === undefined ? "—" : String(value);
 
   return (
-    <Surface accessibilityLiveRegion="polite" elevation={4} style={styles.card}>
+    <Surface
+      accessibilityLiveRegion="polite"
+      elevation={4}
+      style={styles.card}
+    >
       <View style={styles.header}>
         <View style={styles.headerText}>
           <KickerLabel>Nearby player</KickerLabel>
-          <DisplayHeading size={26} style={styles.name}>
+          <DisplayHeading
+            size={26}
+            style={styles.name}
+          >
             {displayName}
           </DisplayHeading>
         </View>
@@ -44,8 +51,14 @@ export function PlayerStatsCard({
           tint={colors.success}
           value={format(stats?.wins)}
         />
-        <StatTile label="Losses" value={format(stats?.losses)} />
-        <StatTile label="ELO" value={format(stats?.eloRating)} />
+        <StatTile
+          label="Losses"
+          value={format(stats?.losses)}
+        />
+        <StatTile
+          label="ELO"
+          value={format(stats?.eloRating)}
+        />
       </View>
     </Surface>
   );

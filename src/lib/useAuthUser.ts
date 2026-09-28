@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
 import { onAuthStateChanged, type User } from "firebase/auth";
+import { useCallback, useEffect, useState } from "react";
 
-import { auth } from "./firebase";
 import { subscribeToProfileChange, syncUserProfileFromAuth } from "./auth";
+import { auth } from "./firebase";
 
 type AuthUserState = {
   /** `null` once loading finishes and nobody is signed in. */

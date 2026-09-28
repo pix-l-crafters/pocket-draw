@@ -1,4 +1,7 @@
-/** Automatic connection attempts after the first before giving up (design doc §10). */
+/**
+ * Automatic connection attempts after the first before giving up (design doc
+ * §10).
+ */
 export const DUEL_CONNECT_MAX_AUTO_RETRIES = 4;
 
 /** Pause between automatic connection attempts. */

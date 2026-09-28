@@ -10,9 +10,9 @@ type PlayerIdentity = {
 
 /**
  * Wins / losses / ELO for a player, shared by the map's opponent card and the
- * profile screen. Currently backed by `mockPlayerStats`;
- * swap for the real backend lookup once Mihir's stats work (5.1/5.4/5.5) lands
- * and delete the mock import.
+ * profile screen. Currently backed by `mockPlayerStats`; swap for the real
+ * backend lookup once Mihir's stats work (5.1/5.4/5.5) lands and delete the
+ * mock import.
  */
 export function usePlayerStats(
   player: PlayerIdentity | null

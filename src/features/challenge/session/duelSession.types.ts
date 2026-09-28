@@ -16,8 +16,10 @@ export type DuelSessionParams = {
  * - `connecting` while an attempt is in flight; `attempt` counts from 1.
  * - `retrying` between automatic attempts (see PRESENCE-style backoff constants).
  * - `connected` carries the live channel handed to the duel logic.
- * - `failed` means the automatic retries are exhausted; the user can retry manually.
- * - `disconnected` means the link dropped after it was established — the duel aborts.
+ * - `failed` means the automatic retries are exhausted; the user can retry
+ *   manually.
+ * - `disconnected` means the link dropped after it was established — the duel
+ *   aborts.
  */
 export type DuelSessionState =
   | { status: "idle" }

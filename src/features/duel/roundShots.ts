@@ -23,7 +23,7 @@ export type RoundPlayer = {
  * No shot becomes a miss at the window's edge, so the judge always has two
  * comparable shots to rank.
  *
- * ponytail: every landed shot is a flat bodyshot — the pitch-zone classifier
+ * Ponytail: every landed shot is a flat bodyshot — the pitch-zone classifier
  * isn't wired into this flow, so any zone here would be invented.
  */
 export function toPlayerShot(
@@ -39,9 +39,9 @@ export function toPlayerShot(
  * Whoever fired first takes the round. The tie window is zero, so only an
  * exactly equal pair of reaction times ties.
  *
- * Both devices run this over the same two numbers — each sends its own
- * reaction time across the channel — so they reach the same outcome without
- * either side acting as the scorer.
+ * Both devices run this over the same two numbers — each sends its own reaction
+ * time across the channel — so they reach the same outcome without either side
+ * acting as the scorer.
  */
 export function judgeRoundShots(
   self: RoundPlayer,

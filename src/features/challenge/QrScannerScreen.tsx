@@ -1,15 +1,15 @@
-import { useCallback, useState } from "react";
-import { StyleSheet, View } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import type { BarcodeScanningResult } from "expo-camera";
+import { useCallback, useState } from "react";
+import { StyleSheet, View } from "react-native";
 
 import { CutCornerButton } from "../../components/CutCornerButton";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { StatusTag } from "../../components/StatusTag";
-import { colors } from "../../theme/tokens";
-import { parseQrInvite } from "../qr/utils/qr.validation";
-import type { QrValidationErrorCode } from "../qr/types/qr.types";
 import type { DuelConnectionInfo } from "../../contracts/duelConnection";
+import { colors } from "../../theme/tokens";
+import type { QrValidationErrorCode } from "../qr/types/qr.types";
+import { parseQrInvite } from "../qr/utils/qr.validation";
 import { OpponentPopup } from "./components/OpponentPopup";
 
 const ERROR_MESSAGES: Record<QrValidationErrorCode, string> = {

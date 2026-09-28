@@ -15,8 +15,8 @@ const BODYSHOT_MAX_F = 1.0;
 const HEADSHOT_DELTA_F = 0.2;
 
 /**
- * f = (θfire − θready) / (θshoulder − θready): how far through the
- * calibrated ready→shoulder raise arc the current pitch angle sits.
+ * F = (θfire − θready) / (θshoulder − θready): how far through the calibrated
+ * ready→shoulder raise arc the current pitch angle sits.
  */
 export function computeRaiseFraction(
   thetaFire: number,

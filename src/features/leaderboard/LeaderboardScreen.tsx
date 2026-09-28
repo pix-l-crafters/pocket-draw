@@ -27,23 +27,41 @@ export function LeaderboardScreen({ onBack }: LeaderboardScreenProps) {
   }, []);
 
   return (
-    <ScrollView contentContainerStyle={styles.content} style={styles.container}>
-      <ScreenHeader kicker="Rankings" title="Leaderboard" />
+    <ScrollView
+      contentContainerStyle={styles.content}
+      style={styles.container}
+    >
+      <ScreenHeader
+        kicker="Rankings"
+        title="Leaderboard"
+      />
 
-      <CutCornerButton label="Back to Profile" onPress={onBack} />
+      <CutCornerButton
+        label="Back to Profile"
+        onPress={onBack}
+      />
 
       <View style={styles.section}>
         <KickerLabel color={colors.textMuted45}>By ELO</KickerLabel>
 
         {entries === null ? (
-          <ActivityIndicator color={colors.accent} style={styles.loading} />
+          <ActivityIndicator
+            color={colors.accent}
+            style={styles.loading}
+          />
         ) : entries.length === 0 ? (
           <Text style={styles.empty}>No ranked matches yet.</Text>
         ) : (
           entries.map((entry, index) => (
-            <View key={entry.uid} style={styles.row}>
+            <View
+              key={entry.uid}
+              style={styles.row}
+            >
               <Text style={styles.rank}>{index + 1}</Text>
-              <Text numberOfLines={1} style={styles.name}>
+              <Text
+                numberOfLines={1}
+                style={styles.name}
+              >
                 {entry.displayName}
               </Text>
               <Text style={styles.elo}>{entry.eloRating}</Text>

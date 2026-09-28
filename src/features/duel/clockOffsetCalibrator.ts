@@ -8,10 +8,10 @@ interface ClockOffsetSample {
 const DEFAULT_SAMPLE_COUNT = 5;
 
 /**
- * Ping-pong RTT clock-offset calibration (NTP-style). Either side answers
- * pings passively; whichever side calls `calibrate()` learns how far ahead
- * (or behind) the other side's clock is, so it can correct timestamps it
- * receives from that peer.
+ * Ping-pong RTT clock-offset calibration (NTP-style). Either side answers pings
+ * passively; whichever side calls `calibrate()` learns how far ahead (or
+ * behind) the other side's clock is, so it can correct timestamps it receives
+ * from that peer.
  */
 export class ClockOffsetCalibrator {
   private offsetMs = 0;

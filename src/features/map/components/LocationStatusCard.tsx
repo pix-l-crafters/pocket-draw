@@ -33,9 +33,16 @@ export function LocationStatusCard({
       : locationState.message;
 
   return (
-    <Surface accessibilityLiveRegion="polite" elevation={3} style={styles.card}>
+    <Surface
+      accessibilityLiveRegion="polite"
+      elevation={3}
+      style={styles.card}
+    >
       <Text variant="titleMedium">{title}</Text>
-      <Text style={styles.message} variant="bodyMedium">
+      <Text
+        style={styles.message}
+        variant="bodyMedium"
+      >
         {message}
       </Text>
       <View style={styles.actions}>

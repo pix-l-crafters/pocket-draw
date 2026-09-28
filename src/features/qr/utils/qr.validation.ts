@@ -41,7 +41,10 @@ export function hasSupportedVersion(value: unknown): boolean {
   return value.version === 1;
 }
 
-/** Require a non-blank Firebase UID of at most 128 UTF-16 code units, not a UUID. */
+/**
+ * Require a non-blank Firebase UID of at most 128 UTF-16 code units, not a
+ * UUID.
+ */
 export function hasValidHostPlayerId(value: unknown): boolean {
   if (!isRecord(value)) {
     return false;
@@ -51,7 +54,10 @@ export function hasValidHostPlayerId(value: unknown): boolean {
   );
 }
 
-/** Allow an omitted display name; otherwise require a non-blank string of at most 64 UTF-16 code units. */
+/**
+ * Allow an omitted display name; otherwise require a non-blank string of at
+ * most 64 UTF-16 code units.
+ */
 export function hasValidHostPlayerName(value: unknown): boolean {
   if (!isRecord(value)) {
     return false;
@@ -65,7 +71,10 @@ export function hasValidHostPlayerName(value: unknown): boolean {
   );
 }
 
-/** Check the format of a 16-byte token encoded as 32 lowercase hexadecimal characters. */
+/**
+ * Check the format of a 16-byte token encoded as 32 lowercase hexadecimal
+ * characters.
+ */
 export function hasValidChallengeToken(value: unknown): boolean {
   if (!isRecord(value)) {
     return false;
@@ -76,7 +85,10 @@ export function hasValidChallengeToken(value: unknown): boolean {
   );
 }
 
-/** Check the local-session routing secret: 4 bytes encoded as 8 lowercase hexadecimal characters. */
+/**
+ * Check the local-session routing secret: 4 bytes encoded as 8 lowercase
+ * hexadecimal characters.
+ */
 export function hasValidDiscoveryToken(value: unknown): boolean {
   if (!isRecord(value)) {
     return false;
@@ -113,7 +125,10 @@ export function hasValidConnection(value: unknown): boolean {
   return false;
 }
 
-/** Accept UUID v4 syntax with either lowercase or uppercase hexadecimal characters. */
+/**
+ * Accept UUID v4 syntax with either lowercase or uppercase hexadecimal
+ * characters.
+ */
 export function hasValidMatchId(value: unknown): boolean {
   if (!isRecord(value)) {
     return false;
@@ -126,7 +141,10 @@ export function hasValidMatchId(value: unknown): boolean {
   );
 }
 
-/** Check timestamp number formats only; lifetime and expiry are checked separately. */
+/**
+ * Check timestamp number formats only; lifetime and expiry are checked
+ * separately.
+ */
 export function hasValidTimestampFields(value: unknown): boolean {
   if (!isRecord(value)) {
     return false;
@@ -137,17 +155,26 @@ export function hasValidTimestampFields(value: unknown): boolean {
   );
 }
 
-/** Require the invite's issued/expiry gap to be exactly the fixed one-minute lifetime. */
+/**
+ * Require the invite's issued/expiry gap to be exactly the fixed one-minute
+ * lifetime.
+ */
 export function hasValidLifetime(issuedAt: number, expiresAt: number): boolean {
   return expiresAt - issuedAt === INVITE_LIFETIME_MS;
 }
 
-/** Check whether an invite has passed its expiry time relative to the given clock reading. */
+/**
+ * Check whether an invite has passed its expiry time relative to the given
+ * clock reading.
+ */
 export function isInviteExpired(expiresAt: number, now: number): boolean {
   return now >= expiresAt;
 }
 
-/** Guard against clock-skewed or forged invites issued more than 30 seconds ahead of now. */
+/**
+ * Guard against clock-skewed or forged invites issued more than 30 seconds
+ * ahead of now.
+ */
 export function isIssuedTooFarInFuture(issuedAt: number, now: number): boolean {
   return issuedAt - now > MAX_CLOCK_SKEW_MS;
 }

@@ -5,12 +5,12 @@ import {
   PRESENCE_MAX_PUBLISH_RETRIES,
   PRESENCE_RETRY_BASE_DELAY_MS
 } from "../constants/map.constants";
+import { presenceRepository } from "../services/presenceRepository";
 import type {
   Coordinates,
   CurrentUser,
   PresencePublishState
 } from "../types/map.types";
-import { presenceRepository } from "../services/presenceRepository";
 import { coarsenCoordinate } from "../utils/map.utils";
 
 type UsePresencePublisherInput = {

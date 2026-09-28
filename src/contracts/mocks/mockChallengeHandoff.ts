@@ -1,9 +1,9 @@
 import type { ChallengeHandoff } from "../challengeHandoff";
 
 /**
- * Stand-in for a completed QR scan + round selection, so the duel session
- * flow (3.8) can be built before the real scanner (3.2) and selector (3.4)
- * are wired. Delete once they land.
+ * Stand-in for a completed QR scan + round selection, so the duel session flow
+ * (3.8) can be built before the real scanner (3.2) and selector (3.4) are
+ * wired. Delete once they land.
  */
 export function mockChallengeHandoff(
   challengerId: string,

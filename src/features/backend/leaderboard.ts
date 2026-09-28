@@ -6,9 +6,9 @@ import { DEFAULT_ELO_RATING } from "./types";
 export type LeaderboardSortBy = "eloRating" | "avgReactionMs";
 
 /**
- * Replays matchResults chronologically into per-player wins/losses/ELO,
- * plus average reaction time over decisive (won) rounds — ties don't record
- * which participant was faster (see RoundOutcome), so they're excluded.
+ * Replays matchResults chronologically into per-player wins/losses/ELO, plus
+ * average reaction time over decisive (won) rounds — ties don't record which
+ * participant was faster (see RoundOutcome), so they're excluded.
  */
 export function computeLeaderboard(
   matchResults: MatchResult[],
