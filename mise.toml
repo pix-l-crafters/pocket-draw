@@ -17,6 +17,12 @@ ai-setup = "capa install --yes"
 check = ["hk check --all", "cog check"]
 prepare = ["npm install"]
 
+[tasks.build-android]
+run = "eas build --platform android --profile production --local"
+
+[tasks.build-ios]
+run = "eas build --platform ios --profile production --local"
+
 [tasks.format]
 alias = "fmt"
 run = [{ task = "treefmt" }, "hk fix --all"]
