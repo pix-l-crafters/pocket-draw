@@ -1,7 +1,16 @@
 # :schema https://schemastore.org/treefmt.json
 
 allow-missing-formatter = true
-excludes = ["package-lock.json"]
+# tombi: format.rules.array-values-order = "ascending"
+excludes = [
+  "**/*.lock",
+  "**/go.sum",
+  "**/locks/**",
+  "**/npm-shrinkwrap.json",
+  "**/package-lock.json",
+  "**/pnpm-lock.yaml",
+  ".mise/**"
+]
 
 [formatter.cspell-sort]
 command = "yq"

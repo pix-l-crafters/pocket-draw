@@ -28,4 +28,4 @@ description: Suggest an idea
 labels:
   - enhancement
 name: Feature Request
-title: "feat: "
+title: "[REQUEST]: "
