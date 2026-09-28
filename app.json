@@ -39,6 +39,7 @@
     "orientation": "portrait",
     "owner": "pix-l-crafters",
     "plugins": [
+      "./plugins/with-ios-min-deployment-target",
       [
         "react-native-ble-manager",
         {
