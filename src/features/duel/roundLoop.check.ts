@@ -56,7 +56,11 @@ const tie = () => ({
     playerId: "b"
   });
 
-  assertEqual(isMatchDecided(s), true, "three rounds with a lead decide a match");
+  assertEqual(
+    isMatchDecided(s),
+    true,
+    "three rounds with a lead decide a match"
+  );
   assertEqual(s.scores, { a: 3, b: 0 }, "round points are summed");
   assertEqual(matchWinnerId(s), "a", "higher total points should win");
 
@@ -109,7 +113,11 @@ const tie = () => ({
 
   s3 = applyRoundOutcome(s3, tie());
 
-  assertEqual(isMatchDecided(s3), true, "a tied tiebreaker still ends the match");
+  assertEqual(
+    isMatchDecided(s3),
+    true,
+    "a tied tiebreaker still ends the match"
+  );
   assertEqual(matchWinnerId(s3), undefined, "a drawn match has no winner");
 
   assertEqual(
@@ -175,7 +183,11 @@ const tie = () => ({
     opponentReactionMs: 300
   });
 
-  assertEqual(isMatchDecided(s), false, "one win should not decide a best-of-3");
+  assertEqual(
+    isMatchDecided(s),
+    false,
+    "one win should not decide a best-of-3"
+  );
 
   s = applyRoundOutcome(s, {
     kind: "win",
@@ -189,7 +201,11 @@ const tie = () => ({
 
   assertEqual(isMatchDecided(s), true, "two wins should decide a best-of-3");
   assertEqual(matchWinnerId(s), "a", "winner should be a");
-  assertEqual(toMatchResult(s, "match-1").winnerId, "a", "MatchResult winnerId");
+  assertEqual(
+    toMatchResult(s, "match-1").winnerId,
+    "a",
+    "MatchResult winnerId"
+  );
 
   // false start counts as a round loss for the false-starter
   let s2 = createRoundLoop(["a", "b"], 3);
