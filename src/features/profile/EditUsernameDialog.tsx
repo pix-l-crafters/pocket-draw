@@ -60,7 +60,10 @@ export function EditUsernameDialog({
       visible={visible}
     >
       <View style={styles.backdrop}>
-        <CutCornerSurface corner="large" style={styles.card}>
+        <CutCornerSurface
+          corner="large"
+          style={styles.card}
+        >
           <KickerLabel>Profile</KickerLabel>
           <DisplayHeading size={30}>Edit Username</DisplayHeading>
           <Text style={styles.description}>

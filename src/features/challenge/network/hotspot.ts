@@ -4,12 +4,12 @@ import type {
   DuelConnectionInfo,
   HotspotConnection
 } from "../../../contracts/duelConnection";
-import type { DuelSessionTransport } from "../session/duelSessionTransport";
 import {
   isUsableIpv4Address,
   isValidHotspotPassword,
   isValidWifiSsid
 } from "../../qr/utils/ip.validation";
+import type { DuelSessionTransport } from "../session/duelSessionTransport";
 
 export type HotspotNetwork = {
   ssid: string;

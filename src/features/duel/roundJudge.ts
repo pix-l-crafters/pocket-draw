@@ -19,12 +19,11 @@ export interface PlayerRoundScore {
 
 /**
  * Gameplay v2 round scoring. Outside the tie window, only the faster shot's
- * zone is eligible to decide the round, falling through to the slower
- * shot's zone if the faster one misses. Within the tie window, both shots
- * score independently. Either way, the two point totals are compared: equal
- * points ties (zone is unambiguous when tied, since miss/bodyshot/headshot
- * points are a 0/1/2 bijection), unequal points wins for whoever scored
- * higher.
+ * zone is eligible to decide the round, falling through to the slower shot's
+ * zone if the faster one misses. Within the tie window, both shots score
+ * independently. Either way, the two point totals are compared: equal points
+ * ties (zone is unambiguous when tied, since miss/bodyshot/headshot points are
+ * a 0/1/2 bijection), unequal points wins for whoever scored higher.
  */
 export function resolveRoundOutcome(
   playerA: PlayerShot,

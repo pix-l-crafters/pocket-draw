@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Alert, StyleSheet, TextInput, View } from "react-native";
 
-import { registerUser } from "../lib/auth";
-import { USERNAME_MAX_LENGTH, validateUsername } from "../lib/username";
 import { CutCornerButton } from "../components/CutCornerButton";
 import { ScreenHeader } from "../components/ScreenHeader";
+import { registerUser } from "../lib/auth";
+import { USERNAME_MAX_LENGTH, validateUsername } from "../lib/username";
 import { colors, fonts } from "../theme/tokens";
 
 export default function RegisterScreen() {

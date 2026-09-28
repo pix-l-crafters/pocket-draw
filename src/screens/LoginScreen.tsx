@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Alert, StyleSheet, TextInput, View } from "react-native";
 
-import { loginUser } from "../lib/auth";
 import { CutCornerButton } from "../components/CutCornerButton";
 import { ScreenHeader } from "../components/ScreenHeader";
+import { loginUser } from "../lib/auth";
 import { colors, fonts } from "../theme/tokens";
 
 export default function LoginScreen() {
@@ -53,7 +53,10 @@ export default function LoginScreen() {
         value={password}
       />
 
-      <CutCornerButton label="Login" onPress={() => void handleLogin()} />
+      <CutCornerButton
+        label="Login"
+        onPress={() => void handleLogin()}
+      />
     </View>
   );
 }

@@ -13,11 +13,12 @@ lockfile = true
 use_git_credentials = true
 
 [tasks]
-ai-setup = "capa install -y"
+ai-setup = "capa install --yes"
 check = ["hk check --all", "cog check"]
 prepare = ["npm install"]
 
-[tasks.fmt]
+[tasks.format]
+alias = "fmt"
 run = [{ task = "treefmt" }, "hk fix --all"]
 
 [tasks.treefmt]
@@ -26,34 +27,36 @@ run_windows = "echo 'Treefmt not supported on Windows'"
 
 [tools]
 android-sdk = "latest"
-apm = { postinstall = "apm install", version = "0.28" }
 "aqua:google/keep-sorted" = "latest"
 "aqua:numtide/treefmt" = { os = ["linux", "macos"], version = "2.6.0" }
 "aqua:owenlamont/ryl" = "latest"
 betterleaks = "latest"
+bun = { postinstall = "bun install", version = "latest" }
 cocogitto = "latest"
 cspell = "latest"
+editorconfig-checker = "latest"
 fnox = "latest"
 gh = { postinstall = "gh auth login", version = "latest" }
 git-cliff = "latest"
 "github:MRDGH2821/Sort-Markdown-Tables" = "latest"
-"github:infragate/capa" = { postinstall = "capa install -y", version = "2.2.2" }
-hk = "2.0.1"
+"github:infragate/capa" = { postinstall = "capa install --yes", version = "2.2.4" }
+hk = "2.3.0"
 java = "21"
 ls-lint = "latest"
 node = "24"
 npm = { postinstall = "npm install", version = "latest" }
 "npm:sort-package-json" = "latest"
+oxfmt = "latest"
 "pipx:lorenzwalthert/gitignore-tidy" = "latest"
 "pipx:toml-sort" = "latest"
 "pipx:yamlfix" = "latest"
 pkl = "latest"
-prettier = "latest"
 ruff = "latest"
 rumdl = "latest"
 tombi = "latest"
 typos = "latest"
 typstyle = "latest"
+uv = "latest"
 yq = "latest"
 
 [[watch_files]]

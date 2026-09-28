@@ -1,8 +1,8 @@
 import { render, userEvent } from "@testing-library/react-native";
 import { PaperProvider } from "react-native-paper";
 
-import { appTheme } from "../../theme/appTheme";
 import { logoutUser, updateUsername } from "../../lib/auth";
+import { appTheme } from "../../theme/appTheme";
 import { ProfileScreen } from "./ProfileScreen";
 
 jest.mock("../../lib/auth", () => ({
@@ -24,7 +24,11 @@ const uid = "player-123";
 function renderProfile() {
   return render(
     <PaperProvider theme={appTheme}>
-      <ProfileScreen displayName={displayName} email={email} uid={uid} />
+      <ProfileScreen
+        displayName={displayName}
+        email={email}
+        uid={uid}
+      />
     </PaperProvider>
   );
 }

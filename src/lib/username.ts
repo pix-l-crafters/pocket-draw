@@ -11,7 +11,8 @@ export const USERNAME_MAX_LENGTH = 20;
 const ALLOWED_CHARACTERS = /^[A-Za-z0-9 _-]+$/;
 
 export type UsernameValidation =
-  { ok: true; value: string } | { ok: false; message: string };
+  | { ok: true; value: string }
+  | { ok: false; message: string };
 
 export function validateUsername(raw: string): UsernameValidation {
   const value = raw.trim();

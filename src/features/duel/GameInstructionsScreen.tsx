@@ -32,7 +32,10 @@ export function GameInstructionsScreen({
 
       <CutCornerSurface style={styles.card}>
         {STEPS.map((step, index) => (
-          <View key={step} style={styles.stepRow}>
+          <View
+            key={step}
+            style={styles.stepRow}
+          >
             <Text style={styles.stepNumber}>
               {String(index + 1).padStart(2, "0")}
             </Text>
@@ -42,7 +45,10 @@ export function GameInstructionsScreen({
       </CutCornerSurface>
 
       <View style={styles.actions}>
-        <CutCornerButton label="I'm Ready" onPress={onContinue} />
+        <CutCornerButton
+          label="I'm Ready"
+          onPress={onContinue}
+        />
       </View>
     </View>
   );

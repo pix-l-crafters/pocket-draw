@@ -1,8 +1,8 @@
 import type { MatchResult } from "../matchResult";
 
 /**
- * Stand-in for a completed match, so the backend write path (5.2/5.3) can
- * be built before the real round loop (4.17) exists. Delete once it lands.
+ * Stand-in for a completed match, so the backend write path (5.2/5.3) can be
+ * built before the real round loop (4.17) exists. Delete once it lands.
  */
 export function mockMatchResult(
   playerAId: string,

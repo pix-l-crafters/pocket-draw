@@ -1,6 +1,6 @@
-import { Accelerometer } from "expo-sensors";
 import { setAudioModeAsync, useAudioPlayer } from "expo-audio";
 import * as Haptics from "expo-haptics";
+import { Accelerometer } from "expo-sensors";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Button, IconButton, ProgressBar } from "react-native-paper";
@@ -40,7 +40,12 @@ export function isFaceDown(x: number, y: number, z: number): boolean {
 }
 
 type Phase =
-  "separate" | "faceDown" | "waiting" | "countdown" | "fire" | "done";
+  | "separate"
+  | "faceDown"
+  | "waiting"
+  | "countdown"
+  | "fire"
+  | "done";
 
 type PreRoundProps = {
   channel: DuelChannel;
@@ -324,7 +329,11 @@ export function PreRound({
         />
       )}
       {(phase === "separate" || phase === "faceDown") && (
-        <Button mode="contained" disabled={confirmDisabled} onPress={advance}>
+        <Button
+          mode="contained"
+          disabled={confirmDisabled}
+          onPress={advance}
+        >
           CONFIRM
         </Button>
       )}

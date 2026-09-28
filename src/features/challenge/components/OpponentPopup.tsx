@@ -5,10 +5,10 @@ import { CutCornerSurface } from "../../../components/CutCornerSurface";
 import { DisplayHeading } from "../../../components/DisplayHeading";
 import { KickerLabel } from "../../../components/KickerLabel";
 import { StatTile } from "../../../components/StatTile";
-import type { PlayerStats } from "../../../contracts/playerStats";
 // TODO(mihir): once 5.1/5.5/5.4 land, swap this mock for the real
 // Firestore-backed lookup (see src/contracts/playerStats.ts).
 import { mockPlayerStats } from "../../../contracts/mocks/mockPlayerStats";
+import type { PlayerStats } from "../../../contracts/playerStats";
 import { colors } from "../../../theme/tokens";
 
 type OpponentPopupProps = {
@@ -46,9 +46,15 @@ export function OpponentPopup({
       visible={visible}
     >
       <View style={styles.backdrop}>
-        <CutCornerSurface corner="large" style={styles.card}>
+        <CutCornerSurface
+          corner="large"
+          style={styles.card}
+        >
           <KickerLabel>{kicker}</KickerLabel>
-          <DisplayHeading size={26} style={styles.name}>
+          <DisplayHeading
+            size={26}
+            style={styles.name}
+          >
             {stats.displayName}
           </DisplayHeading>
           <View style={styles.statsRow}>
@@ -57,12 +63,24 @@ export function OpponentPopup({
               tint={colors.success}
               value={String(stats.wins)}
             />
-            <StatTile label="Losses" value={String(stats.losses)} />
-            <StatTile label="Elo" value={String(stats.eloRating)} />
+            <StatTile
+              label="Losses"
+              value={String(stats.losses)}
+            />
+            <StatTile
+              label="Elo"
+              value={String(stats.eloRating)}
+            />
           </View>
           <View style={styles.actions}>
-            <CutCornerButton label={confirmLabel} onPress={onChallenge} />
-            <CutCornerButton label={cancelLabel} onPress={onCancel} />
+            <CutCornerButton
+              label={confirmLabel}
+              onPress={onChallenge}
+            />
+            <CutCornerButton
+              label={cancelLabel}
+              onPress={onCancel}
+            />
           </View>
         </CutCornerSurface>
       </View>

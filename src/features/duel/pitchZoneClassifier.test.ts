@@ -1,5 +1,5 @@
-import { classifyZone, computeRaiseFraction } from "./pitchZoneClassifier";
 import { ZONE_POINTS } from "../../contracts/roundOutcome";
+import { classifyZone, computeRaiseFraction } from "./pitchZoneClassifier";
 
 describe("computeRaiseFraction", () => {
   it("returns 0 at the ready pose", () => {

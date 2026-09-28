@@ -7,8 +7,10 @@ export const RECONNECT_TIMEOUT_MS = 3_000;
 export interface DisconnectContext {
   phase: "round" | "match";
   roundNumber?: number;
-  /** In-progress score/round history, carried through so a caller can resume
-   * the match instead of restarting it once the channel reconnects. */
+  /**
+   * In-progress score/round history, carried through so a caller can resume the
+   * match instead of restarting it once the channel reconnects.
+   */
   matchState?: RoundLoopState;
 }
 

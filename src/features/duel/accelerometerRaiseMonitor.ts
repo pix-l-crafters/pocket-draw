@@ -8,7 +8,9 @@ import {
 const SENSOR_UPDATE_INTERVAL_MS = 20;
 
 export type RaiseMonitorStartResult =
-  "started" | "permissionDenied" | "unavailable";
+  | "started"
+  | "permissionDenied"
+  | "unavailable";
 
 export class AccelerometerRaiseMonitor {
   private subscription: { remove(): void } | null = null;

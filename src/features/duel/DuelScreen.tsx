@@ -121,7 +121,10 @@ export function DuelScreen({
       />
       {onExit && (
         <View style={styles.exitRow}>
-          <CutCornerButton label="Exit" onPress={onExit} />
+          <CutCornerButton
+            label="Exit"
+            onPress={onExit}
+          />
         </View>
       )}
     </View>

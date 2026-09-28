@@ -15,8 +15,8 @@ import { CutCornerButton } from "../../components/CutCornerButton";
 import { CutCornerSurface } from "../../components/CutCornerSurface";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { StatusTag } from "../../components/StatusTag";
-import type { DuelConnectionInfo } from "../../contracts/duelConnection";
 import type { DuelChannel } from "../../contracts/duelChannel";
+import type { DuelConnectionInfo } from "../../contracts/duelConnection";
 import { colors, fonts } from "../../theme/tokens";
 import type { QrInvitePayload } from "../qr/types/qr.types";
 import {
@@ -299,7 +299,10 @@ export function QrDisplayScreen({
         />
 
         {connectionMode === "hotspot" && Platform.OS === "ios" ? (
-          <CutCornerSurface corner="small" style={styles.instructionsCard}>
+          <CutCornerSurface
+            corner="small"
+            style={styles.instructionsCard}
+          >
             <Text style={styles.instructions}>
               Enable Personal Hotspot in iOS Settings, then enter its Wi-Fi name
               and password below.
@@ -326,7 +329,10 @@ export function QrDisplayScreen({
           </CutCornerSurface>
         ) : null}
 
-        <CutCornerSurface corner="large" style={styles.qrCard}>
+        <CutCornerSurface
+          corner="large"
+          style={styles.qrCard}
+        >
           {invite ? (
             <View style={styles.qrWrapper}>
               <QRCode
@@ -353,7 +359,10 @@ export function QrDisplayScreen({
             </StatusTag>
           )}
         </CutCornerSurface>
-        <CutCornerButton label="Generate New Code" onPress={regenerate} />
+        <CutCornerButton
+          label="Generate New Code"
+          onPress={regenerate}
+        />
       </ScrollView>
     </KeyboardAvoidingView>
   );

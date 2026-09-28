@@ -48,7 +48,10 @@ export function ProfileScreen({ displayName, email, uid }: ProfileScreenProps) {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.content} style={styles.container}>
+    <ScrollView
+      contentContainerStyle={styles.content}
+      style={styles.container}
+    >
       <ScreenHeader
         kicker="Your Profile"
         subtitle={email ?? undefined}
@@ -63,8 +66,14 @@ export function ProfileScreen({ displayName, email, uid }: ProfileScreenProps) {
             tint={colors.success}
             value={format(stats?.wins)}
           />
-          <StatTile label="Losses" value={format(stats?.losses)} />
-          <StatTile label="ELO" value={format(stats?.eloRating)} />
+          <StatTile
+            label="Losses"
+            value={format(stats?.losses)}
+          />
+          <StatTile
+            label="ELO"
+            value={format(stats?.eloRating)}
+          />
         </View>
       </View>
 
@@ -73,7 +82,10 @@ export function ProfileScreen({ displayName, email, uid }: ProfileScreenProps) {
 
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Email</Text>
-          <Text numberOfLines={1} style={styles.detailValue}>
+          <Text
+            numberOfLines={1}
+            style={styles.detailValue}
+          >
             {email ?? "—"}
           </Text>
         </View>

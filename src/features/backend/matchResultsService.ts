@@ -28,7 +28,8 @@ function isLikelyOfflineError(error: unknown): boolean {
 
 /**
  * Writes a completed match to Firestore, or queues it when offline (5.2/5.3).
- * Uses the shared MatchResult contract; callers can pass mockMatchResult today.
+ * Uses the shared MatchResult contract; callers can pass mockMatchResult
+ * today.
  */
 export async function submitMatchResult(
   result: MatchResult,
@@ -63,9 +64,7 @@ export async function submitMatchResult(
   }
 }
 
-/**
- * Flushes the local offline queue. Safe to call on app resume / reconnect.
- */
+/** Flushes the local offline queue. Safe to call on app resume / reconnect. */
 export async function flushQueuedMatchResults(
   uploadedBy: string
 ): Promise<{ written: string[]; remaining: string[] }> {
@@ -98,8 +97,8 @@ export async function flushQueuedMatchResults(
 let stopNetworkSubscription: (() => void) | null = null;
 
 /**
- * Start listening for reconnect and flush queued results for the signed-in user.
- * Call once after auth is ready; returns an unsubscribe function.
+ * Start listening for reconnect and flush queued results for the signed-in
+ * user. Call once after auth is ready; returns an unsubscribe function.
  */
 export function startMatchResultQueueSync(
   getUploadedBy: () => string | null

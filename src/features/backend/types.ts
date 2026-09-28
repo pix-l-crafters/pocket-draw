@@ -5,8 +5,8 @@ import type { PlayerStats } from "../../contracts/playerStats";
 export const DEFAULT_ELO_RATING = 1500;
 
 /**
- * Firestore document written to `matchResults/{matchId}`.
- * Mirrors the shared MatchResult contract plus upload metadata.
+ * Firestore document written to `matchResults/{matchId}`. Mirrors the shared
+ * MatchResult contract plus upload metadata.
  */
 export type MatchResultDocument = MatchResult & {
   uploadedBy: string;

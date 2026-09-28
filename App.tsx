@@ -1,7 +1,3 @@
-import { useCallback, useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { StatusBar } from "expo-status-bar";
-import type { User } from "firebase/auth";
 import {
   Barlow_400Regular,
   useFonts as useBarlowFonts
@@ -14,28 +10,32 @@ import {
   IBMPlexMono_400Regular,
   useFonts as useIBMPlexMonoFonts
 } from "@expo-google-fonts/ibm-plex-mono";
+import { StatusBar } from "expo-status-bar";
+import type { User } from "firebase/auth";
+import { useCallback, useState } from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { BottomNavigation, PaperProvider } from "react-native-paper";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
-import { useAuthUser } from "./src/lib/useAuthUser";
+import type { ChallengeHandoff } from "./src/contracts/challengeHandoff";
+import type { DuelChannel } from "./src/contracts/duelChannel";
 import { ChallengeScreen } from "./src/features/challenge/ChallengeScreen";
 import { ConnectingScreen } from "./src/features/challenge/ConnectingScreen";
 import {
   IncomingChallengeScreen,
   type Challenger
 } from "./src/features/challenge/IncomingChallengeScreen";
-import type { ChallengeHandoff } from "./src/contracts/challengeHandoff";
-import type { DuelChannel } from "./src/contracts/duelChannel";
+import { challengeRequestRepository } from "./src/features/challenge/services/challengeRequestRepository";
 import { DuelScreen, type DuelPlayer } from "./src/features/duel/DuelScreen";
 import type { DuelRole } from "./src/features/duel/fireSignalCoordinator";
 import { GameInstructionsScreen } from "./src/features/duel/GameInstructionsScreen";
 import { MapScreen } from "./src/features/map/MapScreen";
-import { ProfileScreen } from "./src/features/profile/ProfileScreen";
 import type { CurrentUser } from "./src/features/map/types/map.types";
+import { ProfileScreen } from "./src/features/profile/ProfileScreen";
 import type { QrInvitePayload } from "./src/features/qr/types/qr.types";
+import { useAuthUser } from "./src/lib/useAuthUser";
 import LoginScreen from "./src/screens/LoginScreen";
 import RegisterScreen from "./src/screens/RegisterScreen";
-import { challengeRequestRepository } from "./src/features/challenge/services/challengeRequestRepository";
 import { appTheme } from "./src/theme/appTheme";
 import { colors } from "./src/theme/tokens";
 
@@ -200,7 +200,10 @@ export default function App() {
           )
         ) : (
           // 用户已经登录，因此显示应用主界面。
-          <SafeAreaView edges={["top", "bottom"]} style={styles.container}>
+          <SafeAreaView
+            edges={["top", "bottom"]}
+            style={styles.container}
+          >
             {activeDuel ? (
               // 只有在与另一位玩家的对局中才显示 Duel 界面，不作为常驻标签。
               !instructionsSeen ? (

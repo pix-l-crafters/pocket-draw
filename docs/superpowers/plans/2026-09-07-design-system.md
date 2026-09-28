@@ -394,7 +394,10 @@ export function ScreenHeader({ kicker, subtitle, title }: ScreenHeaderProps) {
   return (
     <View style={styles.container}>
       <KickerLabel>{kicker}</KickerLabel>
-      <DisplayHeading size={34} style={styles.title}>
+      <DisplayHeading
+        size={34}
+        style={styles.title}
+      >
         {title}
       </DisplayHeading>
       {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
@@ -763,7 +766,10 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <PaperProvider theme={appTheme}>
-        <SafeAreaView edges={["top"]} style={styles.container}>
+        <SafeAreaView
+          edges={["top"]}
+          style={styles.container}
+        >
           <View style={styles.switcherContainer}>
             <SegmentedButtons
               buttons={[
@@ -774,7 +780,10 @@ export default function App() {
               style={styles.switcher}
               value={activeTab}
             />
-            <TouchableOpacity onPress={logoutUser} style={styles.logoutButton}>
+            <TouchableOpacity
+              onPress={logoutUser}
+              style={styles.logoutButton}
+            >
               <Text style={styles.logoutButtonText}>Logout</Text>
             </TouchableOpacity>
           </View>
@@ -970,7 +979,10 @@ export default function App() {
             </View>
           )
         ) : (
-          <SafeAreaView edges={["top"]} style={styles.container}>
+          <SafeAreaView
+            edges={["top"]}
+            style={styles.container}
+          >
             <View style={styles.switcherContainer}>
               <SegmentedButtons
                 buttons={[
@@ -1159,7 +1171,10 @@ export default function LoginScreen() {
         value={password}
       />
 
-      <CutCornerButton label="Login" onPress={() => void handleLogin()} />
+      <CutCornerButton
+        label="Login"
+        onPress={() => void handleLogin()}
+      />
     </View>
   );
 }

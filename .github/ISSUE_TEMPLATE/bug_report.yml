@@ -33,4 +33,4 @@ description: Report a problem
 labels:
   - bug
 name: Bug Report
-title: "fix: "
+title: "[BUG]: "

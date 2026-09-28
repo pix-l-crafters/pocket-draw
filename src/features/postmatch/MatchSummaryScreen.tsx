@@ -9,9 +9,9 @@ import { CutCornerButton } from "../../components/CutCornerButton";
 import { KickerLabel } from "../../components/KickerLabel";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { StatTile } from "../../components/StatTile";
-import { colors, fonts } from "../../theme/tokens";
 import type { MatchResult } from "../../contracts/matchResult";
 import type { PlayerStats } from "../../contracts/playerStats";
+import { colors, fonts } from "../../theme/tokens";
 import { scoreFromRounds } from "../duel/roundLoop";
 
 type MatchSummaryScreenProps = {
@@ -53,7 +53,10 @@ export function MatchSummaryScreen({
 
   return (
     <View style={styles.container}>
-      <ScreenHeader kicker="Match complete" title={title} />
+      <ScreenHeader
+        kicker="Match complete"
+        title={title}
+      />
 
       <View style={styles.statsRow}>
         {matchResult.participantIds.map((id) => (
@@ -83,15 +86,24 @@ export function MatchSummaryScreen({
       <View style={styles.rounds}>
         <KickerLabel>Rounds</KickerLabel>
         {matchResult.rounds.map((outcome, index) => (
-          <Text key={index} style={styles.roundLine}>
+          <Text
+            key={index}
+            style={styles.roundLine}
+          >
             Round {index + 1} — {reactionSummary(outcome, playerNames)}
           </Text>
         ))}
       </View>
 
       <View style={styles.actions}>
-        <CutCornerButton label="Rematch" onPress={onRematch} />
-        <TouchableOpacity onPress={onReturnToMap} style={styles.returnButton}>
+        <CutCornerButton
+          label="Rematch"
+          onPress={onRematch}
+        />
+        <TouchableOpacity
+          onPress={onReturnToMap}
+          style={styles.returnButton}
+        >
           <Text style={styles.returnLabel}>Back to map</Text>
         </TouchableOpacity>
       </View>

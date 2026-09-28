@@ -101,10 +101,16 @@ export function BleScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title} variant="titleMedium">
+      <Text
+        style={styles.title}
+        variant="titleMedium"
+      >
         BLE Demo (react-native-ble-manager)
       </Text>
-      <Text style={styles.status} variant="bodyMedium">
+      <Text
+        style={styles.status}
+        variant="bodyMedium"
+      >
         {status}
       </Text>
       <Button
@@ -120,7 +126,10 @@ export function BleScreen() {
         data={devices}
         keyExtractor={(item) => item.id}
         ListEmptyComponent={
-          <Text style={styles.emptyText} variant="bodySmall">
+          <Text
+            style={styles.emptyText}
+            variant="bodySmall"
+          >
             {isScanning ? "Looking for devices..." : "No devices found yet"}
           </Text>
         }

@@ -10,12 +10,18 @@ function toHex(bytes: Uint8Array): string {
   return out;
 }
 
-/** A random 32-hex-character challenge token (16 bytes), matching hasValidChallengeToken. */
+/**
+ * A random 32-hex-character challenge token (16 bytes), matching
+ * hasValidChallengeToken.
+ */
 export function generateChallengeToken(): string {
   return toHex(Crypto.getRandomBytes(16));
 }
 
-/** A random 8-hex-character BLE discovery token (4 bytes), matching hasValidDiscoveryToken. */
+/**
+ * A random 8-hex-character BLE discovery token (4 bytes), matching
+ * hasValidDiscoveryToken.
+ */
 export function generateDiscoveryToken(): string {
   return toHex(Crypto.getRandomBytes(4));
 }

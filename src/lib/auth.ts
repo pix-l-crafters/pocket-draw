@@ -8,14 +8,14 @@ import {
   updateProfile
 } from "firebase/auth";
 
-import { auth } from "./firebase";
 import { userProfileRepository } from "../features/backend/userProfileRepository";
+import { auth } from "./firebase";
 
 /**
  * Mirrors the Auth display name into `users/{uid}` without letting a failure
  * fail the caller. Auth is the source of truth; a missed mirror is repaired by
  * `syncUserProfileFromAuth` on the next sign-in, so surfacing it here would
- * only make a rename that *did* succeed look like it failed.
+ * only make a rename that _did_ succeed look like it failed.
  */
 const mirrorUserProfile = (uid: string, displayName: string) => {
   void userProfileRepository
