@@ -27,13 +27,13 @@
     },
     "icon": "./assets/icon.png",
     "ios": {
+      "appleTeamId": "UTGWLD7896",
       "bundleIdentifier": "com.pix-l-crafters.pocketdraw",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSLocalNetworkUsageDescription": "Allow Pocket Draw to connect directly to a nearby opponent for a duel."
       },
-      "supportsTablet": true,
-      "appleTeamId": "UTGWLD7896"
+      "supportsTablet": true
     },
     "name": "Pocket Draw",
     "orientation": "portrait",
