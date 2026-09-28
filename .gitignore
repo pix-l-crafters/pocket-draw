@@ -56,6 +56,7 @@ build-*.ipa
 dist/
 firebase-debug.log
 megalinter-reports/
+modules/local-only-hotspot/android/build
 node_modules/
 report/
 target/
