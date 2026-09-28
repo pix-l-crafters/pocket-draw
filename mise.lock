@@ -272,6 +272,53 @@ aube = { path = ".mise/locks/cspell/10.3.3", digest = "sha256:686ab5b2e39ce85122
 backend = "npm:cspell"
 specifiers = ["latest"]
 
+[[tools.editorconfig-checker]]
+version = "4.0.2"
+backend = "github:editorconfig-checker/editorconfig-checker"
+specifiers = ["latest"]
+
+[tools.editorconfig-checker."platforms.linux-arm64"]
+checksum = "sha256:abad76da8c9950fdc2a314bcd66969172aa823e9c595fa7e3a389a91e34d025e"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v4.0.2/editorconfig-checker-linux-arm64.tar.gz"
+url_api = "https://api.github.com/repos/editorconfig-checker/editorconfig-checker/releases/assets/574675779"
+provenance = "github-attestations"
+
+[tools.editorconfig-checker."platforms.linux-arm64-musl"]
+checksum = "sha256:abad76da8c9950fdc2a314bcd66969172aa823e9c595fa7e3a389a91e34d025e"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v4.0.2/editorconfig-checker-linux-arm64.tar.gz"
+url_api = "https://api.github.com/repos/editorconfig-checker/editorconfig-checker/releases/assets/574675779"
+provenance = "github-attestations"
+
+[tools.editorconfig-checker."platforms.linux-x64"]
+checksum = "sha256:44efaef3ed14c6ab52eb87481d78e5e5c204796dccf26e2f4598a61ba17f8003"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v4.0.2/editorconfig-checker-linux-amd64.tar.gz"
+url_api = "https://api.github.com/repos/editorconfig-checker/editorconfig-checker/releases/assets/574675771"
+provenance = "github-attestations"
+
+[tools.editorconfig-checker."platforms.linux-x64-musl"]
+checksum = "sha256:44efaef3ed14c6ab52eb87481d78e5e5c204796dccf26e2f4598a61ba17f8003"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v4.0.2/editorconfig-checker-linux-amd64.tar.gz"
+url_api = "https://api.github.com/repos/editorconfig-checker/editorconfig-checker/releases/assets/574675771"
+provenance = "github-attestations"
+
+[tools.editorconfig-checker."platforms.macos-arm64"]
+checksum = "sha256:ff59f57717d95fc62b8e372c8051dbbb766f7d660942409a85d027b0feb2422c"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v4.0.2/editorconfig-checker-darwin-all.tar.gz"
+url_api = "https://api.github.com/repos/editorconfig-checker/editorconfig-checker/releases/assets/574675773"
+provenance = "github-attestations"
+
+[tools.editorconfig-checker."platforms.macos-x64"]
+checksum = "sha256:ff59f57717d95fc62b8e372c8051dbbb766f7d660942409a85d027b0feb2422c"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v4.0.2/editorconfig-checker-darwin-all.tar.gz"
+url_api = "https://api.github.com/repos/editorconfig-checker/editorconfig-checker/releases/assets/574675773"
+provenance = "github-attestations"
+
+[tools.editorconfig-checker."platforms.windows-x64"]
+checksum = "sha256:857f8f74dfc259d73dac93573e37cf3ce01150787d7b139bf839549cc6b5beb9"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v4.0.2/editorconfig-checker-windows-amd64.zip"
+url_api = "https://api.github.com/repos/editorconfig-checker/editorconfig-checker/releases/assets/574675794"
+provenance = "github-attestations"
+
 [[tools.fnox]]
 version = "1.35.2"
 backend = "packslip:github.com/jdx/fnox"
@@ -440,44 +487,44 @@ url = "https://github.com/MRDGH2821/Sort-Markdown-Tables/releases/download/v0.5.
 url_api = "https://api.github.com/repos/MRDGH2821/Sort-Markdown-Tables/releases/assets/501255336"
 
 [[tools."github:infragate/capa"]]
-version = "2.2.2"
+version = "2.2.4"
 backend = "github:infragate/capa"
-specifiers = ["2.2.2"]
+specifiers = ["2.2.4"]
 
 [tools."github:infragate/capa"."platforms.linux-arm64"]
-checksum = "sha256:cba202bf561fa8c844e3051b075a02c7751fb7bcc1159abbb0c14860f6e52476"
-url = "https://github.com/infragate/capa/releases/download/v2.2.2/capa-aarch64-unknown-linux-gnu"
-url_api = "https://api.github.com/repos/infragate/capa/releases/assets/571287911"
+checksum = "sha256:ea1bd097bda37510cacbf71dec45780e299540648143d1b9ab82d1ecba2b937b"
+url = "https://github.com/infragate/capa/releases/download/v2.2.4/capa-aarch64-unknown-linux-gnu"
+url_api = "https://api.github.com/repos/infragate/capa/releases/assets/583582066"
 
 [tools."github:infragate/capa"."platforms.linux-arm64-musl"]
-checksum = "sha256:cba202bf561fa8c844e3051b075a02c7751fb7bcc1159abbb0c14860f6e52476"
-url = "https://github.com/infragate/capa/releases/download/v2.2.2/capa-aarch64-unknown-linux-gnu"
-url_api = "https://api.github.com/repos/infragate/capa/releases/assets/571287911"
+checksum = "sha256:ea1bd097bda37510cacbf71dec45780e299540648143d1b9ab82d1ecba2b937b"
+url = "https://github.com/infragate/capa/releases/download/v2.2.4/capa-aarch64-unknown-linux-gnu"
+url_api = "https://api.github.com/repos/infragate/capa/releases/assets/583582066"
 
 [tools."github:infragate/capa"."platforms.linux-x64"]
-checksum = "sha256:7eee8c2789ac540090c5f713dbfecd19ab5aa707fc11f465e2f51a49012effa8"
-url = "https://github.com/infragate/capa/releases/download/v2.2.2/capa-x86_64-unknown-linux-gnu"
-url_api = "https://api.github.com/repos/infragate/capa/releases/assets/571287912"
+checksum = "sha256:d7fb0dfd2ae65c6edc73968d4f6ccc6578d96946d1eea0cd0ab962bd4114ae87"
+url = "https://github.com/infragate/capa/releases/download/v2.2.4/capa-x86_64-unknown-linux-gnu"
+url_api = "https://api.github.com/repos/infragate/capa/releases/assets/583582065"
 
 [tools."github:infragate/capa"."platforms.linux-x64-musl"]
-checksum = "sha256:7eee8c2789ac540090c5f713dbfecd19ab5aa707fc11f465e2f51a49012effa8"
-url = "https://github.com/infragate/capa/releases/download/v2.2.2/capa-x86_64-unknown-linux-gnu"
-url_api = "https://api.github.com/repos/infragate/capa/releases/assets/571287912"
+checksum = "sha256:d7fb0dfd2ae65c6edc73968d4f6ccc6578d96946d1eea0cd0ab962bd4114ae87"
+url = "https://github.com/infragate/capa/releases/download/v2.2.4/capa-x86_64-unknown-linux-gnu"
+url_api = "https://api.github.com/repos/infragate/capa/releases/assets/583582065"
 
 [tools."github:infragate/capa"."platforms.macos-arm64"]
-checksum = "sha256:7055002d309fa9045c8eb4b36d8ef18ec5044faa07e87851e0c2584ad2fd6b2f"
-url = "https://github.com/infragate/capa/releases/download/v2.2.2/capa-aarch64-apple-darwin"
-url_api = "https://api.github.com/repos/infragate/capa/releases/assets/571287902"
+checksum = "sha256:9b7a7ce61eb732e82954e13c8f4dfc738f9643765020b3c713228372a688f70b"
+url = "https://github.com/infragate/capa/releases/download/v2.2.4/capa-aarch64-apple-darwin"
+url_api = "https://api.github.com/repos/infragate/capa/releases/assets/583582077"
 
 [tools."github:infragate/capa"."platforms.macos-x64"]
-checksum = "sha256:8fc5ce52b87c0858ff4d39c415fb5b6a865983203995eada5b795eb01768fcf2"
-url = "https://github.com/infragate/capa/releases/download/v2.2.2/capa-x86_64-apple-darwin"
-url_api = "https://api.github.com/repos/infragate/capa/releases/assets/571287906"
+checksum = "sha256:3560f27354fb3e4599de73d3dba7af46797a8b0b5ddfab028217c4bde5a502bb"
+url = "https://github.com/infragate/capa/releases/download/v2.2.4/capa-x86_64-apple-darwin"
+url_api = "https://api.github.com/repos/infragate/capa/releases/assets/583582075"
 
 [tools."github:infragate/capa"."platforms.windows-x64"]
-checksum = "sha256:e77764c30b2585f02fd3b4345bd0b49f84d62f793d0c37e538b7f0fdbf4edd8f"
-url = "https://github.com/infragate/capa/releases/download/v2.2.2/capa-x86_64-pc-windows-msvc.exe"
-url_api = "https://api.github.com/repos/infragate/capa/releases/assets/571287901"
+checksum = "sha256:e0acaec5efff803ffa61ef2ef13616c44f215685c2dec678ef3f8d7d50d6fdca"
+url = "https://github.com/infragate/capa/releases/download/v2.2.4/capa-x86_64-pc-windows-msvc.exe"
+url_api = "https://api.github.com/repos/infragate/capa/releases/assets/583582070"
 
 [[tools.gradle]]
 version = "9.3.1"
@@ -520,38 +567,38 @@ url = "https://github.com/gradle/gradle-distributions/releases/download/v9.3.1/g
 url_api = "https://api.github.com/repos/gradle/gradle-distributions/releases/assets/347704202"
 
 [[tools.hk]]
-version = "2.0.1"
+version = "2.3.0"
 backend = "packslip:github.com/jdx/hk"
-specifiers = ["2.0.1"]
+specifiers = ["2.3.0"]
 
 [tools.hk."platforms.linux-arm64"]
-checksum = "sha256:8a28f2737914bbffa8dd16f39a2fc65d85e9a52261789cf6a1affd6c6762fbc1"
-url = "https://github.com/jdx/hk/releases/download/v2.0.1/hk-aarch64-unknown-linux-gnu.tar.gz"
+checksum = "sha256:d0311080598527289f2d98cb9d4c1ec287ca595542b842ddecd8a6264ef18cf5"
+url = "https://github.com/jdx/hk/releases/download/v2.3.0/hk-aarch64-unknown-linux-gnu.tar.gz"
 signer = "sigstore-oidc:https://github.com/jdx/hk/.github/workflows/release.yml"
 
 [tools.hk."platforms.linux-arm64-musl"]
-checksum = "sha256:b75f54bf8a3679a13a01d250959ae77fab033ca5025eb557b76442c59efa8eb8"
-url = "https://github.com/jdx/hk/releases/download/v2.0.1/hk-aarch64-unknown-linux-musl.tar.gz"
+checksum = "sha256:477ce79246e62b29db95c034461f108d5019262bfeba14a4307e82689824687d"
+url = "https://github.com/jdx/hk/releases/download/v2.3.0/hk-aarch64-unknown-linux-musl.tar.gz"
 signer = "sigstore-oidc:https://github.com/jdx/hk/.github/workflows/release.yml"
 
 [tools.hk."platforms.linux-x64"]
-checksum = "sha256:f14d0290a07f82911f32ea5e4a91dd80d90abb852488912b1ade9b240f70d615"
-url = "https://github.com/jdx/hk/releases/download/v2.0.1/hk-x86_64-unknown-linux-gnu.tar.gz"
+checksum = "sha256:79cabdccba39e1eef4e443e11713c923381f697b03c00ef4a12dfcd1ca5380b0"
+url = "https://github.com/jdx/hk/releases/download/v2.3.0/hk-x86_64-unknown-linux-gnu.tar.gz"
 signer = "sigstore-oidc:https://github.com/jdx/hk/.github/workflows/release.yml"
 
 [tools.hk."platforms.linux-x64-musl"]
-checksum = "sha256:76269248e27114f361d533551ffca757e58a1d4abe880fd008df16d19128ea97"
-url = "https://github.com/jdx/hk/releases/download/v2.0.1/hk-x86_64-unknown-linux-musl.tar.gz"
+checksum = "sha256:307f760266af8a393c47a8039e2c966c78361eae33949865e9ab4cc163f517b4"
+url = "https://github.com/jdx/hk/releases/download/v2.3.0/hk-x86_64-unknown-linux-musl.tar.gz"
 signer = "sigstore-oidc:https://github.com/jdx/hk/.github/workflows/release.yml"
 
 [tools.hk."platforms.macos-arm64"]
-checksum = "sha256:6ec393f898f562f76c4839a910356b4afec6740eff23f18ebdf8cf41c793a461"
-url = "https://github.com/jdx/hk/releases/download/v2.0.1/hk-aarch64-apple-darwin.tar.gz"
+checksum = "sha256:45e83c2e891bb29280f7e816b244b960e1758f185802c7e0a21d25ff7bbebbde"
+url = "https://github.com/jdx/hk/releases/download/v2.3.0/hk-aarch64-apple-darwin.tar.gz"
 signer = "sigstore-oidc:https://github.com/jdx/hk/.github/workflows/release.yml"
 
 [tools.hk."platforms.windows-x64"]
-checksum = "sha256:b3cb8ab5958393faacefabfb3a402060eb256b1fda8e1f83c74c3fc877ebff8f"
-url = "https://github.com/jdx/hk/releases/download/v2.0.1/hk-x86_64-pc-windows-msvc.zip"
+checksum = "sha256:7df559b349a2bfd60cf5cab32b92b689d862445c08b3dd54777550f9057956fb"
+url = "https://github.com/jdx/hk/releases/download/v2.3.0/hk-x86_64-pc-windows-msvc.zip"
 signer = "sigstore-oidc:https://github.com/jdx/hk/.github/workflows/release.yml"
 
 [[tools.java]]
@@ -684,6 +731,12 @@ aube = { path = ".mise/locks/npm-sort-package-json/4.0.0", digest = "sha256:2de7
 backend = "npm:sort-package-json"
 specifiers = ["latest"]
 
+[[tools.oxfmt]]
+version = "0.70.0"
+aube = { path = ".mise/locks/oxfmt/0.70.0", digest = "sha256:6f43444e29a288a4c8eaae0fd4842397419f6bde12beb04d2be2216a275f96e2" }
+backend = "npm:oxfmt"
+specifiers = ["latest"]
+
 [[tools."pipx:lorenzwalthert/gitignore-tidy"]]
 version = "latest"
 backend = "pipx:lorenzwalthert/gitignore-tidy"
@@ -693,7 +746,7 @@ specifiers = ["latest"]
 version = "0.25.0"
 backend = "pipx:toml-sort"
 specifiers = ["latest"]
-uv = { path = ".mise/locks/pipx-toml-sort/0.25.0", digest = "sha256:f38e97f74b29b6e61132ffba80f16f3e26bf222037889bd71e32c41d3349ab2e" }
+uv = { path = ".mise/locks/pipx-toml-sort/0.25.0", digest = "sha256:c0c5a3ca806a847592634a78bf08a709e96c912be95bf9589ae7f2e417d97716" }
 
 [[tools."pipx:yamlfix"]]
 version = "1.19.1"
@@ -740,12 +793,6 @@ url_api = "https://api.github.com/repos/apple/pkl/releases/assets/487426599"
 checksum = "sha256:8550a00fcf027335e42c5e2cd553b88e98845408cb1880b3e3d1860caf46d22a"
 url = "https://github.com/apple/pkl/releases/download/0.32.1/pkl-windows-amd64.exe"
 url_api = "https://api.github.com/repos/apple/pkl/releases/assets/487426668"
-
-[[tools.prettier]]
-version = "3.9.7"
-aube = { path = ".mise/locks/prettier/3.9.7", digest = "sha256:16353a3bf3d1a9d5be39e167b2490ea3aafb79069a569184f3867e372da6cceb" }
-backend = "npm:prettier"
-specifiers = ["latest"]
 
 [[tools.ruff]]
 version = "0.16.8"
@@ -962,6 +1009,53 @@ url_api = "https://api.github.com/repos/typstyle-rs/typstyle/releases/assets/498
 checksum = "sha256:5bed3082e1668561c95e976888d694699650dd194ac23e0d08d4106c7496a48f"
 url = "https://github.com/typstyle-rs/typstyle/releases/download/v0.15.1/typstyle-x86_64-pc-windows-msvc.exe"
 url_api = "https://api.github.com/repos/typstyle-rs/typstyle/releases/assets/498612929"
+
+[[tools.uv]]
+version = "0.12.19"
+backend = "aqua:astral-sh/uv"
+specifiers = ["latest"]
+
+[tools.uv."platforms.linux-arm64"]
+checksum = "sha256:0804e9b164c64b6914182d5920c08551958a095986f10a3731056df701126436"
+url = "https://github.com/astral-sh/uv/releases/download/0.12.19/uv-aarch64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/587158851"
+provenance = "github-attestations"
+
+[tools.uv."platforms.linux-arm64-musl"]
+checksum = "sha256:ad8d8448a2ff642ba62c2f684d7dd22a03f8eb3fc9918c2c3e8ec975f4ed6710"
+url = "https://github.com/astral-sh/uv/releases/download/0.12.19/uv-aarch64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/587158874"
+provenance = "github-attestations"
+
+[tools.uv."platforms.linux-x64"]
+checksum = "sha256:23bf5552d220e0842b65c862097b2ebaeba0064b74eda5e565e77fd25969d8c8"
+url = "https://github.com/astral-sh/uv/releases/download/0.12.19/uv-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/587159011"
+provenance = "github-attestations"
+
+[tools.uv."platforms.linux-x64-musl"]
+checksum = "sha256:db7278c9f57981338fddff1fb250e11964bc0a4fafcb9eed8303fdb117dc067b"
+url = "https://github.com/astral-sh/uv/releases/download/0.12.19/uv-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/587159021"
+provenance = "github-attestations"
+
+[tools.uv."platforms.macos-arm64"]
+checksum = "sha256:a9a8df1eedeb192f2e47e40e2faabfb387db4b850209118786d42f89dde3e0ba"
+url = "https://github.com/astral-sh/uv/releases/download/0.12.19/uv-aarch64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/587158826"
+provenance = "github-attestations"
+
+[tools.uv."platforms.macos-x64"]
+checksum = "sha256:cb5fa57bafe68fc0fb94b17f06bee0b0b9a7feb94ccbd110445afa0696e39273"
+url = "https://github.com/astral-sh/uv/releases/download/0.12.19/uv-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/587158992"
+provenance = "github-attestations"
+
+[tools.uv."platforms.windows-x64"]
+checksum = "sha256:6dbb02d79e419522f1c500f0adb1cddcff0cda7d59b0d66ea7f5e3b4a1b2f5f0"
+url = "https://github.com/astral-sh/uv/releases/download/0.12.19/uv-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/587159002"
+provenance = "github-attestations"
 
 [[tools.yq]]
 version = "4.53.6"
