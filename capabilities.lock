@@ -1,6 +1,6 @@
 version: 1
 generator: capa@2.2.1
-generatedAt: '2026-09-19T00:38:12.649Z'
+generatedAt: '2026-10-04T10:18:34.637Z'
 skills:
   - id: bootstrap
     source: github
@@ -34,38 +34,6 @@ skills:
     requestedRef: null
     resolvedRef: 0a66795706fffe0a2fb99a7eb1af5f9b67c6db8d
     resolvedVersion: null
-  - id: grill-me
-    source: github
-    repo: mattpocock/skills
-    skillName: grill-me
-    requestedVersion: null
-    requestedRef: null
-    resolvedRef: 6acc160e4e0cd062dbbbd7a1b26ae92855edf07e
-    resolvedVersion: null
-  - id: grill-with-docs
-    source: github
-    repo: mattpocock/skills
-    skillName: grill-with-docs
-    requestedVersion: null
-    requestedRef: null
-    resolvedRef: 6acc160e4e0cd062dbbbd7a1b26ae92855edf07e
-    resolvedVersion: null
-  - id: grilling
-    source: github
-    repo: mattpocock/skills
-    skillName: grilling
-    requestedVersion: null
-    requestedRef: null
-    resolvedRef: 6acc160e4e0cd062dbbbd7a1b26ae92855edf07e
-    resolvedVersion: null
-  - id: to-tickets
-    source: github
-    repo: mattpocock/skills
-    skillName: to-tickets
-    requestedVersion: null
-    requestedRef: null
-    resolvedRef: 6acc160e4e0cd062dbbbd7a1b26ae92855edf07e
-    resolvedVersion: null
 plugins:
   - id: expo
     source: github
@@ -78,6 +46,17 @@ plugins:
     resolvedVersion: null
     manifestName: expo
     manifestVersion: 1.13.5
+  - id: mattpocock-skills
+    source: github
+    repo: mattpocock/skills
+    subpath: null
+    requestedSearchName: null
+    requestedVersion: null
+    requestedRef: null
+    resolvedRef: 6acc160e4e0cd062dbbbd7a1b26ae92855edf07e
+    resolvedVersion: v1.2.3
+    manifestName: mattpocock-skills
+    manifestVersion: 1.2.3
   - id: megalinter
     source: github
     repo: oxsecurity/megalinter
