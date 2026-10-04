@@ -1,9 +1,17 @@
-import { collection, getDocs, query, where } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  setDoc,
+  where
+} from "firebase/firestore";
 
 import type { MatchResult } from "../../contracts/matchResult";
 import type { PlayerStats } from "../../contracts/playerStats";
 import { db } from "../../lib/firebase";
-import { ELO_K_FACTOR, updateEloPair } from "./elo";
+import { updateEloPair } from "./elo";
 import { DEFAULT_ELO_RATING, type PlayerStatsRepository } from "./types";
 
 function isMatchResultDocument(data: unknown): data is MatchResult {
@@ -30,7 +38,13 @@ function isMatchResultDocument(data: unknown): data is MatchResult {
   );
 }
 
-/** Aggregates wins/losses and replays completed matches to derive current ELO. */
+function storedElo(data: Record<string, unknown> | undefined): number {
+  return typeof data?.eloRating === "number"
+    ? data.eloRating
+    : DEFAULT_ELO_RATING;
+}
+
+/** Aggregates wins/losses and loads the persisted ELO from `users/{uid}`. */
 export const playerStatsRepository: PlayerStatsRepository = {
   async getPlayerStats(uid, displayName): Promise<PlayerStats> {
     if (!uid.trim()) {
@@ -38,45 +52,22 @@ export const playerStatsRepository: PlayerStatsRepository = {
     }
 
     const trimmedName = displayName.trim() || "Player";
-    const matchResultsQuery = query(
-      collection(db, "matchResults"),
+    const matchesQuery = query(
+      collection(db, "matches"),
       where("participantIds", "array-contains", uid)
     );
-    const snapshot = await getDocs(matchResultsQuery);
-
+    const [snapshot, userSnapshot] = await Promise.all([
+      getDocs(matchesQuery),
+      getDoc(doc(db, "users", uid))
+    ]);
     let wins = 0;
     let losses = 0;
 
-    const ratings = new Map<string, number>();
-    const relevantResults = snapshot.docs
+    for (const data of snapshot.docs
       .map((docSnap) => docSnap.data())
-      .filter(isMatchResultDocument)
-      .sort((left, right) => left.completedAt.localeCompare(right.completedAt));
-
-    for (const data of relevantResults) {
-      if (data.results[uid] === "win") {
-        wins += 1;
-      } else if (data.results[uid] === "lose") {
-        losses += 1;
-      }
-
-      const [playerA, playerB] = data.participantIds;
-      const ratingA = ratings.get(playerA) ?? DEFAULT_ELO_RATING;
-      const ratingB = ratings.get(playerB) ?? DEFAULT_ELO_RATING;
-      const outcome =
-        data.results[playerA] === "win"
-          ? "win"
-          : data.results[playerA] === "lose"
-            ? "loss"
-            : "draw";
-      const [nextA, nextB] = updateEloPair(
-        ratingA,
-        ratingB,
-        outcome,
-        ELO_K_FACTOR
-      );
-      ratings.set(playerA, nextA);
-      ratings.set(playerB, nextB);
+      .filter(isMatchResultDocument)) {
+      if (data.results[uid] === "win") wins += 1;
+      if (data.results[uid] === "lose") losses += 1;
     }
 
     return {
@@ -84,7 +75,28 @@ export const playerStatsRepository: PlayerStatsRepository = {
       displayName: trimmedName,
       wins,
       losses,
-      eloRating: ratings.get(uid) ?? DEFAULT_ELO_RATING
+      eloRating: storedElo(userSnapshot.data())
     };
+  },
+
+  async updateEloRating(uid, opponentUid, outcome): Promise<number> {
+    if (!uid.trim() || !opponentUid.trim() || uid === opponentUid) {
+      throw new Error("Two distinct player uids are required to update ELO.");
+    }
+
+    const userRef = doc(db, "users", uid);
+    const opponentRef = doc(db, "users", opponentUid);
+    const [userSnapshot, opponentSnapshot] = await Promise.all([
+      getDoc(userRef),
+      getDoc(opponentRef)
+    ]);
+    const [nextRating] = updateEloPair(
+      storedElo(userSnapshot.data()),
+      storedElo(opponentSnapshot.data()),
+      outcome
+    );
+
+    await setDoc(userRef, { eloRating: nextRating }, { merge: true });
+    return nextRating;
   }
 };
