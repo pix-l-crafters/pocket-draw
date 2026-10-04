@@ -52,9 +52,11 @@ Quickdraw Showdown.html
 .worktrees
 __MACOSX
 __pycache__
+build-*.ipa
 dist/
 firebase-debug.log
 megalinter-reports/
+modules/local-only-hotspot/android/build
 node_modules/
 report/
 target/

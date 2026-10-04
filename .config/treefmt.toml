@@ -9,7 +9,8 @@ excludes = [
   "**/npm-shrinkwrap.json",
   "**/package-lock.json",
   "**/pnpm-lock.yaml",
-  ".mise/**"
+  ".mise/**",
+  "package-lock.json"
 ]
 
 [formatter.cspell-sort]

@@ -27,6 +27,7 @@
     },
     "icon": "./assets/icon.png",
     "ios": {
+      "appleTeamId": "UTGWLD7896",
       "bundleIdentifier": "com.pix-l-crafters.pocketdraw",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -38,6 +39,7 @@
     "orientation": "portrait",
     "owner": "pix-l-crafters",
     "plugins": [
+      "./plugins/with-ios-min-deployment-target",
       [
         "react-native-ble-manager",
         {
