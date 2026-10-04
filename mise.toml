@@ -46,7 +46,7 @@ git-cliff = "latest"
 "github:MRDGH2821/Sort-Markdown-Tables" = "latest"
 "github:infragate/capa" = { postinstall = "capa install --yes", version = "2.2.4" }
 gradle = "9.3.1"
-hk = "2.3.0"
+hk = "2.4.0"
 java = "21"
 ls-lint = "latest"
 node = "24"

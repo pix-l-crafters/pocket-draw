@@ -29,6 +29,11 @@ plugins:
       repo: expo/skills::plugins/expo
     id: expo
     type: github
+  - def:
+      description: Matt Pocock's agent skills for real engineering — grilling, spec/ticket flows, TDD, code review, domain modelling and more.
+      repo: mattpocock/skills
+    id: mattpocock-skills
+    type: github
 providers:
   # keep-sorted start
   - antigravity
@@ -68,22 +73,6 @@ skills:
   - def:
       repo: github/awesome-copilot@git-commit
     id: git-commit
-    type: github
-  - def:
-      repo: mattpocock/skills@grill-me
-    id: grill-me
-    type: github
-  - def:
-      repo: mattpocock/skills@grill-with-docs
-    id: grill-with-docs
-    type: github
-  - def:
-      repo: mattpocock/skills@grilling
-    id: grilling
-    type: github
-  - def:
-      repo: mattpocock/skills@to-tickets
-    id: to-tickets
     type: github
   - def:
       repo: cli/cli@gh
