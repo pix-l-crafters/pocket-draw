@@ -155,6 +155,79 @@ describe("resolveRoundOutcome validation", () => {
 });
 
 describe("scoreRoundOutcome", () => {
+  it.each([
+    [null, 0],
+    [{ reactionMs: 320, zone: "miss", points: 0 }, 0],
+    [{ reactionMs: 260, zone: "bodyshot", points: 1 }, 1],
+    [{ reactionMs: 240, zone: "headshot", points: 2 }, 2]
+  ] as const)(
+    "scores a false start's opposing shot %p as %i",
+    (shot, points) => {
+      expect(
+        scoreRoundOutcome(
+          {
+            kind: "falseStart",
+            playerId: "a",
+            nonOffenderId: "b",
+            nonOffenderShot: shot
+          },
+          "a",
+          "b"
+        )
+      ).toEqual([
+        { playerId: "a", points: 0 },
+        { playerId: "b", points }
+      ]);
+    }
+  );
+
+  it("rejects a false start whose opposing shot points disagree with its zone", () => {
+    expect(() =>
+      scoreRoundOutcome(
+        {
+          kind: "falseStart",
+          playerId: "a",
+          nonOffenderId: "b",
+          nonOffenderShot: { reactionMs: 220, zone: "headshot", points: 1 }
+        },
+        "a",
+        "b"
+      )
+    ).toThrow(/zone/);
+  });
+
+  it("credits the non-offender in either participant order", () => {
+    expect(
+      scoreRoundOutcome(
+        {
+          kind: "falseStart",
+          playerId: "b",
+          nonOffenderId: "a",
+          nonOffenderShot: { reactionMs: 205, zone: "headshot", points: 2 }
+        },
+        "a",
+        "b"
+      )
+    ).toEqual([
+      { playerId: "a", points: 2 },
+      { playerId: "b", points: 0 }
+    ]);
+  });
+
+  it("rejects a false start with inconsistent participant identities", () => {
+    expect(() =>
+      scoreRoundOutcome(
+        {
+          kind: "falseStart",
+          playerId: "a",
+          nonOffenderId: "a",
+          nonOffenderShot: null
+        },
+        "a",
+        "b"
+      )
+    ).toThrow(/outside this round/);
+  });
   it("returns each player's points for a win outcome", () => {
     const outcome = resolveRoundOutcome(
       { playerId: "a", reactionMs: 200, zone: "headshot" },

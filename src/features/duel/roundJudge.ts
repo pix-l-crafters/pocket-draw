@@ -108,17 +108,32 @@ export function scoreRoundOutcome(
   }
 
   if (outcome.kind === "falseStart") {
-    // The false-start point value (non-offender scored by their own zone,
-    // per the fire-mechanic spec) is roundLoop.ts's tallyOutcome concern
-    // (roadmap item 7). Preserving the existing flat-1 opponent credit here
-    // since this ticket doesn't extend falseStart with zone data.
-    const winnerId = outcome.playerId === playerAId ? playerBId : playerAId;
-    if (winnerId !== playerAId && winnerId !== playerBId) {
+    const expectedNonOffenderId =
+      outcome.playerId === playerAId ? playerBId : playerAId;
+    if (
+      ![playerAId, playerBId].includes(outcome.playerId) ||
+      outcome.nonOffenderId !== expectedNonOffenderId
+    ) {
       throw new Error("Round outcome references a player outside this round.");
     }
+    const shot = outcome.nonOffenderShot;
+    if (
+      shot &&
+      (!Number.isFinite(shot.reactionMs) ||
+        shot.reactionMs < 0 ||
+        shot.points !== ZONE_POINTS[shot.zone])
+    ) {
+      throw new Error("False-start shot reaction or zone points are invalid.");
+    }
     return [
-      { playerId: playerAId, points: winnerId === playerAId ? 1 : 0 },
-      { playerId: playerBId, points: winnerId === playerBId ? 1 : 0 }
+      {
+        playerId: playerAId,
+        points: outcome.nonOffenderId === playerAId ? (shot?.points ?? 0) : 0
+      },
+      {
+        playerId: playerBId,
+        points: outcome.nonOffenderId === playerBId ? (shot?.points ?? 0) : 0
+      }
     ];
   }
 

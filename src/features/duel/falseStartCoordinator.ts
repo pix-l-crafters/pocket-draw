@@ -1,12 +1,13 @@
 import type { DuelChannel } from "../../contracts/duelChannel";
-import type { RoundOutcome } from "../../contracts/roundOutcome";
 import {
   FalseStartDetector,
   type FalseStartDetection
 } from "./falseStartDetector";
 import type { AccelerationSample } from "./raiseGestureDetector";
 
-export type FalseStartOutcome = Extract<RoundOutcome, { kind: "falseStart" }>;
+// The coordinator reports a violation before the other player's shot is known.
+// The round producer in #81 turns this notice into a complete RoundOutcome.
+export type FalseStartOutcome = { kind: "falseStart"; playerId: string };
 
 export class FalseStartCoordinator {
   private outcome: FalseStartOutcome | null = null;

@@ -10,7 +10,13 @@ export function mockRoundOutcome(
   playerBId: string
 ): RoundOutcome {
   const roll = Math.random();
-  if (roll < 0.1) return { kind: "falseStart", playerId: playerAId };
+  if (roll < 0.1)
+    return {
+      kind: "falseStart",
+      playerId: playerAId,
+      nonOffenderId: playerBId,
+      nonOffenderShot: { reactionMs: 280, zone: "bodyshot", points: 1 }
+    };
   if (roll < 0.2) {
     return {
       kind: "tie",

@@ -53,7 +53,9 @@ const tie = () => ({
 
   s = applyRoundOutcome(s, {
     kind: "falseStart",
-    playerId: "b"
+    playerId: "b",
+    nonOffenderId: "a",
+    nonOffenderShot: { reactionMs: 240, zone: "bodyshot", points: 1 }
   });
 
   assertEqual(
@@ -210,7 +212,12 @@ const tie = () => ({
   // false start counts as a round loss for the false-starter
   let s2 = createRoundLoop(["a", "b"], 3);
 
-  s2 = applyRoundOutcome(s2, { kind: "falseStart", playerId: "a" });
+  s2 = applyRoundOutcome(s2, {
+    kind: "falseStart",
+    playerId: "a",
+    nonOffenderId: "b",
+    nonOffenderShot: { reactionMs: 240, zone: "bodyshot", points: 1 }
+  });
 
   assertEqual(s2.wins, { a: 0, b: 1 }, "false start gives opponent the round");
   assertEqual(isMatchDecided(s2), false, "one round loss should not decide it");
