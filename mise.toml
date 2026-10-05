@@ -1,35 +1,70 @@
 [env]
+EXPO_UNSTABLE_MCP_SERVER = 1
 HK_MISE = 1
 
 [hooks]
 # Automatically install/update hooks when tools are installed
 postinstall = ["hk install --mise"]
 
+[settings]
+lockfile = true
+
+[settings.github]
+use_git_credentials = true
+
 [tasks]
-ai-setup = "apm install"
-cspell = "cspell ."
-pre-commit = "hk run pre-commit"
+ai-setup = "capa install --yes"
+check = ["hk check --all", "cog check"]
+prepare = ["npm install"]
+
+[tasks.build-android]
+run = "npx eas-cli@latest build --platform android --profile production --local"
+
+[tasks.build-ios]
+run = "npx eas-cli@latest build --platform ios --profile production --local"
+
+[tasks.format]
+alias = "fmt"
+run = [{ task = "treefmt" }, "hk fix --all"]
+
+[tasks.treefmt]
+run = "treefmt"
+run_windows = "echo 'Treefmt not supported on Windows'"
 
 [tools]
-apm = { postinstall = "apm install", version = "latest" }
-"aqua:numtide/treefmt" = "latest"
+android-sdk = "latest"
+"aqua:google/keep-sorted" = "latest"
+"aqua:numtide/treefmt" = { os = ["linux", "macos"], version = "2.6.0" }
+"aqua:owenlamont/ryl" = "latest"
+betterleaks = "latest"
 cocogitto = "latest"
 cspell = "latest"
+editorconfig-checker = "latest"
+fnox = "latest"
+gh = { postinstall = "gh auth login", version = "latest" }
 git-cliff = "latest"
-hk = "latest"
+"github:MRDGH2821/Sort-Markdown-Tables" = "latest"
+"github:infragate/capa" = { postinstall = "capa install --yes", version = "2.2.4" }
+gradle = "9.3.1"
+hk = "2.3.0"
+java = "21"
 ls-lint = "latest"
 node = "24"
 npm = { postinstall = "npm install", version = "latest" }
 "npm:sort-package-json" = "latest"
+oxfmt = "latest"
+"pipx:lorenzwalthert/gitignore-tidy" = "latest"
+"pipx:toml-sort" = "latest"
 "pipx:yamlfix" = "latest"
 pkl = "latest"
-prettier = "latest"
+ruff = "latest"
 rumdl = "latest"
 tombi = "latest"
+typos = "latest"
+typstyle = "latest"
 uv = "latest"
-yamllint = "latest"
 yq = "latest"
 
 [[watch_files]]
-patterns = ["apm.yml"]
+patterns = ["capabilities.yaml"]
 task = "ai-setup"

@@ -1,0 +1,6 @@
+{
+  "android": {
+    "modules": ["expo.modules.localonlyhotspot.LocalOnlyHotspotModule"]
+  },
+  "platforms": ["android"]
+}

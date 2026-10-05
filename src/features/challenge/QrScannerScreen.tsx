@@ -1,0 +1,167 @@
+import { CameraView, useCameraPermissions } from "expo-camera";
+import type { BarcodeScanningResult } from "expo-camera";
+import { useCallback, useState } from "react";
+import { StyleSheet, View } from "react-native";
+
+import { CutCornerButton } from "../../components/CutCornerButton";
+import { ScreenHeader } from "../../components/ScreenHeader";
+import { StatusTag } from "../../components/StatusTag";
+import type { DuelConnectionInfo } from "../../contracts/duelConnection";
+import { colors } from "../../theme/tokens";
+import type { QrValidationErrorCode } from "../qr/types/qr.types";
+import { parseQrInvite } from "../qr/utils/qr.validation";
+import { OpponentPopup } from "./components/OpponentPopup";
+
+const ERROR_MESSAGES: Record<QrValidationErrorCode, string> = {
+  TOO_LARGE: "That code isn't a Pocket Draw invite.",
+  MALFORMED_JSON: "That code isn't a Pocket Draw invite.",
+  INVALID_PAYLOAD: "That code isn't a Pocket Draw invite.",
+  UNSUPPORTED_VERSION: "This invite was made by a newer app version.",
+  UNSUPPORTED_TRANSPORT: "This invite uses an unsupported connection type.",
+  EXPIRED: "This invite has expired. Ask them to generate a new one.",
+  INVALID_TIME: "This invite's clock looks wrong. Try scanning again.",
+  SELF_INVITE: "You can't scan your own invite."
+};
+
+export type ConfirmedOpponent = {
+  challengeToken: string;
+  challengerId: string;
+  connection: DuelConnectionInfo;
+  scannedPlayerId: string;
+  scannedPlayerName: string;
+  matchId: string;
+  discoveryToken: string;
+};
+
+type QrScannerScreenProps = {
+  currentUser: { displayName: string; uid: string };
+  // Round count isn't decided yet at this point in the flow — that's
+  // 3.4 (round-count selector), which runs next and is responsible for
+  // actually building the ChallengeHandoff and calling 3.5 (send challenge
+  // request).
+  onOpponentConfirmed: (opponent: ConfirmedOpponent) => void;
+};
+
+export function QrScannerScreen({
+  currentUser,
+  onOpponentConfirmed
+}: QrScannerScreenProps) {
+  const [permission, requestPermission] = useCameraPermissions();
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [scannedInvite, setScannedInvite] = useState<{
+    hostPlayerId: string;
+    hostPlayerName: string;
+    matchId: string;
+    challengeToken: string;
+    connection: DuelConnectionInfo;
+    discoveryToken: string;
+  } | null>(null);
+
+  const handleBarcodeScanned = useCallback(
+    ({ data }: BarcodeScanningResult) => {
+      if (scannedInvite) {
+        return;
+      }
+
+      const result = parseQrInvite(data, currentUser.uid, Date.now());
+      if (!result.ok) {
+        setScanError(ERROR_MESSAGES[result.code]);
+        return;
+      }
+
+      setScanError(null);
+      setScannedInvite({
+        hostPlayerId: result.value.hostPlayerId,
+        hostPlayerName: result.value.hostPlayerName ?? "Player",
+        matchId: result.value.matchId,
+        challengeToken: result.value.challengeToken,
+        connection: result.value.connection,
+        discoveryToken: result.value.discoveryToken
+      });
+    },
+    [currentUser.uid, scannedInvite]
+  );
+
+  const resetScan = useCallback(() => {
+    setScannedInvite(null);
+    setScanError(null);
+  }, []);
+
+  const confirmChallenge = useCallback(() => {
+    if (!scannedInvite) {
+      return;
+    }
+    onOpponentConfirmed({
+      challengeToken: scannedInvite.challengeToken,
+      challengerId: currentUser.uid,
+      connection: scannedInvite.connection,
+      scannedPlayerId: scannedInvite.hostPlayerId,
+      scannedPlayerName: scannedInvite.hostPlayerName,
+      matchId: scannedInvite.matchId,
+      discoveryToken: scannedInvite.discoveryToken
+    });
+    resetScan();
+  }, [currentUser.uid, onOpponentConfirmed, resetScan, scannedInvite]);
+
+  if (!permission) {
+    return <View style={styles.container} />;
+  }
+
+  if (!permission.granted) {
+    return (
+      <View style={styles.container}>
+        <ScreenHeader
+          kicker="Challenge"
+          subtitle="Camera access is needed to scan an opponent's QR code."
+          title="Scan to Challenge"
+        />
+        <CutCornerButton
+          label="Grant Camera Access"
+          onPress={() => void requestPermission()}
+        />
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <ScreenHeader
+        kicker="Challenge"
+        subtitle="Point your camera at an opponent's QR code."
+        title="Scan to Challenge"
+      />
+      <View style={styles.cameraWrapper}>
+        <CameraView
+          barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
+          onBarcodeScanned={scannedInvite ? undefined : handleBarcodeScanned}
+          style={StyleSheet.absoluteFill}
+        />
+      </View>
+      {scanError ? <StatusTag tone="warning">{scanError}</StatusTag> : null}
+      {scannedInvite ? (
+        <OpponentPopup
+          onCancel={resetScan}
+          onChallenge={confirmChallenge}
+          scannedPlayerId={scannedInvite.hostPlayerId}
+          scannedPlayerName={scannedInvite.hostPlayerName}
+          visible
+        />
+      ) : null}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: colors.background,
+    flex: 1,
+    gap: 16,
+    padding: 16
+  },
+  cameraWrapper: {
+    aspectRatio: 3 / 4,
+    borderRadius: 8,
+    overflow: "hidden",
+    position: "relative"
+  }
+});

@@ -1,13 +1,26 @@
 # agents
+.agent-talk/
 .agent/skills
 .agents/mcp_config.json
 .agents/skills
+.claude/agents
+.claude/settings.json
+.claude/settings.local.json
+.claude/skills
+.codex/agents
+.codex/config.toml
+.cursor/agents
+.cursor/hooks.json
 .cursor/mcp.json
 .cursor/skills
+.gemini/settings.json
 .github/skills
 .mcp.json
+.opencode/agents
 .opencode/skills
+.superpowers
 .vscode/mcp.json
+apm.lock.yaml
 apm_modules/
 opencode.json
 
@@ -16,8 +29,17 @@ opencode.json
 .env.*
 !.env.sample
 
+# expo
+.expo/
+/android/
+/ios/
+expo-env.d.ts
+web-build/
+
+# design references (local scratch, not shipped app source)
+Quickdraw Showdown.html
+
 # others
-# keep-sorted start
 *.local
 .DS_Store
 .devenv
@@ -25,12 +47,16 @@ opencode.json
 .git
 .pre-commit-config.yaml
 .svn
+.trivycache/
 .venv/
+.worktrees
 __MACOSX
 __pycache__
+build-*.ipa
 dist/
+firebase-debug.log
 megalinter-reports/
+modules/local-only-hotspot/android/build
 node_modules/
 report/
 target/
-# keep-sorted end
