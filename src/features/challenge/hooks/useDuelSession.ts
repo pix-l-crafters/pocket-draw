@@ -25,9 +25,10 @@ type UseDuelSessionResult = {
    * Transfer ownership of a connected channel to the caller, so unmounting this
    * hook no longer tears the connection down. Required when the duel outlives
    * the screen that opened it — otherwise the DataChannel closes and the first
-   * `channel.send` of the round throws.
+   * `channel.send` of the round throws. Returns the connection so the new owner
+   * can close it when the duel ends.
    */
-  handOff: () => void;
+  handOff: () => DuelTransportConnection | null;
 };
 
 function getParamsKey(params: DuelSessionParams | null) {
@@ -53,6 +54,7 @@ export function useDuelSession(
   const [attemptEpoch, setAttemptEpoch] = useState(0);
   const [cancelled, setCancelled] = useState(false);
   const handedOff = useRef(false);
+  const connectionRef = useRef<DuelTransportConnection | null>(null);
 
   // Callers pass a fresh `params` object each render; the string key is the
   // stable identity the connect effect keys on.
@@ -103,6 +105,7 @@ export function useDuelSession(
             }
           });
 
+          connectionRef.current = connection;
           setState({ status: "connected", channel: connection.channel });
           return;
         } catch (error) {
@@ -135,6 +138,7 @@ export function useDuelSession(
     return () => {
       disposed = true;
       controller.abort();
+      connectionRef.current = null;
       if (!handedOff.current) {
         connection?.disconnect();
       }
@@ -152,6 +156,7 @@ export function useDuelSession(
 
   const handOff = useCallback(() => {
     handedOff.current = true;
+    return connectionRef.current;
   }, []);
 
   return { state, retry, cancel, handOff };

@@ -14,6 +14,7 @@ import type {
   WebRtcSessionAuth
 } from "./signalingProtocol";
 import type {
+  HostAuthorizer,
   PeerConnectionLike,
   SignalingSocket,
   WebRtcSessionDependencies
@@ -171,14 +172,21 @@ const nativeDependencies: WebRtcSessionDependencies = {
   createPeerConnection: createNativePeerConnection
 };
 
+export type HostedDuelConnection = {
+  connection: DuelTransportConnection;
+  /** The credentials the guest presented, identifying which invite it scanned. */
+  auth: WebRtcSessionAuth;
+};
+
 export type WebRtcDuelHost = {
   port: number;
-  connection: Promise<DuelTransportConnection>;
+  /** Settles on the first guest that completes the handshake. */
+  connection: Promise<HostedDuelConnection>;
   stop: () => void;
 };
 
 export async function startNativeWebRtcDuelHost(
-  auth: WebRtcSessionAuth,
+  authorize: HostAuthorizer,
   options: { port?: number; signal?: AbortSignal } = {}
 ): Promise<WebRtcDuelHost> {
   if (options.signal?.aborted) throw createAbortError();
@@ -188,26 +196,42 @@ export async function startNativeWebRtcDuelHost(
   externalSignal?.addEventListener("abort", abortFromExternal, { once: true });
 
   let activeSocket: NativeSocket | null = null;
-  let resolveConnection!: (connection: DuelTransportConnection) => void;
+  let resolveConnection!: (connection: HostedDuelConnection) => void;
   let rejectConnection!: (error: Error) => void;
-  const connection = new Promise<DuelTransportConnection>((resolve, reject) => {
+  const connection = new Promise<HostedDuelConnection>((resolve, reject) => {
     resolveConnection = resolve;
     rejectConnection = reject;
   });
 
+  // One handshake at a time. A failed attempt (wrong code, dropped socket,
+  // timeout) frees the slot and the server keeps listening, so the guest's
+  // automatic retries reach the same port instead of a closed one.
   const server = TcpSocket.createServer({ noDelay: true }, (socket) => {
-    if (activeSocket) {
+    if (activeSocket || controller.signal.aborted) {
       socket.destroy();
       return;
     }
     activeSocket = socket;
-    server.close();
+    let acceptedAuth: WebRtcSessionAuth | null = null;
     void hostWebRtcDuelSession(
       wrapTcpSocket(socket),
-      auth,
+      (received) => {
+        const accepted = authorize(received);
+        if (accepted) acceptedAuth = received;
+        return accepted;
+      },
       controller.signal,
       nativeDependencies
-    ).then(resolveConnection, rejectConnection);
+    ).then(
+      (duelConnection) => {
+        if (server.listening) server.close();
+        externalSignal?.removeEventListener("abort", abortFromExternal);
+        resolveConnection({ connection: duelConnection, auth: acceptedAuth! });
+      },
+      () => {
+        if (activeSocket === socket) activeSocket = null;
+      }
+    );
   });
 
   const port = await new Promise<number>((resolve, reject) => {

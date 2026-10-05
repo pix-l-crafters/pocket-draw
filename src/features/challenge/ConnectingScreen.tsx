@@ -11,6 +11,7 @@ import { colors } from "../../theme/tokens";
 import { useDuelSession } from "./hooks/useDuelSession";
 import { withNetworkPreparation } from "./network/hotspot";
 import { DUEL_CONNECT_MAX_AUTO_RETRIES } from "./session/duelSession.constants";
+import { adoptDuelConnection } from "./session/localDuelSession";
 import { createNativeWebRtcGuestTransport } from "./webrtc/nativeWebRtcTransport";
 
 /** How often the guest re-announces itself until the host's popup answers. */
@@ -90,7 +91,9 @@ export function ConnectingScreen({
     if (state.status === "connected" && approval === "accepted") {
       // Hand off before notifying: the caller swaps this screen out for the
       // duel, and the unmount must not close the channel the duel just got.
-      handOff();
+      // The session owner closes it once the duel ends.
+      const connection = handOff();
+      if (connection) adoptDuelConnection(connection);
       onConnected(state.channel, handoff);
     }
   }, [approval, state, handoff, onConnected, handOff]);

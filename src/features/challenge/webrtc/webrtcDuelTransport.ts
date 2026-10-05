@@ -42,7 +42,23 @@ export interface PeerConnectionLike {
 
 export type WebRtcSessionDependencies = {
   createPeerConnection: () => PeerConnectionLike;
+  /** Give up when the DataChannel has not opened by then. */
+  negotiationTimeoutMs?: number;
 };
+
+/**
+ * Local-network ICE settles in a few seconds; past this the peer is gone or
+ * unreachable, and failing lets the guest retry and frees the host's slot.
+ */
+export const DEFAULT_NEGOTIATION_TIMEOUT_MS = 20_000;
+
+/** Decides whether the credentials a guest presents open this host's session. */
+export type HostAuthorizer = (received: WebRtcSessionAuth) => boolean;
+
+/** An authorizer that accepts exactly one set of QR credentials. */
+export function acceptOnly(expected: WebRtcSessionAuth): HostAuthorizer {
+  return (received) => isAuthorizedPeer(expected, received);
+}
 
 function abortError(): Error {
   const error = new Error("Connection attempt cancelled.");
@@ -62,15 +78,17 @@ function normalizeCandidate(candidate: any): IceCandidateDescription {
   };
 }
 
-type Role = "host" | "guest";
+type NegotiationSide =
+  | { role: "host"; authorize: HostAuthorizer }
+  | { role: "guest"; auth: WebRtcSessionAuth };
 
 function negotiateWebRtcDuel(
-  role: Role,
+  side: NegotiationSide,
   socket: SignalingSocket,
-  auth: WebRtcSessionAuth,
   signal: AbortSignal,
   dependencies: WebRtcSessionDependencies
 ): Promise<DuelTransportConnection> {
+  const { role } = side;
   const peer = dependencies.createPeerConnection();
   const decoder = new SignalingFrameDecoder();
 
@@ -79,6 +97,10 @@ function negotiateWebRtcDuel(
     let authenticated = false;
     let dataChannel: RtcDataChannelLike | null = null;
     let messageQueue = Promise.resolve();
+    // Candidates can overtake the offer/answer they belong to, and WebRTC
+    // rejects a candidate before the remote description is set.
+    let remoteDescriptionSet = false;
+    const pendingCandidates: IceCandidateDescription[] = [];
     const cleanups: Array<() => void> = [];
 
     const send = (message: SignalingMessage) => {
@@ -161,14 +183,37 @@ function negotiateWebRtcDuel(
       );
     }
 
+    const applyRemoteDescription = async (description: SessionDescription) => {
+      await peer.setRemoteDescription(description);
+      remoteDescriptionSet = true;
+      for (const candidate of pendingCandidates.splice(0)) {
+        await peer.addIceCandidate(candidate);
+      }
+    };
+
+    const addRemoteCandidate = async (candidate: IceCandidateDescription) => {
+      if (!remoteDescriptionSet) {
+        pendingCandidates.push(candidate);
+        return;
+      }
+      await peer.addIceCandidate(candidate);
+    };
+
     const handleMessage = async (message: SignalingMessage) => {
       if (message.type === "error") {
         fail(new Error(message.message));
         return;
       }
 
-      if (role === "host" && !authenticated) {
-        if (message.type !== "auth" || !isAuthorizedPeer(auth, message)) {
+      if (side.role === "host" && !authenticated) {
+        if (
+          message.type !== "auth" ||
+          !side.authorize({
+            matchId: message.matchId,
+            challengeToken: message.challengeToken,
+            discoveryToken: message.discoveryToken
+          })
+        ) {
           send({
             type: "error",
             code: "UNAUTHORIZED",
@@ -201,14 +246,14 @@ function negotiateWebRtcDuel(
       if (!authenticated) return;
 
       if (message.type === "offer" && role === "guest") {
-        await peer.setRemoteDescription({ type: "offer", sdp: message.sdp });
+        await applyRemoteDescription({ type: "offer", sdp: message.sdp });
         const answer = await peer.createAnswer();
         await peer.setLocalDescription(answer);
         send({ type: "answer", sdp: answer.sdp });
       } else if (message.type === "answer" && role === "host") {
-        await peer.setRemoteDescription({ type: "answer", sdp: message.sdp });
+        await applyRemoteDescription({ type: "answer", sdp: message.sdp });
       } else if (message.type === "ice-candidate") {
-        await peer.addIceCandidate(message.candidate);
+        await addRemoteCandidate(message.candidate);
       }
     };
 
@@ -257,24 +302,29 @@ function negotiateWebRtcDuel(
     signal.addEventListener("abort", onAbort, { once: true });
     cleanups.push(() => signal.removeEventListener("abort", onAbort));
 
+    const timeout = setTimeout(
+      () => fail(new Error("The duel connection timed out.")),
+      dependencies.negotiationTimeoutMs ?? DEFAULT_NEGOTIATION_TIMEOUT_MS
+    );
+    cleanups.push(() => clearTimeout(timeout));
+
     if (signal.aborted) {
       onAbort();
-    } else if (role === "guest") {
-      send({ type: "auth", ...auth });
+    } else if (side.role === "guest") {
+      send({ type: "auth", ...side.auth });
     }
   });
 }
 
 export function hostWebRtcDuelSession(
   socket: SignalingSocket,
-  expectedAuth: WebRtcSessionAuth,
+  authorize: HostAuthorizer,
   signal: AbortSignal,
   dependencies: WebRtcSessionDependencies
 ): Promise<DuelTransportConnection> {
   return negotiateWebRtcDuel(
-    "host",
+    { role: "host", authorize },
     socket,
-    expectedAuth,
     signal,
     dependencies
   );
@@ -286,5 +336,10 @@ export function connectWebRtcDuelGuest(
   signal: AbortSignal,
   dependencies: WebRtcSessionDependencies
 ): Promise<DuelTransportConnection> {
-  return negotiateWebRtcDuel("guest", socket, auth, signal, dependencies);
+  return negotiateWebRtcDuel(
+    { role: "guest", auth },
+    socket,
+    signal,
+    dependencies
+  );
 }

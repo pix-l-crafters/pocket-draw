@@ -26,6 +26,7 @@ import {
   type Challenger
 } from "./src/features/challenge/IncomingChallengeScreen";
 import { challengeRequestRepository } from "./src/features/challenge/services/challengeRequestRepository";
+import { endLocalDuelSession } from "./src/features/challenge/session/localDuelSession";
 import { DuelScreen, type DuelPlayer } from "./src/features/duel/DuelScreen";
 import type { DuelRole } from "./src/features/duel/fireSignalCoordinator";
 import { GameInstructionsScreen } from "./src/features/duel/GameInstructionsScreen";
@@ -98,6 +99,8 @@ export default function App() {
   const [instructionsSeen, setInstructionsSeen] = useState(false);
 
   const exitDuel = () => {
+    // Closes the duel link and stops or leaves the hotspot it ran over.
+    endLocalDuelSession();
     setActiveDuel(null);
     setIncomingChallenge(null);
     setInstructionsSeen(false);
@@ -224,7 +227,10 @@ export default function App() {
               <IncomingChallengeScreen
                 channel={incomingChallenge.channel}
                 onAccept={acceptChallenge}
-                onDecline={() => setIncomingChallenge(null)}
+                onDecline={() => {
+                  endLocalDuelSession();
+                  setIncomingChallenge(null);
+                }}
               />
             ) : (
               <>
@@ -242,7 +248,10 @@ export default function App() {
                       currentUser={{ displayName, uid: user.uid }}
                       handoff={pendingHandoff}
                       onConnected={onGuestConnected}
-                      onExit={() => setPendingHandoff(null)}
+                      onExit={() => {
+                        endLocalDuelSession();
+                        setPendingHandoff(null);
+                      }}
                     />
                   ) : (
                     <ChallengeScreen

@@ -4,7 +4,9 @@ import type {
   WebRtcSessionDependencies
 } from "./webrtcDuelTransport";
 import {
+  acceptOnly,
   connectWebRtcDuelGuest,
+  DEFAULT_NEGOTIATION_TIMEOUT_MS,
   hostWebRtcDuelSession
 } from "./webrtcDuelTransport";
 
@@ -173,6 +175,10 @@ class FakePeer implements PeerConnectionLike {
   }
 
   async addIceCandidate(candidate: unknown) {
+    // Mirrors native WebRTC, which rejects candidates without a remote description.
+    if (!this.remoteDescription) {
+      throw new Error("The remote description was null.");
+    }
     this.addedCandidates.push(candidate);
   }
 
@@ -204,7 +210,7 @@ describe("WebRTC duel session signaling", () => {
     const [hostConnection, guestConnection] = await Promise.all([
       hostWebRtcDuelSession(
         hostSocket,
-        auth,
+        acceptOnly(auth),
         new AbortController().signal,
         hostDeps
       ),
@@ -237,9 +243,14 @@ describe("WebRTC duel session signaling", () => {
     guestPeer.delayDataChannelEvent = true;
 
     const [hostConnection, guestConnection] = await Promise.all([
-      hostWebRtcDuelSession(hostSocket, auth, new AbortController().signal, {
-        createPeerConnection: () => hostPeer
-      }),
+      hostWebRtcDuelSession(
+        hostSocket,
+        acceptOnly(auth),
+        new AbortController().signal,
+        {
+          createPeerConnection: () => hostPeer
+        }
+      ),
       connectWebRtcDuelGuest(guestSocket, auth, new AbortController().signal, {
         createPeerConnection: () => guestPeer
       })
@@ -265,7 +276,7 @@ describe("WebRTC duel session signaling", () => {
 
     const hostResult = hostWebRtcDuelSession(
       hostSocket,
-      auth,
+      acceptOnly(auth),
       new AbortController().signal,
       { createPeerConnection: () => hostPeer }
     );
@@ -285,14 +296,89 @@ describe("WebRTC duel session signaling", () => {
     const [hostSocket] = socketPair();
     const [hostPeer] = peerPair();
     const controller = new AbortController();
-    const result = hostWebRtcDuelSession(hostSocket, auth, controller.signal, {
-      createPeerConnection: () => hostPeer
-    });
+    const result = hostWebRtcDuelSession(
+      hostSocket,
+      acceptOnly(auth),
+      controller.signal,
+      { createPeerConnection: () => hostPeer }
+    );
 
     controller.abort();
 
     await expect(result).rejects.toMatchObject({ name: "AbortError" });
     expect(hostSocket.closed).toBe(true);
     expect(hostPeer.closed).toBe(true);
+  });
+
+  it("applies ICE candidates that arrive before the offer or answer", async () => {
+    const [hostSocket, guestSocket] = socketPair();
+    const [hostPeer, guestPeer] = peerPair();
+
+    // The fakes emit each local candidate before the description it belongs
+    // to is sent, so both sides receive a candidate they cannot apply yet.
+    await Promise.all([
+      hostWebRtcDuelSession(
+        hostSocket,
+        acceptOnly(auth),
+        new AbortController().signal,
+        { createPeerConnection: () => hostPeer }
+      ),
+      connectWebRtcDuelGuest(guestSocket, auth, new AbortController().signal, {
+        createPeerConnection: () => guestPeer
+      })
+    ]);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(guestPeer.addedCandidates).toHaveLength(1);
+    expect(hostPeer.addedCandidates).toHaveLength(1);
+  });
+
+  it("accepts any credentials the host authorizer allows", async () => {
+    const [hostSocket, guestSocket] = socketPair();
+    const [hostPeer, guestPeer] = peerPair();
+    const previousInvite = { ...auth, matchId: "previous-match" };
+    const seen: string[] = [];
+
+    await Promise.all([
+      hostWebRtcDuelSession(
+        hostSocket,
+        (received) => {
+          seen.push(received.matchId);
+          return received.matchId === previousInvite.matchId;
+        },
+        new AbortController().signal,
+        { createPeerConnection: () => hostPeer }
+      ),
+      connectWebRtcDuelGuest(
+        guestSocket,
+        previousInvite,
+        new AbortController().signal,
+        { createPeerConnection: () => guestPeer }
+      )
+    ]);
+
+    expect(seen).toEqual(["previous-match"]);
+  });
+
+  it("times out when the peer never completes the handshake", async () => {
+    jest.useFakeTimers();
+    try {
+      const [hostSocket] = socketPair();
+      const [hostPeer] = peerPair();
+      const result = hostWebRtcDuelSession(
+        hostSocket,
+        acceptOnly(auth),
+        new AbortController().signal,
+        { createPeerConnection: () => hostPeer }
+      );
+
+      jest.advanceTimersByTime(DEFAULT_NEGOTIATION_TIMEOUT_MS);
+
+      await expect(result).rejects.toThrow("timed out");
+      expect(hostSocket.closed).toBe(true);
+      expect(hostPeer.closed).toBe(true);
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });
