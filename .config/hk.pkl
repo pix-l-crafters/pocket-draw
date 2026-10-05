@@ -31,6 +31,7 @@ local linters = new Mapping<String, Step> {
   ["pkl"] = Builtins.pkl
   ["pkl-format"] = Builtins.pkl_format
   ["oxfmt"] = (Builtins.oxfmt) { depends = List("sort-markdown-tables") }
+  ["oxlint"] = Builtins.ox_lint
   ["ruff"] = (Builtins.ruff) { depends = List("ruff-format") }
   ["ruff-format"] = Builtins.ruff_format
   ["rumdl"] = (Builtins.rumdl) { depends = List("rumdl-format") }
