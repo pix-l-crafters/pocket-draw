@@ -4,6 +4,46 @@ All notable changes to this project will be documented in this file. See [conven
 
 ---
 
+## [0.1.1](https://github.com/pix-l-crafters/pocket-draw/compare/v0.1.0..v0.1.1) - 2026-10-05
+
+### Bug Fixes
+
+- **(expo)** force minimum iOS deployment target on Pod resource bundles - ([11fa904](https://github.com/pix-l-crafters/pocket-draw/commit/11fa904e3227524e24999cea19542486278b7285)) - Mobark Bacran
+- **(expo)** pin EAS iOS builds to the Xcode 26 image - ([d679eb4](https://github.com/pix-l-crafters/pocket-draw/commit/d679eb492ac8e08a13008f09d6cce1e19c457f78)) - Mobark Bacran
+
+### Documentation
+
+- align roadmap with assignment requirements - ([9297dc9](https://github.com/pix-l-crafters/pocket-draw/commit/9297dc95b86d6484a5f1f51dd717c7da9f27a13d)) - MRDGH2821
+- record issue and project board reconciliation - ([8a3da92](https://github.com/pix-l-crafters/pocket-draw/commit/8a3da92708a1e3da7b1733095a1db046331893dd)) - MRDGH2821
+- add Assignment 1 feedback - ([a6edde9](https://github.com/pix-l-crafters/pocket-draw/commit/a6edde9a847dd557f9a59f6e4cfce7fb04928a9e)) - MRDGH2821
+- record PR 84 metadata update - ([87f1d12](https://github.com/pix-l-crafters/pocket-draw/commit/87f1d1253139f2d2eab2917f81f3a448b4457cb1)) - MRDGH2821
+
+### Miscellaneous Chores
+
+- **(mise)** update tools & lock files - ([898fec8](https://github.com/pix-l-crafters/pocket-draw/commit/898fec8c290317316031850ecfa72cb3e2cc112e)) - MRDGH2821
+- merge pull request #79 from pix-l-crafters/mobark/build/fix-deps - ([497529c](https://github.com/pix-l-crafters/pocket-draw/commit/497529c4a6eb12fa01698a6cbb93132162cdcc98)) - Mihir Rabade
+- use mattpocock's plugin - ([3101c9b](https://github.com/pix-l-crafters/pocket-draw/commit/3101c9b21f5420399d0c825f8cad8887a935f916)) - MRDGH2821
+- merge pull request #84 from pix-l-crafters/mihir/chore/update-work-list - ([c2f1213](https://github.com/pix-l-crafters/pocket-draw/commit/c2f1213ef2886c86d87039c278c3a84aadb725e4)) - Mihir Rabade
+- merge pull request #86 from pix-l-crafters/mihir/chore/release - ([1a1406d](https://github.com/pix-l-crafters/pocket-draw/commit/1a1406dc07c027ddabe030dbc23861d2a180ddca)) - Mihir Rabade
+- merge pull request #87 from pix-l-crafters/mihir/chore/release-tag - ([fc28ee4](https://github.com/pix-l-crafters/pocket-draw/commit/fc28ee4207143ff52e9b9b1e36c72bc0ea6052df)) - Mihir Rabade
+- merge pull request #88 from pix-l-crafters/main - ([0cde9e3](https://github.com/pix-l-crafters/pocket-draw/commit/0cde9e37835d683bfb48d031242413e585d599e6)) - Mihir Rabade
+- merge pull request #89 from pix-l-crafters/release - ([e7f565b](https://github.com/pix-l-crafters/pocket-draw/commit/e7f565b3958c8865410fd743e8c6f2a0dd3d4880)) - Mihir Rabade
+
+### Style
+
+- format files - ([cffec78](https://github.com/pix-l-crafters/pocket-draw/commit/cffec7828a66562471fade9a0c8402359b378410)) - MRDGH2821
+- format files - ([0036bf3](https://github.com/pix-l-crafters/pocket-draw/commit/0036bf3b9bb6cf485eb8fdaacb2b3451ac1ea635)) - MRDGH2821
+
+### Build
+
+- **(mise)** update lock files - ([0feefbf](https://github.com/pix-l-crafters/pocket-draw/commit/0feefbf377a6e14b8f41113ebcbbf25771f4118a)) - MRDGH2821
+
+### Ci
+
+- delete eas ci workflow - ([0a0da86](https://github.com/pix-l-crafters/pocket-draw/commit/0a0da86dd46b8bcb3a163a4c7a84d97a3f7ba911)) - MRDGH2821
+
+---
+
 ## [0.1.0] - 2026-10-05
 
 ### Bug Fixes
