@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file. See [conven
 
 ---
 
-## [unreleased]
+## [0.1.0] - 2026-10-05
 
 ### Bug Fixes
 
@@ -107,6 +107,7 @@ All notable changes to this project will be documented in this file. See [conven
 - add implementation plan for Expo builds via CI on dev branch - ([f2d2466](https://github.com/pix-l-crafters/pocket-draw/commit/f2d2466dce2b8fd0f961fcce9602eab82ad59851)) - Mobark Bacran
 - fix structure - ([3846fb9](https://github.com/pix-l-crafters/pocket-draw/commit/3846fb9c7ce82554b252310fe2391a5c293bac27)) - MRDGH2821
 - fix linter errors - ([b9613b3](https://github.com/pix-l-crafters/pocket-draw/commit/b9613b3ab5b59065242b3bcc7899e80db938b199)) - MRDGH2821
+- create interim changelog - ([d025104](https://github.com/pix-l-crafters/pocket-draw/commit/d02510488f4ec7fe3b2d08d27a70a63983f847f4)) - MRDGH2821
 
 ### Features
 
