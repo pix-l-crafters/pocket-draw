@@ -1,18 +1,45 @@
 # Roadmap
 
-This document reconciles the product design (`README.md`, `UI.md`, `Gameplay-v2.md` — the canonical gameplay spec, `Gameplay-v1.md` is superseded, `Leaderboards.md`) against what's actually implemented on `dev`, and lays out the remaining work as independent, GitHub-issue-sized items. Anyone can pick up any item below — this isn't a per-person assignment list like `docs/task-splits-v2/`.
+This roadmap maps the current checked worktree and GitHub issue state to the Assignment 2 rubric and the team's 9 Oct 2026 internal freeze. It preserves the product design decisions and points to GitHub issues for executable work.
 
-## Current state
+## Current state (checked 2026-10-04)
 
-Already implemented on `dev` (ahead of this doc's own branch):
+Implemented in the checked worktree:
 
-- Auth (login/register), live player-location map
-- Full QR challenge/connect flow (my-QR, scan, opponent confirm) with a BLE session transport underneath
-- Duel gameplay: raise-gesture calibration, countdown, fire/raise detection, false-start handling, tie-window scoring, reaction-time capture
-- Backend: match-result write path, offline queue, ELO calculation, `playerStatsRepository` (wins/losses/ELO)
-- Postmatch summary screen (rematch / return-to-map)
+- Firebase auth, live player map, QR invite generation, profile/settings screen, and Android map configuration.
+- Gameplay-v2 zone scoring, fixed 3-round + tiebreak structure, clock-offset calibration, iOS tap-to-fire, instructions, match-result writes, and offline queue.
+- Native WebRTC signaling/DataChannel and Wi-Fi/hotspot connection flows are present; issues #45–#49 are closed.
 
-Not implemented at all: Leaderboards tab, Profile & Settings tab, match-level draws, WebRTC transport, clock-sync for reaction timing, the Gameplay-v2 fire mechanic and zone-based scoring (current code implements v1's auto-fire/reaction-only model), the post-challenge game-instructions screen, and the Android map / haptics-only fire cue bugs.
+Still incomplete or unverified:
+
+- QR confirmation still attempts the unsupported `challengeRequests` write and does not reliably enter the duel. Open PR [#72](https://github.com/pix-l-crafters/pocket-draw/pull/72) addresses both; its GitHub checks were failing when reviewed.
+- BLE is a stub; issue #51 remains open for WebRTC cutover and BLE-stack removal. WebRTC is not counted as demo-ready until exercised between real Android and iPhone devices.
+- Android volume-button fire (#37), draw stats (#40), false-start shot persistence (#64), four-tab navigation (#44), real leaderboard rankings (#42), onboarding/demo script (#53), and full device QA (#54) remain open.
+- The code contains Profile and Leaderboard screens, but `App.tsx` currently exposes only Map / Challenge / Profile. A screen existing in source is not proof that the shipped flow reaches it.
+
+Closed implementation issues include Android map/audio fixes (#34–#35), zone scoring (#36), iOS fire (#38), match tally (#39), instructions (#41), Profile (#43), and WebRTC/network/clock/recovery work (#45–#49). Device verification is still outstanding under #54.
+
+## Submission target and priority
+
+The Assignment 2 rubric in [`docs/rubrics/`](../rubrics/README.md) weights Implementation at 44 points (Connectivity alone: 12), UI at 26, Innovation at 16, and Material at 14. The rubric image shows a portal deadline of 12 October 2026, 23:59; use 9 October as the team's internal completion freeze.
+
+The submission package requires a report PDF, a YouTube demo video up to 10 minutes,
+an Android Studio console screenshot showing a successful compile, a source-code ZIP,
+an exported Git commit-log ZIP, and a one-page itemized contribution breakdown for
+each member. The report must include run instructions and up to 10 pages mapping every
+rubric criterion to evidence. Each member also attends an individual in-person viva.
+Track the complete package in [issue #80](https://github.com/pix-l-crafters/pocket-draw/issues/80).
+
+The submitted Assignment 1 plan names BLE as the MVP transport and WebRTC only as a
+fallback if the BLE spike fails. Current product docs and implementation instead use
+WebRTC. Do not add a second transport under this deadline; document the actual
+transport decision and its evidence honestly in the report.
+
+Assignment 1 feedback asks for measured two-phone buzz timing (20 ms was suggested),
+a criterion-by-criterion report, and specific individual contributions. Treat timing
+as a measurement to report, not a result to claim without device evidence.
+
+The roadmap below orders work by submission risk, not by feature novelty. The detailed design decisions and linked specs remain the product contract; anything explicitly marked stretch must not delay the verified two-phone path or the submission materials.
 
 ## Design decisions
 
@@ -47,122 +74,76 @@ Full spec: [`docs/superpowers/specs/2026-09-17-connectivity-rewrite-design.md`](
 
 ### Reaction-timing fairness
 
-`fireSignalCoordinator.ts` currently stamps the "fire" signal with the host's own `Date.now()` and both sides compute `reactionMs` against that same value.
-The host's measurement is clean (single clock); the guest's is contaminated by however long the message took to arrive plus any clock offset between the two phones — neither compensated for today.
-This is a transport-independent bug, not something the WebRTC migration introduces, though lower/more-consistent WiFi latency should reduce its impact versus BLE.
-
-Fix: a ping-pong RTT exchange (`offset ≈ ((t1-t0)-(t3-t2))/2`) run during the existing pre-round calibration step (`DrawCalibrationScreen.tsx`), alongside the arm-position calibration that already happens there. The resulting clock offset corrects received timestamps before `reactionMs` is computed.
-
-`accelerometerRaiseMonitor.ts` already works around a related, subtler platform gap: native accelerometer sample timestamps use each OS's own monotonic clock, not wall-clock time, so it stamps raise detection with `Date.now()` at the JS callback instead.
-That's the right call, but it trades in a small amount of JS-thread scheduling jitter whose size can differ between iOS and Android — worth a quick sanity check once clock-offset calibration lands, not a separate issue.
+Clock-offset calibration is implemented (#48). The JS callback timestamp still introduces platform scheduling jitter; measure the observed two-phone buzz/fire timing during device QA (#54). Assignment 1 feedback suggested measuring whether the phones buzz within 20 ms; report the method and actual result rather than assuming that threshold is met.
 
 ### Android map rendering
 
-`MapScreen.tsx` uses `react-native-maps` with the default provider (Apple Maps on iOS, Google Maps SDK on Android).
-`app.json`'s `plugins` array has no `react-native-maps` entry and no Google Maps API key anywhere — Android's Google Maps SDK requires one to render anything, iOS's Apple Maps doesn't.
-That fully explains "works on iOS, doesn't load on Android": it's a missing config, not a library defect.
-`react-native-maps` remains the right library for 2026 — Expo's own first-party `expo-maps` is still alpha and Expo's guidance is to only use it if you can drop iOS support below iOS 17, which doesn't apply here.
-Fix is additive: set `expo.android.config.googleMaps.apiKey`, which Expo prebuild already turns into the `com.google.android.geo.API_KEY` manifest entry — no extra plugin needed.
-Note that `react-native-maps` 1.20.1 (the version SDK 54 pins) ships **no** Expo config plugin; the `androidGoogleMapsApiKey` plugin option only exists in later releases, so registering the package in `plugins` fails prebuild.
-Get a "Maps SDK for Android" key from Google Cloud Console (needs billing enabled; native mobile map loads are free), and inject it from a `GOOGLE_MAPS_ANDROID_API_KEY` environment variable via `app.config.ts` — from `.env` locally and from EAS environment variables on EAS builds — rather than committing it.
+The Android map configuration fix is implemented (#34): the Google Maps key is injected through app configuration. Confirm the map renders on the final Android build as part of #54.
 
-### Fire-signal cue (haptics-only today)
+### Fire-signal cue
 
-The "buzz" that tells players to fire (`PreRound.tsx`) is implemented purely via `expo-haptics` — no audio at all; `countdownAudio.ts`'s `COUNTDOWN_AUDIO_SOURCE` is still a `null` placeholder.
-Haptic intensity is not comparable across devices: iOS's Taptic Engine gives a crisp, consistent pulse, while Android's vibration motors vary widely in strength and latency by device.
-For a game whose entire premise is "fastest to react," a haptics-only cue risks the outcome hinging on whose phone has a stronger buzzer rather than who actually reacted first.
-Fix: wire up the placeholder audio asset as a redundant cue alongside haptics, and explicitly configure iOS's audio session to play through the silent/mute switch (`expo-audio`'s playback-in-silent-mode option) — Android has no equivalent muting behavior to work around.
+The countdown now pairs audio with haptics (#35). Confirm both cues are audible/noticeable on the final Android and iOS devices during #54.
 
 ### Fire mechanic & scoring (Gameplay v2)
 
 Full spec: [`docs/superpowers/specs/2026-09-17-fire-mechanic-scoring-design.md`](../superpowers/specs/2026-09-17-fire-mechanic-scoring-design.md).
 
-Today, `raiseGestureDetector.ts` auto-fires purely from accelerometer magnitude crossing a threshold, and `roundJudge.ts` scores purely on who reacted faster (`"win" | "tie" | "falseStart"`, 1 point, no headshot/bodyshot).
-That's v1's model.
-v2 requires a manual fire trigger, plus height-zone scoring: a bodyshot zone (ready-height to shoulder-height, 1 point), a headshot zone (shoulder-height to +15cm above, 2 points), and misses (0 points) for anything else.
+The checked implementation uses manual fire and pitch-zone scoring, not v1's
+auto-fire/reaction-only model. The iOS tap trigger is implemented (#38); the Android
+volume-button trigger remains open (#37). Zone classification uses sensor-fused pitch
+through ready-to-shoulder calibration, not double-integrated position. The fixed
+angular headshot band approximates the product spec's centimeter measurement;
+disclose it and test sensor stability on-device (#54).
 
 **Round scoring:** order both players' shots by reaction time. Outside the tie window, classify the faster shot's landing height into miss/bodyshot/headshot — if valid, that player scores those points and the other scores 0; if the faster shot is a miss, fall through and classify the slower shot the same way; if both miss, the round is 0-0.
-Within the tie window (near-simultaneous fire), classify **both** shots independently — each player scores their own zone value regardless of the other's timing — and whoever scores higher wins the round; equal scores (including a double miss) tie, with both keeping their equal points.
-`falseStart` stays as its own outcome kind — it's a timing violation (firing before the buzz), orthogonal to where a shot lands, not folded into the zone system. The non-offending player still fires and scores normally by their own zone accuracy rather than getting a flat penalty bonus; see the fire mechanic spec's "False-start point value" note for the alternatives considered.
-Reaction time still gates who's even eligible to score, and separately remains the leaderboard's avg-reaction-time stat.
+Within the tie window (near-simultaneous fire), classify **both** shots independently — each player scores their own zone value regardless of the other's timing — and whoever scores higher wins; equal scores (including a double miss) tie, with both keeping their equal points.
+`falseStart` stays as its own outcome kind. Issue #64 remains open to persist the non-offending player's actual shot and score.
 
-**Feasibility flag:** classifying a shot's height needs continuous position tracking relative to the calibrated ready/shoulder reference points, not just today's one-shot threshold-crossing raise event.
-Accelerometer-based position estimation drifts — this needs its own feasibility check (bounded drift over a single round's timescale, possibly gyroscope fusion) before committing to an implementation approach.
+**Fire trigger:** Android volume-button interception is tracked in #37; iOS uses the implemented tap-to-fire trigger. Do not add the documented iOS volume-button alternatives under this deadline.
 
-**Fire trigger — documented for whoever picks this up, since the right answer differs by platform and by how much risk you're willing to accept:**
+## Submission sequence — 9 Oct internal freeze
 
-- **Android:** volume button via native key interception (`KEYCODE_VOLUME_UP/DOWN`, e.g. `react-native-volume-manager` or a small custom native module — this project already runs `expo-dev-client`, so a native module is nothing new). Reliable, no caveats.
-- **iOS, default:** on-screen tap-to-fire button. No API-misuse risk, no camera overhead, works on every device.
-- **iOS, alternative — native volume trigger via `AVCaptureEventInteraction`:** Apple's only sanctioned API for volume-button capture, but it's scoped to apps actively using the camera; non-camera apps risk the capture session being terminated. Would need an active (if hidden) camera session running during the duel just to unlock the events.
-- **iOS, alternative — unofficial volume-observation hack:** watch `AVAudioSession.outputVolume` for changes. Works without a camera session, but is fragile: volume needs resetting between rounds, detection can be missed at min/max volume, and the system volume HUD flashes unless suppressed.
-- **iOS, alternative — Action Button:** only exists on iPhone 15 Pro and later, and requires the _player_ to manually assign your app's Shortcut to it in Settings ahead of time — not something the app can claim automatically. Whether it delivers a fast in-scene event to an already-foregrounded duel screen (vs. behaving like an app relaunch) isn't confirmed without device testing.
-- **Ruled out — side/power button:** no public API exists for any app to intercept it; fully reserved by iOS.
+### 1. Restore the QR-to-duel path
 
-## Phased issue list
+- **PR #72:** remove the unsupported `challengeRequests` write and enter the duel after connection. Resolve its failing checks, merge, then exercise the accepted-host and guest paths.
 
-### Phase 0 — Quick fixes
+### 2. Prove the single live transport
 
-1. Fix Android map: set `expo.android.config.googleMaps.apiKey` from a `GOOGLE_MAPS_ANDROID_API_KEY` environment variable in `app.config.ts` (Google Cloud Maps SDK for Android key, billing enabled, injected from `.env` locally and EAS environment variables on EAS builds)
-2. Wire up the countdown audio cue alongside the existing haptics-only "buzz" signal, with iOS audio-session config to play through silent/mute mode
+- **Issue #51:** finish the WebRTC cutover and remove the BLE stack. Its prerequisites (#45–#47) are closed; the BLE transport in source is still a stub.
+- Smoke-test host/guest WebRTC between real Android and iPhone devices as soon as #72 is green. Do not wait until final QA to discover native-network failures, and do not add a second transport under this deadline.
 
-### Phase 1 — Contracts & rules
+### 3. Finish gameplay result correctness
 
-Items 3–6: see the full [fire mechanic & scoring spec](../superpowers/specs/2026-09-17-fire-mechanic-scoring-design.md).
+- **Issue #37:** implement Android volume-button fire; iOS tap-to-fire (#38) is already closed.
+- **Issue #64:** preserve the non-offending player's shot and points on a false start.
+- **Issue #40:** include draws in the player-stats surface.
+- Keep all three inside the Oct 9 freeze if the team is submitting Gameplay v2 as its current product.
 
-3. Feasibility-check continuous position/height tracking from the calibrated ready/shoulder reference points (accelerometer drift risk) needed to classify a shot as miss/bodyshot/headshot
-4. Android fire trigger: volume-button key intercept (native module, e.g. `react-native-volume-manager`)
-5. iOS fire trigger: on-screen tap-to-fire button (default) — see "Fire mechanic & scoring" above for the documented alternatives a teammate can swap in instead
-6. Rewrite `roundJudge.ts`/`RoundOutcome` for v2 scoring: order shots by reaction time, classify the faster shot's zone with fallthrough to the slower shot on a miss (outside the tie window), or classify both shots independently with the higher score winning (within the tie window).
-   Keep `falseStart` as its own outcome kind, scoring the non-offending player's own shot normally rather than a flat penalty value (see the fire mechanic spec's "False-start point value" note)
-7. Rewrite `MatchResult` and the match-level `roundLoop.ts` for strict 3-round + 1-tiebreaker matches with win/lose/draw outcomes, decided by **sum of round points**, not count of rounds won — `tallyOutcome`'s accumulator needs to add each round's actual zone point value (0/1/2) instead of the current hardcoded `+= 1` / `+= pointsEach`.
-   Confirmed the `matchResults` Firestore collection is dev-only scratch data — clear it before cutover rather than writing a migration for the old `winnerId` shape
-8. Extend `PlayerStats` and `playerStatsRepository` to tally draws
-9. Remove `RoundCountSelector`'s 3/5/7 choice (round count is fixed now). Narrow the shared `ChallengeHandoff.roundCount` contract type (`src/contracts/challengeHandoff.ts`) from `3 | 5 | 7` to the literal `3` too — it flows through `App.tsx` into the duel session, so leaving it un-narrowed means TypeScript won't catch a stale caller still constructing a 5- or 7-round handoff
+### 4. Finish the user-facing flow
 
-### Phase 2 — Missing UI
+- **Issue #44:** expose Map / Challenge / Leaderboards / Profile navigation; current `App.tsx` has only three tabs.
+- **Issue #53:** complete the demo script and the onboarding/empty-state work that materially helps a first-time user finish a duel. It depends on #44 and #51.
 
-10. Full-screen game-instructions step, shown right after challenge acceptance and before calibration (`UI.md`: "the Challenge tab, when the challenge is accepted, launches the game instructions screen in full screen... From that screen, the gameplay starts.").
-    Nothing in the current challenge→duel pipeline shows this today — `DrawCalibrationScreen.tsx`'s copy is calibration-specific, not game rules.
-11. Leaderboard data layer (`leaderboardRepository`).
-    Read player names from `users/{uid}` (`userProfileRepository`), **not** from `presence` — a presence document is deleted whenever a player stops sharing their location, so it cannot answer uid→name for the offline players a leaderboard has to list.
-    `matchResults` stores only uids
-12. Leaderboard screen with ranking-type selector (win/loss ratio, wins, losses, draws, ELO, avg reaction time)
-13. Profile & Settings screen (own stats, username edit via Firebase Auth `updateProfile`, logout moved here)
-14. Tab IA rewire: `Map / Challenge / Leaderboards / Profile`, drop the BLE debug tab from shipped UI
+### 5. Verify on hardware and prepare the package
 
-### Phase 3 — Connectivity rewrite (core)
+- **Issue #54:** run the full Android+iOS loop after #44 and #51. Cover map/presence, QR, connection, countdown/fire timing, scoring/tie/false-start, match persistence, offline queue flush, and permission-denial recovery. Include an uncoached user run. Record device/model, method, and measured timing; do not present mocks or source presence as hardware proof.
+- **Issue #80:** complete the report, <=10-minute demo video, Android Studio compile screenshot, source ZIP, commit-log ZIP, itemized individual contributions, and individual-viva preparation. The report must map every Assignment 2 rubric row (including UI and Material) to evidence.
 
-Items 15–25: see the full [connectivity rewrite spec](../superpowers/specs/2026-09-17-connectivity-rewrite-design.md).
+### Defer until the submission path and materials are ready
 
-15. Remove the BLE transport stack entirely
-16. QR payload carries WiFi/hotspot connection info, regenerates on network change
-17. Existing-network detection: try the current shared WiFi network before falling back to creating a hotspot, using `expo-network`'s `getIpAddressAsync()` for the host-IP lookup (confirmed cross-platform, no platform-specific handling needed)
-18. Android hotspot auto-create via `WifiManager.startLocalOnlyHotspot()` — `react-native-wifi-reborn` (item 20) doesn't cover hotspot creation, only joining; use `react-native-local-only-hotspot` (or an equivalent small native module) for this specific call
-19. iOS manual-hotspot flow: Settings instructions + one-time password entry (the app can't read its own hotspot password)
-20. Join-network flow via `react-native-wifi-reborn` (both platforms)
-21. Local signaling server (host) + SDP/ICE exchange. Add `NSLocalNetworkUsageDescription` to iOS's `infoPlist` — any direct local-network connection on iOS 14+ needs this or the connection silently fails with no permission-denied signal to the user
-22. Authenticate the signaling connection: require the connecting peer to present the QR payload's `challengeToken`/`discoveryToken` before the host accepts an SDP exchange — on the "existing shared WiFi" mode, the signaling port isn't private to the two duelists, so an unauthenticated server would let any other device on that network hijack or deny the pairing.
-    See the connectivity spec's "Token freshness on reconnect" note for how this interacts with item 24 — a deadline-driven call flagged there for confirmation, not a settled answer
-23. `RTCPeerConnection`/`DataChannel`-backed `DuelChannel` implementation
-24. Extend `disconnectRecovery.ts`'s `DisconnectContext`/`DisconnectRecoveryState` to carry the in-progress `RoundLoopState` (score, round number) through a reconnect, so the match resumes instead of restarting — this is what actually makes reconnection feel seamless, not the signaling-socket lifecycle.
-    `DuelDisconnectRecovery` already takes its transport as an injected `DuelChannel` + `reconnect` callback, so no separate "port to WebRTC" work is needed here — item 23's `DuelChannel` implementation just supplies its own `reconnect` callback.
-    (This item previously read "port `disconnectRecovery.ts` to the WebRTC transport" — corrected after reading the actual class; that wording would have sent someone chasing a porting task that doesn't exist.)
-25. Clock-offset calibration folded into the pre-round calibration screen, applied in `fireSignalCoordinator`/`reactionTimer`
+- **Issue #42:** full real leaderboard rankings; the submitted Assignment 1 plan treated a leaderboard as an extra, not an MVP pass condition.
+- **Issue #52:** average-reaction-time ranking.
+- **Issue #50:** real aim/bearing check.
 
-### Phase 4 — Stretch
+The team's internal freeze is 9 Oct 2026. The Assignment 2 portal date shown in the rubric is 12 Oct 2026, 23:59; reserve the gap for packaging and final validation, not new features.
 
-26. Average reaction time aggregation + leaderboard ranking by it (product design marks this "do only when we have time")
-27. Onboarding / empty states / demo script — flagged unassigned since `docs/task-splits-v2/README.md`
-28. Full prod-readiness device QA (Android/iOS full-loop, permission-denial recovery) — carried over from the existing prod-readiness checklist in `docs/task-splits-v2/README.md`
-29. Real aim/bearing check: compare phone compass heading against the opponent's live GPS bearing (from the map feature's presence data) at fire time, instead of the disclosed raise-height-only simplification shipped in Phase 1 — see the fire mechanic spec's "Pointing at the opponent" note for the tradeoff. Pick up only after the core roadmap ships
+The detailed engineering rationale remains in the sections above and the linked fire/connectivity specs. Issue #80 tracks the submission artifacts; current open feature work remains tracked in GitHub issues.
 
-## Open risks to verify during implementation
+## Open risks and ownership
 
-- iOS can't read its own Personal Hotspot password — confirm the one-time manual entry is acceptable UX, not a blocker.
-- `@config-plugins/react-native-webrtc` version pinning against this project's Expo SDK 54 / RN 0.81.5.
+- **Transport divergence:** the submitted Assignment 1 plan names BLE as the MVP and permits WebRTC as fallback after a failed BLE spike. Current product docs and code use WebRTC. Preserve evidence for the actual transport decision and explain it in the report; the checked repo does not establish that teaching staff approved a change.
+- **Device proof:** native WebRTC source and unit tests do not prove a working Android+iOS connection. Issue #54 remains open; the buzz timing and permission paths need real-device evidence.
+- **Ownership:** several submission-critical issues are unassigned. Confirm a named owner for each, then derive the individual contribution page from merged work rather than paired area labels.
+- **PR #72:** still open and its GitHub checks were failing when this roadmap was reviewed.
 
-## Branch survey
-
-Checked all remote branches, not just `dev`/`main`, before finalizing this roadmap: `tingyue/feat/challenge-connect-flow`, `sihengma/map`, `tanachat/feat/duel-pre-round-ritual`, and `tianze/feat/duel-fire-detection` are all fully merged into `dev` already (zero commits ahead).
-`feature/payload-rebased` has unmerged commits but is a stale pre-architecture snapshot (thousands of lines behind `dev`, superseded auth/QR experiment) with nothing platform-relevant.
-`dev` is the complete, current picture this roadmap is based on.
+Status checked on 2026-10-04 against the checked worktree, open GitHub issues/PRs, and `docs/rubrics/`. Device execution was not performed for this review.

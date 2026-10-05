@@ -253,3 +253,13 @@ Version bumps use cocogitto (`cog bump`); pre-bump hooks update `package.json` a
 
 - Verify the project structure is correct
 - Ensure documentation is updated
+
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues for `pix-l-crafters/pocket-draw`; use `gh`. See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Single-context `CONTEXT.md` and `docs/adr/` at the repository root. See `docs/agents/domain.md`.
