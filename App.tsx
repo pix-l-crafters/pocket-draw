@@ -1,0 +1,321 @@
+import {
+  Barlow_400Regular,
+  useFonts as useBarlowFonts
+} from "@expo-google-fonts/barlow";
+import {
+  BarlowCondensed_700Bold,
+  useFonts as useBarlowCondensedFonts
+} from "@expo-google-fonts/barlow-condensed";
+import {
+  IBMPlexMono_400Regular,
+  useFonts as useIBMPlexMonoFonts
+} from "@expo-google-fonts/ibm-plex-mono";
+import { StatusBar } from "expo-status-bar";
+import type { User } from "firebase/auth";
+import { useCallback, useState } from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { BottomNavigation, PaperProvider } from "react-native-paper";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+
+import type { ChallengeHandoff } from "./src/contracts/challengeHandoff";
+import type { DuelChannel } from "./src/contracts/duelChannel";
+import { ChallengeScreen } from "./src/features/challenge/ChallengeScreen";
+import { ConnectingScreen } from "./src/features/challenge/ConnectingScreen";
+import {
+  IncomingChallengeScreen,
+  type Challenger
+} from "./src/features/challenge/IncomingChallengeScreen";
+import { challengeRequestRepository } from "./src/features/challenge/services/challengeRequestRepository";
+import { DuelScreen, type DuelPlayer } from "./src/features/duel/DuelScreen";
+import type { DuelRole } from "./src/features/duel/fireSignalCoordinator";
+import { GameInstructionsScreen } from "./src/features/duel/GameInstructionsScreen";
+import { MapScreen } from "./src/features/map/MapScreen";
+import type { CurrentUser } from "./src/features/map/types/map.types";
+import { ProfileScreen } from "./src/features/profile/ProfileScreen";
+import type { QrInvitePayload } from "./src/features/qr/types/qr.types";
+import { useAuthUser } from "./src/lib/useAuthUser";
+import LoginScreen from "./src/screens/LoginScreen";
+import RegisterScreen from "./src/screens/RegisterScreen";
+import { appTheme } from "./src/theme/appTheme";
+import { colors } from "./src/theme/tokens";
+
+function toCurrentUser(user: User, displayName: string): CurrentUser {
+  return { uid: user.uid, displayName };
+}
+
+type AppTab = "map" | "challenge" | "profile";
+
+type ActiveDuel = {
+  channel: DuelChannel;
+  matchId: string;
+  opponent: DuelPlayer;
+  role: DuelRole;
+  self: DuelPlayer;
+};
+
+/** A guest has opened the duel channel and is waiting on this player's answer. */
+type IncomingChallenge = {
+  channel: DuelChannel;
+  matchId: string;
+};
+
+const NAV_ROUTES: {
+  key: AppTab;
+  title: string;
+  focusedIcon: string;
+  unfocusedIcon: string;
+}[] = [
+  {
+    key: "map",
+    title: "Map",
+    focusedIcon: "map-marker",
+    unfocusedIcon: "map-marker-outline"
+  },
+  {
+    key: "challenge",
+    title: "Challenge",
+    focusedIcon: "sword-cross",
+    unfocusedIcon: "sword-cross"
+  },
+  {
+    key: "profile",
+    title: "Profile",
+    focusedIcon: "account-circle",
+    unfocusedIcon: "account-circle-outline"
+  }
+];
+
+export default function App() {
+  const { displayName, loading: authLoading, user } = useAuthUser();
+  const [showRegister, setShowRegister] = useState(false);
+  const [activeTab, setActiveTab] = useState<AppTab>("map");
+  const [pendingHandoff, setPendingHandoff] = useState<ChallengeHandoff | null>(
+    null
+  );
+  const [activeDuel, setActiveDuel] = useState<ActiveDuel | null>(null);
+  const [incomingChallenge, setIncomingChallenge] =
+    useState<IncomingChallenge | null>(null);
+  const [instructionsSeen, setInstructionsSeen] = useState(false);
+
+  const exitDuel = () => {
+    setActiveDuel(null);
+    setIncomingChallenge(null);
+    setInstructionsSeen(false);
+    setPendingHandoff(null);
+    setActiveTab("map");
+  };
+
+  const self: DuelPlayer = { id: user?.uid ?? "", name: displayName };
+
+  // Stable identity matters: QrDisplayScreen keys its host-server effect on
+  // this, so a new function each render would tear the signaling server down
+  // and restart it, dropping any guest mid-join. The guest is connected but
+  // not yet accepted here — the popup that follows is what starts the duel.
+  const onHostConnected = useCallback(
+    (channel: DuelChannel, invite: QrInvitePayload) =>
+      setIncomingChallenge({ channel, matchId: invite.matchId }),
+    []
+  );
+
+  // The guest side: the host has already accepted by the time this runs.
+  const onGuestConnected = useCallback(
+    (channel: DuelChannel, handoff: ChallengeHandoff) =>
+      setActiveDuel({
+        channel,
+        matchId: handoff.matchId,
+        opponent: {
+          id: handoff.scannedPlayerId,
+          name: handoff.scannedPlayerName
+        },
+        role: "guest",
+        self: { id: handoff.challengerId, name: displayName }
+      }),
+    [displayName]
+  );
+
+  const acceptChallenge = (challenger: Challenger) => {
+    if (!incomingChallenge) return;
+    setActiveDuel({
+      channel: incomingChallenge.channel,
+      matchId: incomingChallenge.matchId,
+      opponent: { id: challenger.playerId, name: challenger.playerName },
+      role: "host",
+      self
+    });
+    setIncomingChallenge(null);
+  };
+  const [barlowLoaded] = useBarlowFonts({ Barlow_400Regular });
+  const [barlowCondensedLoaded] = useBarlowCondensedFonts({
+    BarlowCondensed_700Bold
+  });
+  const [ibmPlexMonoLoaded] = useIBMPlexMonoFonts({ IBMPlexMono_400Regular });
+  const fontsLoaded =
+    barlowLoaded && barlowCondensedLoaded && ibmPlexMonoLoaded;
+
+  const loading = authLoading || !fontsLoaded;
+
+  return (
+    <SafeAreaProvider>
+      <PaperProvider theme={appTheme}>
+        {loading ? (
+          // 登录状态或字体仍在加载。
+          <View style={styles.authScreen}>
+            <StatusBar style="light" />
+            <Text style={styles.loadingText}>Loading...</Text>
+          </View>
+        ) : !user ? (
+          // 加载已经完成，但当前没有已登录用户，因此显示登录或注册界面。
+          showRegister ? (
+            <View style={styles.authScreen}>
+              <StatusBar style="light" />
+
+              <RegisterScreen />
+
+              <TouchableOpacity
+                onPress={() => setShowRegister(false)}
+                style={styles.switchButton}
+              >
+                <Text style={styles.switchText}>
+                  Already have an account?{" "}
+                  <Text style={styles.switchHighlight}>Login</Text>
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.authScreen}>
+              <StatusBar style="light" />
+
+              <LoginScreen />
+
+              <TouchableOpacity
+                onPress={() => setShowRegister(true)}
+                style={styles.switchButton}
+              >
+                <Text style={styles.switchText}>
+                  Don&apos;t have an account?{" "}
+                  <Text style={styles.switchHighlight}>Register</Text>
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )
+        ) : (
+          // 用户已经登录，因此显示应用主界面。
+          <SafeAreaView
+            edges={["top", "bottom"]}
+            style={styles.container}
+          >
+            {activeDuel ? (
+              // 只有在与另一位玩家的对局中才显示 Duel 界面，不作为常驻标签。
+              !instructionsSeen ? (
+                <GameInstructionsScreen
+                  onContinue={() => setInstructionsSeen(true)}
+                />
+              ) : (
+                <DuelScreen
+                  channel={activeDuel.channel}
+                  matchId={activeDuel.matchId}
+                  onExit={exitDuel}
+                  opponent={activeDuel.opponent}
+                  role={activeDuel.role}
+                  self={activeDuel.self}
+                />
+              )
+            ) : incomingChallenge ? (
+              <IncomingChallengeScreen
+                channel={incomingChallenge.channel}
+                onAccept={acceptChallenge}
+                onDecline={() => setIncomingChallenge(null)}
+              />
+            ) : (
+              <>
+                <View style={styles.screenContainer}>
+                  {activeTab === "map" ? (
+                    <MapScreen currentUser={toCurrentUser(user, displayName)} />
+                  ) : activeTab === "profile" ? (
+                    <ProfileScreen
+                      displayName={displayName}
+                      email={user.email}
+                      uid={user.uid}
+                    />
+                  ) : pendingHandoff ? (
+                    <ConnectingScreen
+                      currentUser={{ displayName, uid: user.uid }}
+                      handoff={pendingHandoff}
+                      onConnected={onGuestConnected}
+                      onExit={() => setPendingHandoff(null)}
+                    />
+                  ) : (
+                    <ChallengeScreen
+                      currentUser={toCurrentUser(user, displayName)}
+                      onHostConnected={onHostConnected}
+                      onOpponentConfirmed={(opponent) => {
+                        const handoff: ChallengeHandoff = {
+                          ...opponent,
+                          roundCount: 3
+                        };
+                        setPendingHandoff(handoff);
+                        void challengeRequestRepository
+                          .sendChallenge(handoff)
+                          .catch((error) =>
+                            console.error(
+                              "Failed to send challenge request:",
+                              error
+                            )
+                          );
+                      }}
+                    />
+                  )}
+                </View>
+                <BottomNavigation.Bar
+                  navigationState={{
+                    index: NAV_ROUTES.findIndex(
+                      (route) => route.key === activeTab
+                    ),
+                    routes: NAV_ROUTES
+                  }}
+                  onTabPress={({ route }) => setActiveTab(route.key)}
+                />
+              </>
+            )}
+          </SafeAreaView>
+        )}
+      </PaperProvider>
+    </SafeAreaProvider>
+  );
+}
+
+const styles = StyleSheet.create({
+  authScreen: {
+    alignItems: "center",
+    backgroundColor: colors.background,
+    flex: 1,
+    justifyContent: "center",
+    paddingHorizontal: 28
+  },
+  loadingText: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: "600"
+  },
+  switchButton: {
+    marginTop: 24,
+    paddingHorizontal: 10,
+    paddingVertical: 12
+  },
+  switchText: {
+    color: colors.textMuted60,
+    fontSize: 15,
+    textAlign: "center"
+  },
+  switchHighlight: {
+    color: colors.accent,
+    fontWeight: "700"
+  },
+  container: {
+    backgroundColor: colors.background,
+    flex: 1
+  },
+  screenContainer: {
+    flex: 1
+  }
+});

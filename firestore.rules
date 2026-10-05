@@ -1,0 +1,186 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isPresenceOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function hasValidPresenceFields(data) {
+      return data.keys().hasAll([
+        'displayName',
+        'latitude',
+        'longitude',
+        'isVisible',
+        'lastSeen'
+      ]) && data.keys().hasOnly([
+        'displayName',
+        'latitude',
+        'longitude',
+        'isVisible',
+        'lastSeen'
+      ]);
+    }
+
+    function hasValidPresenceValues(data) {
+      return data.displayName is string
+        && data.displayName.size() > 0
+        && data.displayName.size() <= 100
+        && data.latitude is number
+        && data.latitude >= -90
+        && data.latitude <= 90
+        && data.longitude is number
+        && data.longitude >= -180
+        && data.longitude <= 180
+        && data.isVisible == true
+        && data.lastSeen is timestamp
+        && data.lastSeen == request.time;
+    }
+
+    // --- matchResults helpers ---
+
+    function hasValidMatchResultFields(data) {
+      return data.keys().hasAll([
+        'matchId',
+        'participantIds',
+        'roundCount',
+        'rounds',
+        'results',
+        'completedAt',
+        'uploadedBy',
+        'createdAt'
+      ]) && data.keys().hasOnly([
+        'matchId',
+        'participantIds',
+        'roundCount',
+        'rounds',
+        'results',
+        'completedAt',
+        'uploadedBy',
+        'createdAt'
+      ]);
+    }
+
+    // On create, `resource` is null — compare matchId to the path wildcard.
+    function hasValidMatchResultValues(data, matchId) {
+      return data.matchId is string
+        && data.matchId == matchId
+        && data.participantIds is list
+        && data.participantIds.size() == 2
+        && data.participantIds[0] is string
+        && data.participantIds[1] is string
+        && data.participantIds[0].size() > 0
+        && data.participantIds[1].size() > 0
+        && data.participantIds[0] != data.participantIds[1]
+        && data.roundCount is int
+        && data.roundCount == 3
+        && data.rounds is list
+        && data.rounds.size() >= 3
+        && data.rounds.size() <= 4
+        && data.results is map
+        && data.results.keys().hasOnly(data.participantIds)
+        && data.results.keys().hasAll(data.participantIds)
+        && (
+          (data.results[data.participantIds[0]] == 'win'
+            && data.results[data.participantIds[1]] == 'lose')
+          || (data.results[data.participantIds[0]] == 'lose'
+            && data.results[data.participantIds[1]] == 'win')
+          || (data.results[data.participantIds[0]] == 'draw'
+            && data.results[data.participantIds[1]] == 'draw')
+        )
+        && data.completedAt is string
+        && data.completedAt.size() > 0
+        && data.completedAt.size() <= 40
+        && data.uploadedBy is string
+        && data.uploadedBy == request.auth.uid
+        && data.createdAt is timestamp
+        && data.createdAt == request.time;
+    }
+
+    function isMatchResultUploader() {
+      return isSignedIn()
+        && request.auth.uid in request.resource.data.participantIds
+        && request.resource.data.uploadedBy == request.auth.uid;
+    }
+
+    match /presence/{uid} {
+      allow read: if isSignedIn()
+        && (request.auth.uid == uid || resource.data.isVisible == true);
+      allow create, update: if isPresenceOwner(uid)
+        && hasValidPresenceFields(request.resource.data)
+        && hasValidPresenceValues(request.resource.data);
+      allow delete: if isPresenceOwner(uid);
+    }
+
+    function hasValidChallengeRequestFields(data) {
+      return data.keys().hasAll([
+        'challengerId',
+        'scannedPlayerId',
+        'scannedPlayerName',
+        'roundCount',
+        'matchId',
+        'status',
+        'createdAt',
+        'expiresAt'
+      ]) && data.keys().hasOnly([
+        'challengerId',
+        'scannedPlayerId',
+        'scannedPlayerName',
+        'roundCount',
+        'matchId',
+        'status',
+        'createdAt',
+        'expiresAt'
+      ]);
+    }
+
+    function hasValidChallengeRequestValues(data) {
+      return data.challengerId is string
+        && data.challengerId == request.auth.uid
+        && data.scannedPlayerId is string
+        && data.scannedPlayerId.size() > 0
+        && data.challengerId != data.scannedPlayerId
+        && data.scannedPlayerName is string
+        && data.scannedPlayerName.size() > 0
+        && data.roundCount is int
+        && data.roundCount == 3
+        && data.matchId is string
+        && data.matchId.size() > 0
+        && data.status == 'pending'
+        && data.createdAt == request.time
+        && data.expiresAt is timestamp;
+    }
+
+    match /challengeRequests/{requestId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && hasValidChallengeRequestFields(request.resource.data)
+        && hasValidChallengeRequestValues(request.resource.data);
+      allow update, delete: if false;
+    }
+
+    match /matchResults/{matchId} {
+      allow read: if isSignedIn();
+      allow create: if isMatchResultUploader()
+        && hasValidMatchResultFields(request.resource.data)
+        && hasValidMatchResultValues(request.resource.data, matchId);
+      allow update, delete: if false;
+    }
+
+    // Directory of uid -> displayName, used to resolve names on the
+    // leaderboard (matchResults only stores uids).
+    match /users/{uid} {
+      allow read: if isSignedIn();
+      allow create, update: if isPresenceOwner(uid)
+        && request.resource.data.keys().hasOnly(['displayName'])
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() > 0
+        && request.resource.data.displayName.size() <= 100;
+      allow delete: if false;
+    }
+  }
+}
