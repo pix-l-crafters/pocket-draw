@@ -15,16 +15,23 @@ type LeaderboardScreenProps = {
 
 export function LeaderboardScreen({ onBack }: LeaderboardScreenProps) {
   const [entries, setEntries] = useState<LeaderboardEntry[] | null>(null);
+  const [error, setError] = useState(false);
+  const [requestId, setRequestId] = useState(0);
 
   useEffect(() => {
     let active = true;
-    void getLeaderboard().then((result) => {
-      if (active) setEntries(result);
-    });
+    void getLeaderboard().then(
+      (result) => {
+        if (active) setEntries(result);
+      },
+      () => {
+        if (active) setError(true);
+      }
+    );
     return () => {
       active = false;
     };
-  }, []);
+  }, [requestId]);
 
   return (
     <ScrollView
@@ -44,13 +51,26 @@ export function LeaderboardScreen({ onBack }: LeaderboardScreenProps) {
       <View style={styles.section}>
         <KickerLabel color={colors.textMuted45}>By ELO</KickerLabel>
 
-        {entries === null ? (
+        {error ? (
+          <View>
+            <Text style={styles.empty}>
+              Unable to load rankings. Please try again.
+            </Text>
+            <CutCornerButton
+              label="Retry"
+              onPress={() => {
+                setError(false);
+                setRequestId((current) => current + 1);
+              }}
+            />
+          </View>
+        ) : entries === null ? (
           <ActivityIndicator
             color={colors.accent}
             style={styles.loading}
           />
         ) : entries.length === 0 ? (
-          <Text style={styles.empty}>No ranked matches yet.</Text>
+          <Text style={styles.empty}>No players yet.</Text>
         ) : (
           entries.map((entry, index) => (
             <View

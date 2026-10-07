@@ -1,5 +1,4 @@
-// Contract for the leaderboard screen (#42/#52): ranks every player who has
-// appeared in at least one matchResults doc.
+// Contract for the leaderboard screen (#42/#52): the top 100 users by ELO.
 
 export interface LeaderboardEntry {
   uid: string;
