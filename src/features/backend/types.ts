@@ -1,5 +1,6 @@
 import type { MatchResult } from "../../contracts/matchResult";
 import type { PlayerStats } from "../../contracts/playerStats";
+import type { EloOutcome } from "./elo";
 
 /** Starting ELO for every player (Tanachat 5.4). */
 export const DEFAULT_ELO_RATING = 1500;
@@ -28,6 +29,11 @@ export type MatchResultsRepository = {
 
 export type PlayerStatsRepository = {
   getPlayerStats(uid: string, displayName: string): Promise<PlayerStats>;
+  updateEloRating(
+    uid: string,
+    opponentUid: string,
+    outcome: EloOutcome
+  ): Promise<number>;
 };
 
 /** A player's public profile, as stored in `users/{uid}`. Never holds PII. */

@@ -7,7 +7,24 @@ import {
   removeQueuedMatchResult
 } from "./matchResultQueue";
 import { matchResultsRepository } from "./matchResultsRepository";
+import { playerStatsRepository } from "./playerStatsRepository";
 import type { SubmitMatchResultOutcome } from "./types";
+
+async function updateUploaderElo(
+  result: MatchResult,
+  uploadedBy: string
+): Promise<void> {
+  const opponentId = result.participantIds.find((id) => id !== uploadedBy);
+  if (!opponentId) {
+    throw new Error("Match result does not contain an opponent.");
+  }
+
+  const playerResult = result.results[uploadedBy];
+  const outcome =
+    playerResult === "win" ? "win" : playerResult === "lose" ? "loss" : "draw";
+
+  await playerStatsRepository.updateEloRating(uploadedBy, opponentId, outcome);
+}
 
 function isLikelyOfflineError(error: unknown): boolean {
   if (!error || typeof error !== "object") {
@@ -48,6 +65,7 @@ export async function submitMatchResult(
 
   try {
     await matchResultsRepository.writeMatchResult(result, uploadedBy);
+    await updateUploaderElo(result, uploadedBy);
     await removeQueuedMatchResult(result.matchId);
     return { status: "written", matchId: result.matchId };
   } catch (error) {
@@ -75,6 +93,7 @@ export async function flushQueuedMatchResults(
   for (const entry of queued) {
     try {
       await matchResultsRepository.writeMatchResult(entry.result, uploadedBy);
+      await updateUploaderElo(entry.result, uploadedBy);
       await removeQueuedMatchResult(entry.result.matchId);
       written.push(entry.result.matchId);
     } catch (error) {

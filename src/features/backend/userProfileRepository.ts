@@ -49,8 +49,7 @@ export const userProfileRepository: UserProfileRepository = {
       return;
     }
 
-    // `displayName` is the only field the security rules admit
-    // (`hasOnly(['displayName'])`), so this is a whole-document write.
-    await setDoc(profileRef, { displayName: trimmedName });
+    // Preserve independently updated fields such as eloRating.
+    await setDoc(profileRef, { displayName: trimmedName }, { merge: true });
   }
 };

@@ -34,9 +34,11 @@ describe("userProfileRepository", () => {
 
       await userProfileRepository.syncUserProfile(uid, "Quick Draw");
 
-      expect(setDoc).toHaveBeenCalledWith(profileReference, {
-        displayName: "Quick Draw"
-      });
+      expect(setDoc).toHaveBeenCalledWith(
+        profileReference,
+        { displayName: "Quick Draw" },
+        { merge: true }
+      );
     });
 
     test("skips the write when the stored name already matches", async () => {
@@ -53,9 +55,11 @@ describe("userProfileRepository", () => {
 
       await userProfileRepository.syncUserProfile(uid, "Fast Hands");
 
-      expect(setDoc).toHaveBeenCalledWith(profileReference, {
-        displayName: "Fast Hands"
-      });
+      expect(setDoc).toHaveBeenCalledWith(
+        profileReference,
+        { displayName: "Fast Hands" },
+        { merge: true }
+      );
     });
 
     test("trims the name before comparing and writing", async () => {
