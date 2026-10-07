@@ -1,3 +1,9 @@
+import { playerStatsRepository } from "../backend/playerStatsRepository";
+
+jest.mock("../backend/playerStatsRepository", () => ({
+  playerStatsRepository: { getPlayerStats: jest.fn() }
+}));
+
 import { render, userEvent } from "@testing-library/react-native";
 import { PaperProvider } from "react-native-paper";
 
@@ -36,6 +42,21 @@ function renderProfile() {
 describe("ProfileScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.mocked(playerStatsRepository.getPlayerStats).mockResolvedValue({
+      uid,
+      displayName,
+      wins: 2,
+      losses: 1,
+      draws: 3,
+      eloRating: 1510
+    });
+  });
+
+  test("shows the player's draw count in the record", async () => {
+    const screen = await renderProfile();
+
+    expect(screen.getByText("Draws")).toBeTruthy();
+    expect(await screen.findByText("3")).toBeTruthy();
   });
 
   test("shows the username, email and record tiles", async () => {

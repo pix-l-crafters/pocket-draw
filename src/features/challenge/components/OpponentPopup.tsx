@@ -5,10 +5,7 @@ import { CutCornerSurface } from "../../../components/CutCornerSurface";
 import { DisplayHeading } from "../../../components/DisplayHeading";
 import { KickerLabel } from "../../../components/KickerLabel";
 import { StatTile } from "../../../components/StatTile";
-// TODO(mihir): once 5.1/5.5/5.4 land, swap this mock for the real
-// Firestore-backed lookup (see src/contracts/playerStats.ts).
-import { mockPlayerStats } from "../../../contracts/mocks/mockPlayerStats";
-import type { PlayerStats } from "../../../contracts/playerStats";
+import { usePlayerStats } from "../../../hooks/usePlayerStats";
 import { colors } from "../../../theme/tokens";
 
 type OpponentPopupProps = {
@@ -22,10 +19,6 @@ type OpponentPopupProps = {
   visible: boolean;
 };
 
-function getOpponentStats(uid: string, displayName: string): PlayerStats {
-  return mockPlayerStats(uid, displayName);
-}
-
 export function OpponentPopup({
   cancelLabel = "Cancel",
   confirmLabel = "Send Challenge",
@@ -36,7 +29,9 @@ export function OpponentPopup({
   scannedPlayerName,
   visible
 }: OpponentPopupProps) {
-  const stats = getOpponentStats(scannedPlayerId, scannedPlayerName);
+  const stats = usePlayerStats(
+    visible ? { uid: scannedPlayerId, displayName: scannedPlayerName } : null
+  );
 
   return (
     <Modal
@@ -55,21 +50,25 @@ export function OpponentPopup({
             size={26}
             style={styles.name}
           >
-            {stats.displayName}
+            {stats?.displayName ?? scannedPlayerName}
           </DisplayHeading>
           <View style={styles.statsRow}>
             <StatTile
               label="Wins"
               tint={colors.success}
-              value={String(stats.wins)}
+              value={String(stats?.wins ?? "—")}
             />
             <StatTile
               label="Losses"
-              value={String(stats.losses)}
+              value={String(stats?.losses ?? "—")}
+            />
+            <StatTile
+              label="Draws"
+              value={String(stats?.draws ?? "—")}
             />
             <StatTile
               label="Elo"
-              value={String(stats.eloRating)}
+              value={String(stats?.eloRating ?? "—")}
             />
           </View>
           <View style={styles.actions}>

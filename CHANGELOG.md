@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
+## Unreleased
+
+### Features
+
+- Include drawn matches in player stats and show live stats in player popups and profile.
+
 ---
 
 ## [0.1.1](https://github.com/pix-l-crafters/pocket-draw/compare/v0.1.0..v0.1.1) - 2026-10-05
