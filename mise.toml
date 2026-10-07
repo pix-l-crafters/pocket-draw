@@ -6,7 +6,6 @@ HK_MISE = 1
 _.path = ["{{ xdg_data_home }}/android-sdk/platform-tools"]
 
 [hooks]
-enter = ["capa install --yes"]
 # Automatically install/update hooks when tools are installed
 postinstall = ["hk install --mise"]
 
