@@ -4,6 +4,12 @@
 
 export type Zone = "miss" | "bodyshot" | "headshot";
 
+export type ScoredShot = {
+  reactionMs: number;
+  zone: Zone;
+  points: 0 | 1 | 2;
+};
+
 export const ZONE_POINTS: Record<Zone, 0 | 1 | 2> = {
   miss: 0,
   bodyshot: 1,
@@ -34,7 +40,13 @@ export type RoundOutcome =
       reactionMs: number;
       opponentReactionMs: number;
     }
-  | { kind: "falseStart"; playerId: string };
+  | {
+      kind: "falseStart";
+      playerId: string;
+      nonOffenderId: string;
+      // null means no shot was captured; a captured miss has zone "miss".
+      nonOffenderShot: ScoredShot | null;
+    };
 
 // Producer implementation: src/features/duel/roundJudge.ts.
 // TODO(mobark): once the producer branch lands, replace mockRoundOutcome with

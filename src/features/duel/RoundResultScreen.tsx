@@ -82,7 +82,24 @@ export function RoundResultScreen({
             value={String(outcome.reactionMs)}
           />
         </View>
-      ) : null}
+      ) : (
+        <View style={styles.statsRow}>
+          <StatTile
+            label={nameFor(playerNames, outcome.nonOffenderId)}
+            unit="pts"
+            value={String(outcome.nonOffenderShot?.points ?? 0)}
+          />
+          <StatTile
+            label="Reaction time"
+            unit={outcome.nonOffenderShot ? "ms" : ""}
+            value={
+              outcome.nonOffenderShot
+                ? String(outcome.nonOffenderShot.reactionMs)
+                : "No shot"
+            }
+          />
+        </View>
+      )}
 
       <View style={styles.continueButton}>
         <CutCornerButton

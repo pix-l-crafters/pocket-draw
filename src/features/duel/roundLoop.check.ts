@@ -54,7 +54,9 @@ const tie = () => ({
 
   s = applyRoundOutcome(s, {
     kind: "falseStart",
-    playerId: "b"
+    playerId: "b",
+    nonOffenderId: "a",
+    nonOffenderShot: { reactionMs: 240, zone: "bodyshot", points: 1 }
   });
 
   assertEqual(

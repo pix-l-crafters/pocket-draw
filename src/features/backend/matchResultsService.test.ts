@@ -29,9 +29,24 @@ const result: MatchResult = {
   participantIds: ["player-a", "player-b"],
   roundCount: 3,
   rounds: [
-    { kind: "falseStart", playerId: "player-b" },
-    { kind: "falseStart", playerId: "player-b" },
-    { kind: "falseStart", playerId: "player-a" }
+    {
+      kind: "falseStart",
+      playerId: "player-b",
+      nonOffenderId: "player-a",
+      nonOffenderShot: null
+    },
+    {
+      kind: "falseStart",
+      playerId: "player-b",
+      nonOffenderId: "player-a",
+      nonOffenderShot: null
+    },
+    {
+      kind: "falseStart",
+      playerId: "player-a",
+      nonOffenderId: "player-b",
+      nonOffenderShot: null
+    }
   ],
   results: { "player-a": "win", "player-b": "lose" },
   completedAt: "2026-10-05T00:00:00.000Z"
