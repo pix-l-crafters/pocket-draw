@@ -33,7 +33,12 @@ export function computeLeaderboard(
 
     const ratingA = elo.get(playerA) ?? DEFAULT_ELO_RATING;
     const ratingB = elo.get(playerB) ?? DEFAULT_ELO_RATING;
-    const outcome = match.winnerId === playerA ? "win" : "loss";
+    const outcome =
+      match.results[playerA] === "win"
+        ? "win"
+        : match.results[playerA] === "lose"
+          ? "loss"
+          : "draw";
     const [nextA, nextB] = updateEloPair(
       ratingA,
       ratingB,
@@ -43,9 +48,13 @@ export function computeLeaderboard(
     elo.set(playerA, nextA);
     elo.set(playerB, nextB);
 
-    const loserId = match.winnerId === playerA ? playerB : playerA;
-    wins.set(match.winnerId, (wins.get(match.winnerId) ?? 0) + 1);
-    losses.set(loserId, (losses.get(loserId) ?? 0) + 1);
+    for (const uid of match.participantIds) {
+      if (match.results[uid] === "win") {
+        wins.set(uid, (wins.get(uid) ?? 0) + 1);
+      } else if (match.results[uid] === "lose") {
+        losses.set(uid, (losses.get(uid) ?? 0) + 1);
+      }
+    }
 
     for (const round of match.rounds) {
       if (round.kind !== "win") {

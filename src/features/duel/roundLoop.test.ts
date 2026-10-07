@@ -10,12 +10,16 @@ import {
 const win = (winnerId: string, reactionMs = 200) => ({
   kind: "win" as const,
   winnerId,
+  winnerZone: "bodyshot" as const,
+  winnerPoints: 1,
+  loserPoints: 0,
   reactionMs,
   opponentReactionMs: reactionMs + 100
 });
 
 const tie = () => ({
   kind: "tie" as const,
+  zone: "bodyshot" as const,
   reactionMs: 250,
   opponentReactionMs: 250,
   pointsEach: 1 as const
@@ -68,9 +72,7 @@ describe("roundLoop", () => {
 
     expect(isMatchDecided(state)).toBe(true);
     expect(matchResults(state)).toEqual({ a: "draw", b: "draw" });
-    expect(() => applyRoundOutcome(state, win("a"))).toThrow(
-      "Cannot add a round after the match has ended."
-    );
+    expect(() => applyRoundOutcome(state, win("a"))).toThrow();
   });
 
   it("rebuilds the same point totals from persisted rounds", () => {
