@@ -30,11 +30,12 @@ local linters = new Mapping<String, Step> {
   ["newlines"] = Builtins.newlines
   ["pkl"] = Builtins.pkl
   ["pkl-format"] = Builtins.pkl_format
-  ["oxfmt"] = Builtins.oxfmt
+  ["oxfmt"] = (Builtins.oxfmt) { depends = List("sort-markdown-tables") }
+  ["oxlint"] = Builtins.ox_lint
   ["ruff"] = (Builtins.ruff) { depends = List("ruff-format") }
   ["ruff-format"] = Builtins.ruff_format
   ["rumdl"] = (Builtins.rumdl) { depends = List("rumdl-format") }
-  ["rumdl-format"] = Builtins.rumdl_format
+  ["rumdl-format"] = (Builtins.rumdl_format) { depends = List("sort-markdown-tables") }
   ["ryl"] = (Builtins.ryl) { depends = List("yamlfix") }
   ["ryl_markdown"] = Builtins.ryl_markdown
   ["sort-markdown-tables"] {
@@ -50,6 +51,9 @@ local linters = new Mapping<String, Step> {
     types = List("toml")
   }
   ["trailing-whitespace"] = Builtins.trailing_whitespace
+  ["tsc"] = (Builtins.tsc) {
+    prefix = "npx"
+  }
   ["typos"] = Builtins.typos
   ["typstyle"] {
     check = "typstyle -c {{files}}"

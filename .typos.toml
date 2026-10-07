@@ -1,5 +1,6 @@
 [default.extend-words]
 udid = "udid"
+unparseable = "unparseable"
 
 [files]
 # tombi: format.rules.array-values-order = "ascending"

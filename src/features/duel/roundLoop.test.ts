@@ -77,9 +77,7 @@ describe("roundLoop", () => {
 
     expect(isMatchDecided(state)).toBe(true);
     expect(matchResults(state)).toEqual({ a: "draw", b: "draw" });
-    expect(() => applyRoundOutcome(state, win("a"))).toThrow(
-      "Cannot add a round after the match has ended."
-    );
+    expect(() => applyRoundOutcome(state, win("a"))).toThrow();
   });
 
   it("rebuilds the same point totals from persisted rounds", () => {

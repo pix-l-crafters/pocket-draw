@@ -65,7 +65,7 @@ export const matchResultsRepository: MatchResultsRepository = {
   async writeMatchResult(result, uploadedBy) {
     validateMatchResult(result, uploadedBy);
 
-    const matchRef = doc(db, "matchResults", result.matchId);
+    const matchRef = doc(db, "matches", result.matchId);
     const existing = await getDoc(matchRef);
 
     // Idempotent: either phone may upload; rules deny updates so skip if present.
@@ -76,9 +76,9 @@ export const matchResultsRepository: MatchResultsRepository = {
     await setDoc(matchRef, {
       matchId: result.matchId,
       participantIds: result.participantIds,
-      roundCount: result.roundCount,
-      rounds: result.rounds,
       results: result.results,
+      rounds: result.rounds,
+      // elo: ,
       completedAt: result.completedAt,
       uploadedBy,
       createdAt: serverTimestamp()

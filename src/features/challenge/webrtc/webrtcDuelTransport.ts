@@ -77,7 +77,6 @@ function negotiateWebRtcDuel(
   return new Promise((resolve, reject) => {
     let settled = false;
     let authenticated = false;
-    let dataChannel: RtcDataChannelLike | null = null;
     let messageQueue = Promise.resolve();
     const cleanups: Array<() => void> = [];
 
@@ -99,7 +98,6 @@ function negotiateWebRtcDuel(
     };
 
     const connectChannel = (channel: RtcDataChannelLike) => {
-      dataChannel = channel;
       const complete = () => {
         if (settled) return;
         settled = true;

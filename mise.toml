@@ -53,6 +53,7 @@ node = "24"
 npm = { postinstall = "npm install", version = "latest" }
 "npm:sort-package-json" = "latest"
 oxfmt = "latest"
+oxlint = "latest"
 "pipx:lorenzwalthert/gitignore-tidy" = "latest"
 "pipx:toml-sort" = "latest"
 "pipx:yamlfix" = "latest"

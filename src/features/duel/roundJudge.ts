@@ -2,7 +2,7 @@ import {
   type RoundOutcome,
   type Zone,
   ZONE_POINTS
-} from "../../contracts/roundOutcome";
+} from "../../contracts/roundOutcome.ts";
 
 export const TIE_WINDOW_MS = 100;
 

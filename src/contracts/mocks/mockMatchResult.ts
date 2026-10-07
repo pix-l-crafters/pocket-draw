@@ -12,18 +12,27 @@ export function mockMatchResult(
     {
       kind: "win",
       winnerId: playerAId,
+      winnerZone: "bodyshot",
+      winnerPoints: 1,
+      loserPoints: 0,
       reactionMs: 220,
       opponentReactionMs: 280
     },
     {
       kind: "win",
       winnerId: playerBId,
+      winnerZone: "bodyshot",
+      winnerPoints: 1,
+      loserPoints: 0,
       reactionMs: 210,
       opponentReactionMs: 290
     },
     {
       kind: "win",
       winnerId: playerAId,
+      winnerZone: "bodyshot",
+      winnerPoints: 1,
+      loserPoints: 0,
       reactionMs: 200,
       opponentReactionMs: 300
     }
