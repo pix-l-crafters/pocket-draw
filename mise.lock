@@ -684,7 +684,6 @@ url = "https://registry.npmjs.org/npm/-/npm-12.2.0.tgz"
 url = "https://registry.npmjs.org/npm/-/npm-12.2.0.tgz"
 
 [tools.npm."platforms.macos-arm64"]
-checksum = "blake3:b666230e535f2cf3dbaba270943f64f0bda4dffb9aeadc7f2f43367a44973500"
 url = "https://registry.npmjs.org/npm/-/npm-12.2.0.tgz"
 
 [tools.npm."platforms.macos-x64"]
