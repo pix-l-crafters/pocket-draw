@@ -1,7 +1,15 @@
 version: 1
 generator: capa@2.2.1
-generatedAt: '2026-10-04T10:18:34.637Z'
+generatedAt: '2026-10-07T09:18:16.000Z'
 skills:
+  - id: android-cli
+    source: github
+    repo: android/skills
+    skillName: android-cli
+    requestedVersion: null
+    requestedRef: null
+    resolvedRef: 42dc2270e96032bd860bb94511e440aa00a43125
+    resolvedVersion: v1.0.13
   - id: bootstrap
     source: github
     repo: infragate/capa
