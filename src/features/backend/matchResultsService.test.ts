@@ -69,4 +69,19 @@ describe("submitMatchResult", () => {
       "win"
     );
   });
+
+  test("applies a draw outcome to the uploader's ELO", async () => {
+    const drawnResult: MatchResult = {
+      ...result,
+      results: { "player-a": "draw", "player-b": "draw" }
+    };
+
+    await submitMatchResult(drawnResult, "player-a");
+
+    expect(playerStatsRepository.updateEloRating).toHaveBeenCalledWith(
+      "player-a",
+      "player-b",
+      "draw"
+    );
+  });
 });
