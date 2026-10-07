@@ -38,9 +38,16 @@ jest.mock("expo-haptics", () => ({
   NotificationFeedbackType: { Success: "success" }
 }));
 
-async function renderPreRound(role: DuelRole) {
+async function renderPreRound(
+  role: DuelRole,
+  options: {
+    clockOffsetMs?: number;
+    clockCalibrationStatus?: "calibrating" | "ready" | "failed";
+  } = {}
+) {
   const sent: DuelMessage[] = [];
   const shots: RoundShots[] = [];
+  const retries = jest.fn();
   const handlers = new Set<(message: DuelMessage) => void>();
 
   const channel: DuelChannel = {
@@ -56,6 +63,9 @@ async function renderPreRound(role: DuelRole) {
     <PaperProvider theme={appTheme}>
       <PreRound
         channel={channel}
+        clockCalibrationStatus={options.clockCalibrationStatus ?? "ready"}
+        clockOffsetMs={options.clockOffsetMs ?? 0}
+        onRetryClockCalibration={retries}
         onCountdownStart={() => undefined}
         onRoundShots={(round) => shots.push(round)}
         peerReady
@@ -87,7 +97,7 @@ async function renderPreRound(role: DuelRole) {
     await fireEvent.press(view.getByText("CONFIRM"));
   };
 
-  return { completeRitual, deliver, sent, shots, view, wait };
+  return { completeRitual, deliver, retries, sent, shots, view, wait };
 }
 
 describe("PreRound countdown and draw", () => {
@@ -100,31 +110,31 @@ describe("PreRound countdown and draw", () => {
     jest.useRealTimers();
   });
 
-  it("ticks 3-2-1 one second apart and fires exactly on zero", async () => {
-    const { completeRitual, sent, view, wait } = await renderPreRound("host");
+  it("times a guest reaction from the host FIRE timestamp in the local clock", async () => {
+    const { completeRitual, deliver, view, wait } = await renderPreRound(
+      "guest",
+      { clockOffsetMs: 400 }
+    );
     await completeRitual();
+    const localNow = Date.now();
 
-    expect(sent).toEqual([{ type: "countdown", value: 3 }]);
-    expect(view.getByText("3")).toBeTruthy();
+    // Host's clock is 400ms ahead; FIRE arrived 200ms after it was sent.
+    await deliver({ type: "fire", atMs: localNow + 200 });
+    await wait(400);
+    await fireEvent.press(view.getByLabelText("Fire"));
 
-    await wait(1000);
-    expect(view.getByText("2")).toBeTruthy();
+    expect(view.getByText("600ms — waiting for your opponent")).toBeTruthy();
+  });
 
-    await wait(1000);
-    expect(view.getByText("1")).toBeTruthy();
+  it("blocks timed play and offers a retry when clock calibration fails", async () => {
+    const { retries, view } = await renderPreRound("guest", {
+      clockCalibrationStatus: "failed"
+    });
 
-    // One millisecond short of the countdown: still no draw.
-    await wait(COUNTDOWN_DURATION_MS - 2000 - 1);
-    expect(view.queryByText("FIRE!")).toBeNull();
-
-    await wait(1);
-    expect(view.getByText("FIRE!")).toBeTruthy();
-    expect(sent).toEqual([
-      { type: "countdown", value: 3 },
-      { type: "countdown", value: 2 },
-      { type: "countdown", value: 1 },
-      { type: "fire", atMs: expect.any(Number) }
-    ]);
+    expect(view.getByText("CLOCK CALIBRATION FAILED")).toBeTruthy();
+    expect(view.queryByText("CONFIRM")).toBeNull();
+    await fireEvent.press(view.getByText("RETRY CALIBRATION"));
+    expect(retries).toHaveBeenCalledTimes(1);
   });
 
   it("reports both reaction times once each player has fired", async () => {

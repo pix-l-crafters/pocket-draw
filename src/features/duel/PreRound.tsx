@@ -54,6 +54,9 @@ type PreRoundProps = {
   role: DuelRole;
   /** True once the opponent has finished their own pre-round ritual. */
   peerReady: boolean;
+  clockCalibrationStatus: "calibrating" | "ready" | "failed";
+  clockOffsetMs: number;
+  onRetryClockCalibration: () => void;
   onCountdownStart: () => void;
   onRoundShots: (shots: RoundShots) => void;
 };
@@ -63,6 +66,9 @@ export function PreRound({
   readRssi,
   role,
   peerReady,
+  clockCalibrationStatus,
+  clockOffsetMs,
+  onRetryClockCalibration,
   onCountdownStart,
   onRoundShots
 }: PreRoundProps) {
@@ -129,24 +135,18 @@ export function PreRound({
   };
 
   const fireCoordinator = useMemo(
-    () => new FireSignalCoordinator(channel, role),
-    [channel, role]
+    () =>
+      new FireSignalCoordinator(channel, role, Date.now, () => clockOffsetMs),
+    [channel, clockOffsetMs, role]
   );
   useEffect(() => () => fireCoordinator.dispose(), [fireCoordinator]);
 
-  // One path for both roles: the host hears its own signal through the same
-  // coordinator the guest hears the wire message through.
+  // Both roles receive a FIRE timestamp in their own clock domain.
   useEffect(
     () =>
-      fireCoordinator.onFire(() => {
-        // Time the reaction from the local arrival of FIRE rather than the
-        // host's `atMs`: the two clocks are never calibrated, and a negative
-        // delta would make ReactionTimer swallow the raise entirely.
-        // ponytail: hands the guest the one-way latency (a few ms on LAN) as a
-        // head start — wire clockOffsetCalibrator if that ever matters.
-        const firedAt = Date.now();
-        firedAtRef.current = firedAt;
-        reactionTimerRef.current.start(firedAt);
+      fireCoordinator.onFire((signal) => {
+        firedAtRef.current = signal.atMs;
+        reactionTimerRef.current.start(signal.atMs);
         setCountdown(0);
         setPhase("fire");
         void Haptics.notificationAsync(
@@ -311,32 +311,56 @@ export function PreRound({
         style={styles.muteButton}
       />
       <Text style={styles.kicker}>PRE-ROUND RITUAL</Text>
-      <Text style={styles.heading}>{sendError ?? status}</Text>
+      <Text style={styles.heading}>
+        {clockCalibrationStatus === "ready"
+          ? (sendError ?? status)
+          : clockCalibrationStatus === "failed"
+            ? "CLOCK CALIBRATION FAILED"
+            : "CALIBRATING CLOCKS"}
+      </Text>
       <Text style={styles.detail}>
-        {phase === "separate" &&
-          `BLE signal: ${rssi === null ? "—" : `${rssi} dBm`}`}
-        {phase === "faceDown" &&
+        {clockCalibrationStatus === "failed"
+          ? "Check the connection to your opponent, then retry before the duel."
+          : clockCalibrationStatus === "calibrating"
+            ? "Synchronizing both players’ clocks before timed play."
+            : phase === "separate" &&
+              `BLE signal: ${rssi === null ? "—" : `${rssi} dBm`}`}
+        {clockCalibrationStatus === "ready" &&
+          phase === "faceDown" &&
           (isHost
             ? "Both players face down. You start the countdown."
             : "Place your phone screen-down and confirm.")}
-        {phase === "waiting" && "The countdown starts when the host is ready."}
-        {phase === "countdown" && (countdown ? `${countdown}` : "")}
+        {clockCalibrationStatus === "ready" &&
+          phase === "waiting" &&
+          "The countdown starts when the host is ready."}
+        {clockCalibrationStatus === "ready" &&
+          phase === "countdown" &&
+          (countdown ? `${countdown}` : "")}
       </Text>
-      {phase === "countdown" && (
+      {clockCalibrationStatus === "failed" && (
+        <Button
+          mode="contained"
+          onPress={onRetryClockCalibration}
+        >
+          RETRY CALIBRATION
+        </Button>
+      )}
+      {clockCalibrationStatus === "ready" && phase === "countdown" && (
         <ProgressBar
           progress={(COUNTDOWN_VALUES.length - (countdown ?? 3)) / 3}
           color={colors.accent}
         />
       )}
-      {(phase === "separate" || phase === "faceDown") && (
-        <Button
-          mode="contained"
-          disabled={confirmDisabled}
-          onPress={advance}
-        >
-          CONFIRM
-        </Button>
-      )}
+      {clockCalibrationStatus === "ready" &&
+        (phase === "separate" || phase === "faceDown") && (
+          <Button
+            mode="contained"
+            disabled={confirmDisabled}
+            onPress={advance}
+          >
+            CONFIRM
+          </Button>
+        )}
 
       {/* The draw itself: a full-screen target, so neither player loses the
           round hunting for a small button. Tap anywhere on either platform —

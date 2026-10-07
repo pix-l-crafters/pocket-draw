@@ -6,6 +6,7 @@ interface ClockOffsetSample {
 }
 
 const DEFAULT_SAMPLE_COUNT = 5;
+const SAMPLE_TIMEOUT_MS = 2_000;
 
 /**
  * Ping-pong RTT clock-offset calibration (NTP-style). Either side answers pings
@@ -15,7 +16,9 @@ const DEFAULT_SAMPLE_COUNT = 5;
  */
 export class ClockOffsetCalibrator {
   private offsetMs = 0;
+  private disposed = false;
   private readonly unsubscribeFromChannel: () => void;
+  private cancelPendingSample: ((error: Error) => void) | null = null;
 
   constructor(
     private readonly channel: DuelChannel,
@@ -43,6 +46,9 @@ export class ClockOffsetCalibrator {
   async calibrate(sampleCount = DEFAULT_SAMPLE_COUNT): Promise<number> {
     const samples: ClockOffsetSample[] = [];
     for (let i = 0; i < sampleCount; i += 1) {
+      if (this.disposed) {
+        throw new Error("Clock calibration was cancelled.");
+      }
       samples.push(await this.runOneSample());
     }
 
@@ -54,22 +60,56 @@ export class ClockOffsetCalibrator {
   }
 
   dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
     this.unsubscribeFromChannel();
+    this.cancelPendingSample?.(new Error("Clock calibration was cancelled."));
   }
 
   private runOneSample(): Promise<ClockOffsetSample> {
-    return new Promise((resolve) => {
+    const { promise, resolve, reject } =
+      Promise.withResolvers<ClockOffsetSample>();
+    const pendingPingTimes = new Set<number>();
+    let unsubscribe: (() => void) | undefined;
+    let timeout: ReturnType<typeof setTimeout>;
+    let retryTimer: ReturnType<typeof setInterval>;
+    const finish = (callback: () => void) => {
+      clearTimeout(timeout);
+      clearInterval(retryTimer);
+      unsubscribe?.();
+      this.cancelPendingSample = null;
+      callback();
+    };
+    const sendPing = () => {
       const t0 = this.now();
-      const unsubscribe = this.channel.onMessage((message) => {
-        if (message.type !== "clockPong" || message.t0 !== t0) return;
-        const t3 = this.now();
-        unsubscribe();
+      pendingPingTimes.add(t0);
+      try {
+        this.channel.send({ type: "clockPing", t0 });
+      } catch {
+        finish(() =>
+          reject(new Error("Clock calibration could not send a ping."))
+        );
+      }
+    };
+    unsubscribe = this.channel.onMessage((message) => {
+      if (message.type !== "clockPong" || !pendingPingTimes.has(message.t0)) {
+        return;
+      }
+      const t3 = this.now();
+      finish(() =>
         resolve({
-          offsetMs: (message.t1 - t0 - (t3 - message.t2)) / 2,
-          rttMs: t3 - t0
-        });
-      });
-      this.channel.send({ type: "clockPing", t0 });
+          offsetMs: (message.t1 - message.t0 - (t3 - message.t2)) / 2,
+          rttMs: t3 - message.t0
+        })
+      );
     });
+    this.cancelPendingSample = (error) => finish(() => reject(error));
+    timeout = setTimeout(
+      () => finish(() => reject(new Error("Clock calibration timed out."))),
+      SAMPLE_TIMEOUT_MS
+    );
+    retryTimer = setInterval(sendPing, 250);
+    sendPing();
+    return promise;
   }
 }

@@ -12,8 +12,8 @@ export type DuelMessage =
   | { type: "ready" }
   | { type: "countdown"; value: 3 | 2 | 1 }
   | { type: "fire"; atMs: number }
-  // `atMs` is the raiser's own clock; `reactionMs` is the only cross-device
-  // comparable figure, since the two clocks are never calibrated.
+  // `atMs` is the raiser's local timestamp; calibration translates received
+  // FIRE timestamps before reaction timing, so `reactionMs` is comparable.
   | { type: "raised"; atMs: number; reactionMs: number }
   | { type: "falseStart"; atMs: number }
   | { type: "clockPing"; t0: number }
