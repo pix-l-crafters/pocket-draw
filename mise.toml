@@ -1,6 +1,9 @@
 [env]
+ANDROID_HOME = "{{ xdg_data_home }}/android-sdk"
+ANDROID_SDK_ROOT = "{{ xdg_data_home }}/android-sdk"
 EXPO_UNSTABLE_MCP_SERVER = 1
 HK_MISE = 1
+_.path = ["{{ xdg_data_home }}/android-sdk/platform-tools"]
 
 [hooks]
 # Automatically install/update hooks when tools are installed
@@ -17,8 +20,30 @@ ai-setup = "capa install --yes"
 check = ["hk check --all", "cog check"]
 prepare = ["npm install"]
 
+[tasks.android-prebuild]
+depends = ["android-setup"]
+description = "Generate the Android project with Expo"
+run = "npx expo prebuild --platform android --no-install"
+
+[tasks.android-setup]
+description = "Install the Android SDK packages required by Expo SDK 54"
+run = 'android --sdk="{{ env.ANDROID_HOME }}" sdk install platform-tools platforms/android-36 build-tools/36.0.0 ndk/27.1.12297006 cmake/3.22.1'
+
 [tasks.build-android]
-run = "npx eas-cli@latest build --platform android --profile production --local"
+depends = ["android-prebuild"]
+description = "Build an Android App Bundle locally"
+dir = "android"
+env = { NODE_ENV = "production" }
+run = "./gradlew :app:bundleRelease"
+run_windows = '.\gradlew.bat :app:bundleRelease'
+
+[tasks.build-android-apk]
+depends = ["android-prebuild"]
+description = "Build an Android APK locally"
+dir = "android"
+env = { NODE_ENV = "production" }
+run = "./gradlew :app:assembleRelease"
+run_windows = '.\gradlew.bat :app:assembleRelease'
 
 [tasks.build-ios]
 run = "npx eas-cli@latest build --platform ios --profile production --local"
@@ -32,6 +57,7 @@ run = "treefmt"
 run_windows = "echo 'Treefmt not supported on Windows'"
 
 [tools]
+android-cli = { bin = "android", platforms = { linux-x64 = { checksum_url = "https://dl.google.com/android/cli/{{ version }}/linux_x86_64/android.sha256", url = "https://dl.google.com/android/cli/{{ version }}/linux_x86_64/android" }, macos-arm64 = { checksum_url = "https://dl.google.com/android/cli/{{ version }}/darwin_arm64/android.sha256", url = "https://dl.google.com/android/cli/{{ version }}/darwin_arm64/android" }, macos-x64 = { checksum_url = "https://dl.google.com/android/cli/{{ version }}/darwin_x86_64/android.sha256", url = "https://dl.google.com/android/cli/{{ version }}/darwin_x86_64/android" }, windows-arm64 = { bin = "android.exe", checksum_url = "https://dl.google.com/android/cli/{{ version }}/windows_x86_64/android.exe.sha256", url = "https://dl.google.com/android/cli/{{ version }}/windows_x86_64/android.exe" }, windows-x64 = { bin = "android.exe", checksum_url = "https://dl.google.com/android/cli/{{ version }}/windows_x86_64/android.exe.sha256", url = "https://dl.google.com/android/cli/{{ version }}/windows_x86_64/android.exe" } }, version = "latest", version_list_url = "https://dl.google.com/android/cli/latest/debian/dists/stable/main/binary-amd64/Packages", version_regex = '(?m)^Version: (\S+)$' }
 android-sdk = "latest"
 "aqua:google/keep-sorted" = "latest"
 "aqua:numtide/treefmt" = { os = ["linux", "macos"], version = "2.6.0" }
@@ -45,9 +71,8 @@ gh = { postinstall = "gh auth login", version = "latest" }
 git-cliff = "latest"
 "github:MRDGH2821/Sort-Markdown-Tables" = "latest"
 "github:infragate/capa" = { postinstall = "capa install --yes", version = "2.2.4" }
-gradle = "9.3.1"
 hk = "2.4.0"
-java = "21"
+java = "temurin-17"
 ls-lint = "latest"
 node = "24"
 npm = { postinstall = "npm install", version = "latest" }
