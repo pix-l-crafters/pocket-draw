@@ -2,7 +2,7 @@ import { setAudioModeAsync, useAudioPlayer } from "expo-audio";
 import * as Haptics from "expo-haptics";
 import { Accelerometer } from "expo-sensors";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { Button, IconButton, ProgressBar } from "react-native-paper";
 
 import type { DuelChannel, DuelMessage } from "../../contracts/duelChannel";
@@ -35,13 +35,17 @@ export function isSeparatedByRssi(
   return rssi !== null && rssi <= threshold;
 }
 
-export function isFaceDown(x: number, y: number, z: number): boolean {
-  return z < -0.75 && Math.abs(x) < 0.35 && Math.abs(y) < 0.35;
+export function isTopEdgeDown(x: number, y: number, z: number): boolean {
+  // Expo forwards native readings; the top-edge-down Y sign differs by OS.
+  const topEdgePointsDown =
+    (Platform.OS === "ios" && y > 0.75) ||
+    (Platform.OS === "android" && y < -0.75);
+  return topEdgePointsDown && Math.abs(x) < 0.35 && Math.abs(z) < 0.35;
 }
 
 type Phase =
   | "separate"
-  | "faceDown"
+  | "position"
   | "waiting"
   | "countdown"
   | "fire"
@@ -70,7 +74,7 @@ export function PreRound({
   const [phase, setPhase] = useState<Phase>("separate");
   const [rssi, setRssi] = useState<number | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
-  const [faceDown, setFaceDown] = useState(false);
+  const [topEdgeDown, setTopEdgeDown] = useState(false);
   const [selfReactionMs, setSelfReactionMs] = useState<number | null>(null);
   const [opponentReactionMs, setOpponentReactionMs] = useState<number | null>(
     null
@@ -159,7 +163,7 @@ export function PreRound({
   useEffect(() => {
     let mounted = true;
     const subscription = Accelerometer.addListener(({ x, y, z }) => {
-      if (mounted) setFaceDown(isFaceDown(x, y, z));
+      if (mounted) setTopEdgeDown(isTopEdgeDown(x, y, z));
     });
     Accelerometer.setUpdateInterval(150);
     return () => {
@@ -268,10 +272,10 @@ export function PreRound({
 
   const advance = () => {
     if (phase === "separate" && separated) {
-      setPhase("faceDown");
+      setPhase("position");
       return;
     }
-    if (phase !== "faceDown" || !faceDown) return;
+    if (phase !== "position" || !topEdgeDown) return;
 
     if (isHost) {
       startCountdown();
@@ -283,13 +287,13 @@ export function PreRound({
   };
 
   const confirmDisabled =
-    phase === "separate" ? !separated : !faceDown || (isHost && !peerReady);
+    phase === "separate" ? !separated : !topEdgeDown || (isHost && !peerReady);
 
   const status = useMemo(() => {
     if (phase === "separate")
       return separated ? "DISTANCE CONFIRMED" : "MOVE FURTHER APART";
-    if (phase === "faceDown") {
-      if (!faceDown) return "TURN PHONE FACE DOWN";
+    if (phase === "position") {
+      if (!topEdgeDown) return "POINT THE TOP EDGE TOWARD THE GROUND";
       return isHost && !peerReady
         ? "WAITING FOR YOUR OPPONENT"
         : "PHONE POSITION CONFIRMED";
@@ -297,7 +301,7 @@ export function PreRound({
     if (phase === "waiting") return "WAITING FOR THE DRAW";
     if (phase === "countdown") return "GET READY";
     return "DRAW!";
-  }, [faceDown, isHost, peerReady, phase, separated]);
+  }, [isHost, peerReady, phase, separated, topEdgeDown]);
 
   return (
     <View style={styles.container}>
@@ -315,10 +319,10 @@ export function PreRound({
       <Text style={styles.detail}>
         {phase === "separate" &&
           `BLE signal: ${rssi === null ? "—" : `${rssi} dBm`}`}
-        {phase === "faceDown" &&
+        {phase === "position" &&
           (isHost
-            ? "Both players face down. You start the countdown."
-            : "Place your phone screen-down and confirm.")}
+            ? "Point both phones' top edges toward the ground. You start the countdown."
+            : "Point your phone's top edge toward the ground, then confirm.")}
         {phase === "waiting" && "The countdown starts when the host is ready."}
         {phase === "countdown" && (countdown ? `${countdown}` : "")}
       </Text>
@@ -328,7 +332,7 @@ export function PreRound({
           color={colors.accent}
         />
       )}
-      {(phase === "separate" || phase === "faceDown") && (
+      {(phase === "separate" || phase === "position") && (
         <Button
           mode="contained"
           disabled={confirmDisabled}
