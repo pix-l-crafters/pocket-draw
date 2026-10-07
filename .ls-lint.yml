@@ -19,6 +19,7 @@ ignore:
   - .opencode
   - .pytest_cache
   - .venv
+  - .worktrees
   - __pycache__
   - apm_modules
   - build
