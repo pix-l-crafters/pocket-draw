@@ -10,10 +10,10 @@
 # ── Ignored paths ─────────────────────────────────────────────────────────
 ignore:
   # keep-sorted start
-  - .agents
-  - .claude
-  - .codex
-  - .cursor
+  - "**/.agents/**"
+  - "**/.claude/**"
+  - "**/.codex/**"
+  - "**/.cursor/**"
   - .git
   - .gradle
   - .opencode
