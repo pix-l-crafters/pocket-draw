@@ -71,7 +71,7 @@ gh = { postinstall = "gh auth login", version = "latest" }
 git-cliff = "latest"
 "github:MRDGH2821/Sort-Markdown-Tables" = "latest"
 "github:infragate/capa" = { postinstall = "capa install --yes", version = "2.2.4" }
-hk = "2.4.0"
+hk = "2.5.0"
 java = "temurin-17"
 ls-lint = "latest"
 node = "24"
