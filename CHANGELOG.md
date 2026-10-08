@@ -4,6 +4,42 @@ All notable changes to this project will be documented in this file. See [conven
 
 ---
 
+## [0.4.0](https://github.com/pix-l-crafters/pocket-draw/compare/v0.3.1..v0.4.0) - 2026-10-08
+
+### Bug Fixes
+
+- **(duel)** harden the local connection lifecycle - ([b77a20d](https://github.com/pix-l-crafters/pocket-draw/commit/b77a20dd0051bcfeee3fe13a43ad47403033e110)) - tingyueh
+- **(duel)** keep volume fire handler current - ([106c903](https://github.com/pix-l-crafters/pocket-draw/commit/106c903fd75a65cec4dcdabcfa9dcac5647b39cd)) - Mobark Bacran
+
+### Documentation
+
+- **(duel)** record live gameplay contracts and verification - ([d3fe5ce](https://github.com/pix-l-crafters/pocket-draw/commit/d3fe5ce8e4a20b7fb7a8c1b49ff3e955e0c7e285)) - MRDGH2821
+- **(duel)** record feature branch rename - ([c4bcabb](https://github.com/pix-l-crafters/pocket-draw/commit/c4bcabbd57f20fb3ed9d812a149fb5cb4e514701)) - MRDGH2821
+- **(expo)** document working iPhone tunnel setup - ([3597949](https://github.com/pix-l-crafters/pocket-draw/commit/3597949a1244a407c38b104d6d977e8b2c198290)) - Mobark Bacran
+- **(github)** document triage labels - ([09301e1](https://github.com/pix-l-crafters/pocket-draw/commit/09301e1a68e53dc6af6e3d02152027fed0ee556c)) - MRDGH2821
+
+### Features
+
+- **(duel)** capture reliable ready and shoulder pitch calibration - ([7b0b9a3](https://github.com/pix-l-crafters/pocket-draw/commit/7b0b9a393b0939b8c41fd9de9ede3fd4af79b7ec)) - MRDGH2821
+- **(duel)** classify calibrated shots against opponent bearing - ([4047ee1](https://github.com/pix-l-crafters/pocket-draw/commit/4047ee173f39a0470ebec09e99189bd6a622f796)) - MRDGH2821
+- **(duel)** wire calibrated aim, shot zones, and false starts - ([3366642](https://github.com/pix-l-crafters/pocket-draw/commit/336664278c9ec5b96714d525e9dd080aa07fb9c1)) - MRDGH2821
+- **(duel)** warn and restart round on first false start - ([1ea5e0a](https://github.com/pix-l-crafters/pocket-draw/commit/1ea5e0a68e31b82b8d23e3b76da719c546aa8362)) - Mobark Bacran
+
+### Miscellaneous Chores
+
+- **(duel)** merge connection lifecycle into iPhone fix - ([3e43214](https://github.com/pix-l-crafters/pocket-draw/commit/3e43214ed8b361b4c05e0d250cfc35d70a1025b1)) - Mobark Bacran
+- **(duel)** merge volume fire fix with false-start warning - ([27dc1f1](https://github.com/pix-l-crafters/pocket-draw/commit/27dc1f1c1ff8c3df5bac54fc0c381d39bbf939b9)) - Mobark Bacran
+- merge branch 'dev' into MRDGH2821/feat/real-aim-live-gameplay - ([3b12b80](https://github.com/pix-l-crafters/pocket-draw/commit/3b12b80af302a970ececd7bced709ce21b3cfc64)) - MRDGH2821
+- merge pull request #112 from pix-l-crafters/mobark/feat/duel-fire-and-false-start - ([9ae9285](https://github.com/pix-l-crafters/pocket-draw/commit/9ae92856985e6df14a720562436407a1525b2959)) - Mobark Bacran
+- merge pull request #110 from pix-l-crafters/mobark/fix/iphone-expo-connection - ([128df8a](https://github.com/pix-l-crafters/pocket-draw/commit/128df8afb08dc6e2fae895c50d58faffbf64f2e4)) - Mihir Rabade
+- fix linter errors - ([c6f0066](https://github.com/pix-l-crafters/pocket-draw/commit/c6f0066c4d471ecc9244e65db5efc1d677155e16)) - MRDGH2821
+
+### Refactoring
+
+- **(duel)** keep false-start warnings in match coordinator - ([171c512](https://github.com/pix-l-crafters/pocket-draw/commit/171c5124059e8f0173a7edd7738b7be13845c296)) - Mobark Bacran
+
+---
+
 ## [0.3.1](https://github.com/pix-l-crafters/pocket-draw/compare/v0.3.0..v0.3.1) - 2026-10-08
 
 ### Miscellaneous Chores
