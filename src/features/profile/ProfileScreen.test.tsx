@@ -23,6 +23,10 @@ jest.mock("../leaderboard/LeaderboardScreen", () => ({
   LeaderboardScreen: () => null
 }));
 
+jest.mock("../../lib/appVersion", () => ({
+  getAppVersion: () => "9.8.7"
+}));
+
 const displayName = "Quick Draw";
 const email = "player@example.com";
 const uid = "player-123";
@@ -67,6 +71,13 @@ describe("ProfileScreen", () => {
     expect(screen.getByText("Wins")).toBeTruthy();
     expect(screen.getByText("Losses")).toBeTruthy();
     expect(screen.getByText("ELO")).toBeTruthy();
+  });
+
+  test("shows the installed app version in settings", async () => {
+    const screen = await renderProfile();
+
+    expect(screen.getByText("Version")).toBeTruthy();
+    expect(screen.getByText("9.8.7")).toBeTruthy();
   });
 
   test("signs the player out from settings", async () => {
