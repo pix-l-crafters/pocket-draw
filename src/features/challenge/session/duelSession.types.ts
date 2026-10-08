@@ -1,3 +1,4 @@
+import type { PermissionDeniedError } from "../../../lib/appPermissions";
 import type { DuelTransportConnection } from "./duelSessionTransport";
 
 export type DuelRole = "host" | "guest";
@@ -27,5 +28,9 @@ export type DuelSessionState =
   | { status: "connecting"; attempt: number }
   | { status: "retrying"; attempt: number; message: string }
   | { status: "connected"; connection: DuelTransportConnection }
-  | { status: "failed"; message: string }
+  | {
+      status: "failed";
+      message: string;
+      permissionError?: PermissionDeniedError;
+    }
   | { status: "disconnected"; message: string };

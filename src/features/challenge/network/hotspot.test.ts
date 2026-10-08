@@ -13,6 +13,8 @@ import {
 // Test-only hotspot passphrase.
 const FIXTURE_PASSPHRASE = "draw-4821";
 
+const allowed = { granted: true, canAskAgain: true };
+
 const connection: HotspotConnection = {
   mode: "hotspot",
   ssid: "PocketDraw-A1B2",
@@ -26,6 +28,7 @@ describe("hotspot networking", () => {
     let joinedNetwork: unknown = null;
 
     await joinHotspot(connection, {
+      ensurePermission: async () => allowed,
       connectToProtectedWifiSSID: async (options) => {
         joinedNetwork = options;
       }
@@ -47,7 +50,7 @@ describe("hotspot networking", () => {
       startAndroidLocalOnlyHotspot({
         requestPermission: async () => {
           events.push("permission");
-          return true;
+          return allowed;
         },
         startAsync: async () => {
           events.push("start");
@@ -70,13 +73,46 @@ describe("hotspot networking", () => {
   it("does not create a hotspot when Android permission is denied", async () => {
     await expect(
       startAndroidLocalOnlyHotspot({
-        requestPermission: async () => false,
+        requestPermission: async () => ({
+          granted: false,
+          canAskAgain: true
+        }),
         startAsync: async () => {
           throw new Error("must not start");
         },
         stop: () => undefined
       })
-    ).rejects.toThrow("Nearby Wi-Fi permission is required");
+    ).rejects.toThrow(
+      "Nearby Wi-Fi permission is required to create a hotspot. Allow it and try again."
+    );
+  });
+
+  it("sends a permanently denied host to Settings instead of a bare retry", async () => {
+    await expect(
+      startAndroidLocalOnlyHotspot({
+        requestPermission: async () => ({
+          granted: false,
+          canAskAgain: false
+        }),
+        startAsync: async () => {
+          throw new Error("must not start");
+        },
+        stop: () => undefined
+      })
+    ).rejects.toThrow("Turn it on in Settings");
+  });
+
+  it("does not touch Wi-Fi when the guest denies nearby-Wi-Fi access", async () => {
+    await expect(
+      joinHotspot(connection, {
+        ensurePermission: async () => ({ granted: false, canAskAgain: false }),
+        connectToProtectedWifiSSID: async () => {
+          throw new Error("must not join");
+        }
+      })
+    ).rejects.toThrow(
+      "Nearby Wi-Fi permission is required to join PocketDraw-A1B2. Turn it on in Settings, then come back and try again."
+    );
   });
 
   it("prepares a hotspot once before retrying the underlying duel transport", async () => {
@@ -88,6 +124,7 @@ describe("hotspot networking", () => {
       }
     };
     const prepared = withNetworkPreparation(connection, transport, {
+      ensurePermission: async () => allowed,
       connectToProtectedWifiSSID: async () => {
         events.push("join");
       }
@@ -120,6 +157,7 @@ describe("hotspot networking", () => {
       }
     };
     const reconnecting = withReconnectPreparation(connection, transport, {
+      ensurePermission: async () => allowed,
       connectToProtectedWifiSSID: async () => {
         events.push("join");
       }

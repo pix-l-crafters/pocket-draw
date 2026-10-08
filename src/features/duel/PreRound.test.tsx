@@ -15,6 +15,7 @@ type MobilePlatform = "ios" | "android";
 type VolumeDirection = "up" | "down";
 
 const accelerometerListeners: ((reading: Reading) => void)[] = [];
+const motionPermission = { granted: true, canAskAgain: true };
 const mockVolumeListeners = new Set<
   (event: { direction: VolumeDirection }) => void
 >();
@@ -34,7 +35,9 @@ jest.mock("expo-sensors", () => ({
       accelerometerListeners.push(listener);
       return { remove: () => undefined };
     },
-    setUpdateInterval: () => undefined
+    setUpdateInterval: () => undefined,
+    getPermissionsAsync: async () => motionPermission,
+    requestPermissionsAsync: async () => motionPermission
   }
 }));
 
@@ -130,6 +133,8 @@ async function renderPreRound(
 describe("PreRound countdown and draw", () => {
   beforeEach(() => {
     accelerometerListeners.length = 0;
+    motionPermission.granted = true;
+    motionPermission.canAskAgain = true;
     mockVolumeListeners.clear();
     jest.useFakeTimers();
   });
@@ -302,5 +307,36 @@ describe("PreRound countdown and draw", () => {
 
     await deliver({ type: "fire", atMs: Date.now() });
     expect(view.getByText("FIRE!")).toBeTruthy();
+  });
+
+  it("explains the block and offers a way back when motion access is refused", async () => {
+    motionPermission.granted = false;
+    motionPermission.canAskAgain = false;
+
+    const { view } = await renderPreRound("host");
+
+    // Without motion the tilt check can never pass, so CONFIRM would sit
+    // disabled forever — the player must be told why and given a route out.
+    expect(view.queryByText("CONFIRM")).toBeNull();
+    expect(view.getByText(/Motion access needed/i)).toBeTruthy();
+    expect(view.getByText(/reads the phone's tilt/i)).toBeTruthy();
+    expect(view.getByText("Open Settings")).toBeTruthy();
+    expect(accelerometerListeners).toHaveLength(0);
+  });
+
+  it("starts watching tilt once motion access is granted on retry", async () => {
+    motionPermission.granted = false;
+    motionPermission.canAskAgain = false;
+
+    const { view } = await renderPreRound("host");
+    expect(accelerometerListeners).toHaveLength(0);
+
+    motionPermission.granted = true;
+    await act(async () => {
+      fireEvent.press(view.getByText("Check Again"));
+    });
+
+    expect(accelerometerListeners).toHaveLength(1);
+    expect(view.getByText("CONFIRM")).toBeTruthy();
   });
 });

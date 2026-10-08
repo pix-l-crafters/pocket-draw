@@ -13,10 +13,13 @@ import QRCode from "react-native-qrcode-svg";
 
 import { CutCornerButton } from "../../components/CutCornerButton";
 import { CutCornerSurface } from "../../components/CutCornerSurface";
+import { PermissionNotice } from "../../components/PermissionNotice";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { StatusTag } from "../../components/StatusTag";
 import type { DuelConnectionInfo } from "../../contracts/duelConnection";
 import type { DuelLink } from "../../contracts/duelLink";
+import { PermissionDeniedError } from "../../lib/appPermissions";
+import { useForegroundRecheck } from "../../lib/useForegroundRecheck";
 import { colors, fonts } from "../../theme/tokens";
 import type { QrInvitePayload } from "../qr/types/qr.types";
 import {
@@ -55,6 +58,10 @@ type QrDisplayScreenProps = {
 type InviteIdentity = Omit<QrInvitePayload, "connection">;
 type ConnectionMode = DuelConnectionInfo["mode"];
 
+function toSetupError(error: unknown, fallback: string): Error {
+  return error instanceof Error ? error : new Error(fallback);
+}
+
 function createInviteIdentity(
   hostUid: string,
   hostDisplayName: string
@@ -92,7 +99,11 @@ export function QrDisplayScreen({
   // Once a guest connects over the hotspot, the duel depends on it, so leaving
   // this screen must not tear the hotspot down.
   const hotspotHandedOff = useRef(false);
-  const [setupError, setSetupError] = useState<string | null>(null);
+  // An Error rather than a string, so a refused permission can be told apart
+  // from an ordinary setup failure and offered the right recovery.
+  const [setupError, setSetupError] = useState<Error | null>(null);
+  // Bumped to re-run the hotspot effect after a refused permission is granted.
+  const [hotspotAttempt, setHotspotAttempt] = useState(0);
   // Survives the regeneration it triggers, so the host sees why the code
   // changed under them.
   const [joinFailure, setJoinFailure] = useState<string | null>(null);
@@ -119,6 +130,21 @@ export function QrDisplayScreen({
     return subscribeToNetworkChanges(regenerate);
   }, [connectionMode, regenerate]);
 
+  // Regenerating alone only rotates the invite — the hotspot effect below is
+  // keyed on the mode, so retrying a refused permission needs its own trigger.
+  const retrySetup = useCallback(() => {
+    setSetupError(null);
+    setHotspotAttempt((attempt) => attempt + 1);
+    regenerate();
+  }, [regenerate]);
+
+  // A permission granted in Settings only reaches this screen on the way back,
+  // so retry there rather than making the player restart the app.
+  const retryAfterSettings = useCallback(() => {
+    if (setupError instanceof PermissionDeniedError) retrySetup();
+  }, [retrySetup, setupError]);
+  useForegroundRecheck(retryAfterSettings);
+
   // The Android hotspot outlives individual invites: regenerating a QR code
   // must not rotate the SSID/password or drop a guest who is already joining.
   useEffect(() => {
@@ -134,9 +160,7 @@ export function QrDisplayScreen({
       (error: unknown) => {
         if (!active) return;
         setSetupError(
-          error instanceof Error
-            ? error.message
-            : "Could not create an Android hotspot."
+          toSetupError(error, "Could not create an Android hotspot.")
         );
       }
     );
@@ -145,7 +169,7 @@ export function QrDisplayScreen({
       setAndroidHotspot(null);
       if (!hotspotHandedOff.current) stopAndroidLocalOnlyHotspot();
     };
-  }, [connectionMode]);
+  }, [connectionMode, hotspotAttempt]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -259,9 +283,7 @@ export function QrDisplayScreen({
       } catch (error) {
         if (!active || controller.signal.aborted) return;
         setSetupError(
-          error instanceof Error
-            ? error.message
-            : "Could not create a local duel invite."
+          toSetupError(error, "Could not create a local duel invite.")
         );
       }
     };
@@ -377,8 +399,15 @@ export function QrDisplayScreen({
               {`A join attempt failed (${joinFailure}). This is a fresh code.`}
             </StatusTag>
           ) : null}
-          {setupError ? (
-            <StatusTag tone="warning">{setupError}</StatusTag>
+          {setupError instanceof PermissionDeniedError ? (
+            <PermissionNotice
+              canAskAgain={setupError.canAskAgain}
+              capability={setupError.capability}
+              message="Hosting over your own hotspot needs it. Until then, switch to Shared Wi-Fi and put both phones on the same network."
+              onRetry={retrySetup}
+            />
+          ) : setupError ? (
+            <StatusTag tone="warning">{setupError.message}</StatusTag>
           ) : waitingForIosDetails ? (
             <StatusTag>Enter your Personal Hotspot details above.</StatusTag>
           ) : invite ? (

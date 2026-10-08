@@ -1,11 +1,13 @@
 import { setAudioModeAsync, useAudioPlayer } from "expo-audio";
 import * as Haptics from "expo-haptics";
 import { Accelerometer } from "expo-sensors";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { Button, IconButton, ProgressBar } from "react-native-paper";
 
+import { PermissionNotice } from "../../components/PermissionNotice";
 import type { DuelChannel, DuelMessage } from "../../contracts/duelChannel";
+import { useForegroundRecheck } from "../../lib/useForegroundRecheck";
 import { colors, fonts } from "../../theme/tokens";
 import { COUNTDOWN_AUDIO_SOURCE } from "./countdownAudio";
 import { FireSignalCoordinator, type DuelRole } from "./fireSignalCoordinator";
@@ -68,6 +70,9 @@ export function PreRound({
   const [phase, setPhase] = useState<Phase>("separate");
   const [countdown, setCountdown] = useState<number | null>(null);
   const [topEdgeDown, setTopEdgeDown] = useState(false);
+  const [motionDenied, setMotionDenied] = useState(false);
+  // Bumped to re-run the tilt effect once motion access is granted.
+  const [motionAttempt, setMotionAttempt] = useState(0);
   const [selfReactionMs, setSelfReactionMs] = useState<number | null>(null);
   const [opponentReactionMs, setOpponentReactionMs] = useState<number | null>(
     null
@@ -147,17 +152,42 @@ export function PreRound({
     [fireCoordinator]
   );
 
+  const recheckMotion = useCallback(() => {
+    if (motionDenied) setMotionAttempt((attempt) => attempt + 1);
+  }, [motionDenied]);
+  useForegroundRecheck(recheckMotion);
+
   useEffect(() => {
     let mounted = true;
-    const subscription = Accelerometer.addListener(({ x, y, z }) => {
-      if (mounted) setTopEdgeDown(isTopEdgeDown(x, y, z));
-    });
-    Accelerometer.setUpdateInterval(150);
+    let subscription: { remove(): void } | null = null;
+
+    // CONFIRM is gated on `topEdgeDown`, which only ever flips from this
+    // listener. Subscribing without checking motion access left a player who
+    // had refused it stuck on a disabled button with no prompt and no
+    // explanation — the restart loop this ticket is about.
+    const startWatchingTilt = async () => {
+      let permission = await Accelerometer.getPermissionsAsync();
+      if (!permission.granted && permission.canAskAgain) {
+        permission = await Accelerometer.requestPermissionsAsync();
+      }
+      if (!mounted) return;
+
+      setMotionDenied(!permission.granted);
+      if (!permission.granted) return;
+
+      Accelerometer.setUpdateInterval(150);
+      subscription = Accelerometer.addListener(({ x, y, z }) => {
+        if (mounted) setTopEdgeDown(isTopEdgeDown(x, y, z));
+      });
+    };
+
+    void startWatchingTilt();
+
     return () => {
       mounted = false;
-      subscription.remove();
+      subscription?.remove();
     };
-  }, []);
+  }, [motionAttempt]);
 
   useEffect(() => {
     // The countdown cue must be audible even with the iOS silent switch on —
@@ -338,7 +368,15 @@ export function PreRound({
         />
       )}
       {clockCalibrationStatus === "ready" &&
-        (phase === "separate" || phase === "position") && (
+        (phase === "separate" || phase === "position") &&
+        (motionDenied ? (
+          <PermissionNotice
+            canAskAgain={false}
+            capability="Motion"
+            message="Pocket Draw reads the phone's tilt to check your starting pose, so the round can't begin without motion access."
+            onRetry={() => setMotionAttempt((attempt) => attempt + 1)}
+          />
+        ) : (
           <Button
             mode="contained"
             disabled={confirmDisabled}
@@ -346,7 +384,7 @@ export function PreRound({
           >
             CONFIRM
           </Button>
-        )}
+        ))}
 
       {/* Android intercepts volume keys; iOS observes volume changes while
           preserving the normal volume adjustment. Tap remains available. */}

@@ -1,12 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { ActivityIndicator } from "react-native-paper";
 
 import { CutCornerButton } from "../../components/CutCornerButton";
+import { PermissionNotice } from "../../components/PermissionNotice";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { StatusTag } from "../../components/StatusTag";
 import type { ChallengeHandoff } from "../../contracts/challengeHandoff";
 import type { DuelLink } from "../../contracts/duelLink";
+import { useForegroundRecheck } from "../../lib/useForegroundRecheck";
 import { colors } from "../../theme/tokens";
 import { useDuelSession } from "./hooks/useDuelSession";
 import {
@@ -64,6 +66,11 @@ export function ConnectingScreen({
   const { state, retry, cancel, handOff } = useDuelSession(params, transport);
 
   const [approval, setApproval] = useState<ChallengeApproval>("pending");
+
+  const retryAfterSettings = useCallback(() => {
+    if (state.status === "failed" && state.permissionError) retry();
+  }, [retry, state]);
+  useForegroundRecheck(retryAfterSettings);
 
   // The channel opens before the host has rendered its accept popup, so a
   // single announcement can be sent into a screen that is not listening yet.
@@ -160,7 +167,14 @@ export function ConnectingScreen({
           <StatusTag tone="warning">{`${opponentName} declined the challenge.`}</StatusTag>
         ) : null}
 
-        {state.status === "failed" ? (
+        {state.status === "failed" && state.permissionError ? (
+          <PermissionNotice
+            canAskAgain={state.permissionError.canAskAgain}
+            capability={state.permissionError.capability}
+            message="Joining the host's hotspot needs Nearby Wi-Fi access."
+            onRetry={retry}
+          />
+        ) : state.status === "failed" ? (
           <StatusTag tone="warning">
             {`${state.message} Couldn't connect after ${totalAttempts} tries.`}
           </StatusTag>
@@ -173,7 +187,7 @@ export function ConnectingScreen({
       </View>
 
       <View style={styles.actions}>
-        {state.status === "failed" ? (
+        {state.status === "failed" && !state.permissionError ? (
           <CutCornerButton
             label="Try Again"
             onPress={retry}

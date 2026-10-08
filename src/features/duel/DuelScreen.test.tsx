@@ -22,7 +22,9 @@ jest.mock("expo-sensors", () => ({
       accelerometerListeners.push(listener);
       return { remove: () => undefined };
     },
-    setUpdateInterval: () => undefined
+    setUpdateInterval: () => undefined,
+    getPermissionsAsync: async () => ({ granted: true, canAskAgain: true }),
+    requestPermissionsAsync: async () => ({ granted: true, canAskAgain: true })
   }
 }));
 

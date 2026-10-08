@@ -3,10 +3,11 @@ import type { BarcodeScanningResult } from "expo-camera";
 import { useCallback, useState } from "react";
 import { StyleSheet, View } from "react-native";
 
-import { CutCornerButton } from "../../components/CutCornerButton";
+import { PermissionNotice } from "../../components/PermissionNotice";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { StatusTag } from "../../components/StatusTag";
 import type { DuelConnectionInfo } from "../../contracts/duelConnection";
+import { useForegroundRecheck } from "../../lib/useForegroundRecheck";
 import { colors } from "../../theme/tokens";
 import type { QrValidationErrorCode } from "../qr/types/qr.types";
 import { parseQrInvite } from "../qr/utils/qr.validation";
@@ -46,7 +47,7 @@ export function QrScannerScreen({
   currentUser,
   onOpponentConfirmed
 }: QrScannerScreenProps) {
-  const [permission, requestPermission] = useCameraPermissions();
+  const [permission, requestPermission, getPermission] = useCameraPermissions();
   const [scanError, setScanError] = useState<string | null>(null);
   const [scannedInvite, setScannedInvite] = useState<{
     hostPlayerId: string;
@@ -56,6 +57,14 @@ export function QrScannerScreen({
     connection: DuelConnectionInfo;
     discoveryToken: string;
   } | null>(null);
+
+  // Granting camera access in Settings suspends the app, so the status held
+  // here is stale on return. Re-reading it there is what keeps the scan flow
+  // resumable without a restart.
+  const refreshPermission = useCallback(() => {
+    void getPermission();
+  }, [getPermission]);
+  useForegroundRecheck(refreshPermission);
 
   const handleBarcodeScanned = useCallback(
     ({ data }: BarcodeScanningResult) => {
@@ -115,9 +124,11 @@ export function QrScannerScreen({
           subtitle="Camera access is needed to scan an opponent's QR code."
           title="Scan to Challenge"
         />
-        <CutCornerButton
-          label="Grant Camera Access"
-          onPress={() => void requestPermission()}
+        <PermissionNotice
+          canAskAgain={permission.canAskAgain}
+          capability="Camera"
+          message="Scanning an opponent's invite needs the camera. Until then, switch to My QR and let them scan your code instead."
+          onRetry={() => void requestPermission()}
         />
       </View>
     );
