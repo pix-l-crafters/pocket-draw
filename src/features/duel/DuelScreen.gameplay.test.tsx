@@ -236,10 +236,25 @@ async function renderPhones() {
     await press(role, "I'm Ready");
     await press(role, "Start calibration");
     expect(mockPhones[role].motion.size).toBe(1);
-    await press(role, "Capture ready pose");
+    for (let index = 0; index <= 20; index += 1) {
+      await act(() => {
+        publishSensors(role);
+        mockPhones[role].tilt.forEach((listener) =>
+          listener({ x: 0, y: -0.9, z: 0 })
+        );
+        jest.advanceTimersByTime(100);
+      });
+    }
     mockPhones[role].pitch = 1;
-    await act(() => publishSensors(role));
-    await press(role, "Capture shoulder pose");
+    for (let index = 0; index <= 20; index += 1) {
+      await act(() => {
+        publishSensors(role);
+        mockPhones[role].tilt.forEach((listener) =>
+          listener({ x: 0, y: 0, z: 0.95 })
+        );
+        jest.advanceTimersByTime(100);
+      });
+    }
     expect(phones[role].queryByText("CONFIRM")).toBeNull();
     await press(role, "Continue");
     // Verify watchers finished mounting before delivering any round readings.

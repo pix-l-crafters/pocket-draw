@@ -10,6 +10,7 @@ import type { DuelChannel, DuelMessage } from "../../contracts/duelChannel";
 import type { Zone } from "../../contracts/roundOutcome";
 import { useForegroundRecheck } from "../../lib/useForegroundRecheck";
 import { colors, fonts } from "../../theme/tokens";
+import { isTopEdgeDown } from "./calibrationPose";
 import { COUNTDOWN_AUDIO_SOURCE } from "./countdownAudio";
 import { FalseStartCoordinator } from "./falseStartCoordinator";
 import { FireSignalCoordinator, type DuelRole } from "./fireSignalCoordinator";
@@ -35,14 +36,6 @@ export const COUNTDOWN_DURATION_MS =
  * devices can score the same last-instant shot differently.
  */
 const PEER_SHOT_GRACE_MS = 250;
-
-export function isTopEdgeDown(x: number, y: number, z: number): boolean {
-  // Expo forwards native readings; the top-edge-down Y sign differs by OS.
-  const topEdgePointsDown =
-    (Platform.OS === "ios" && y > 0.75) ||
-    (Platform.OS === "android" && y < -0.75);
-  return topEdgePointsDown && Math.abs(x) < 0.35 && Math.abs(z) < 0.35;
-}
 
 type Phase =
   | "separate"

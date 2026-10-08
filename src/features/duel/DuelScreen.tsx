@@ -475,7 +475,11 @@ export function DuelScreen({
             onContinue={() => setInstructionsSeen(true)}
           />
         ) : (
-          <DrawCalibrationScreen onComplete={setCalibration} />
+          <DrawCalibrationScreen
+            clockCalibrationStatus={clockCalibrationStatus}
+            onComplete={setCalibration}
+            onRetryClockCalibration={runClockCalibration}
+          />
         )}
         {exitControl}
       </View>
