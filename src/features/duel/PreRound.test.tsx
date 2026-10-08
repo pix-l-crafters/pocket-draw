@@ -12,8 +12,21 @@ import type { RoundShots } from "./roundShots";
 
 type Reading = { x: number; y: number; z: number };
 type MobilePlatform = "ios" | "android";
+type VolumeDirection = "up" | "down";
 
 const accelerometerListeners: ((reading: Reading) => void)[] = [];
+const mockVolumeListeners = new Set<
+  (event: { direction: VolumeDirection }) => void
+>();
+
+jest.mock("./volumeFireTrigger", () => ({
+  subscribeVolumeFire: (
+    listener: (event: { direction: VolumeDirection }) => void
+  ) => {
+    mockVolumeListeners.add(listener);
+    return () => mockVolumeListeners.delete(listener);
+  }
+}));
 
 jest.mock("expo-sensors", () => ({
   Accelerometer: {
@@ -87,6 +100,12 @@ async function renderPreRound(
     act(() => {
       accelerometerListeners.forEach((listener) => listener(reading));
     });
+  const pressVolume = (direction: VolumeDirection, count = 1) =>
+    act(() => {
+      for (let index = 0; index < count; index += 1) {
+        mockVolumeListeners.forEach((listener) => listener({ direction }));
+      }
+    });
 
   /** Walks the ritual to the point the countdown can start. */
   const completeRitual = async (reading: Reading = { x: 0, y: -1, z: 0 }) => {
@@ -101,6 +120,7 @@ async function renderPreRound(
   return {
     completeRitual,
     deliver,
+    pressVolume,
     retries,
     sent,
     setReading,
@@ -113,6 +133,7 @@ async function renderPreRound(
 describe("PreRound countdown and draw", () => {
   beforeEach(() => {
     accelerometerListeners.length = 0;
+    mockVolumeListeners.clear();
     jest.useFakeTimers();
   });
 
@@ -207,6 +228,36 @@ describe("PreRound countdown and draw", () => {
     expect(shots).toEqual([{ selfReactionMs: 400, opponentReactionMs: 900 }]);
     expect(sent.at(-1)).toMatchObject({ type: "raised", reactionMs: 400 });
   });
+
+  it.each(["up", "down"] as const)(
+    "fires from Android volume %s only during the active fire window",
+    async (direction) => {
+      const { completeRitual, pressVolume, sent, shots, wait } =
+        await renderPreRound("host");
+      await pressVolume(direction);
+      expect(sent).toEqual([]);
+
+      await completeRitual();
+      await pressVolume(direction);
+      expect(sent.filter((message) => message.type === "raised")).toEqual([]);
+
+      await wait(COUNTDOWN_DURATION_MS);
+      await wait(400);
+      await pressVolume(direction, 2);
+      expect(sent.filter((message) => message.type === "raised")).toEqual([
+        { type: "raised", atMs: expect.any(Number), reactionMs: 400 }
+      ]);
+
+      await wait(10_000);
+      await pressVolume(direction);
+      expect(shots).toEqual([
+        { selfReactionMs: 400, opponentReactionMs: null }
+      ]);
+      expect(sent.filter((message) => message.type === "raised")).toHaveLength(
+        1
+      );
+    }
+  );
 
   it("scores a player who never fires as no shot at all", async () => {
     const { completeRitual, shots, view, wait } = await renderPreRound("host");

@@ -1,0 +1,6 @@
+{
+  "android": {
+    "modules": ["expo.modules.volumefire.VolumeFireModule"]
+  },
+  "platforms": ["android"]
+}

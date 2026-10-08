@@ -11,6 +11,7 @@ import { COUNTDOWN_AUDIO_SOURCE } from "./countdownAudio";
 import { FireSignalCoordinator, type DuelRole } from "./fireSignalCoordinator";
 import { ReactionTimer } from "./reactionTimer";
 import { FIRE_WINDOW_MS, type RoundShots } from "./roundShots";
+import { subscribeVolumeFire } from "./volumeFireTrigger";
 
 export const SEPARATION_RSSI_THRESHOLD = -70;
 
@@ -227,7 +228,8 @@ export function PreRound({
   }, [onRoundShots, opponentReactionMs, phase, selfReactionMs]);
 
   const handleFire = () => {
-    if (selfReactionMs !== null) return;
+    if (selfReactionMs !== null || reactionTimerRef.current.getCapture())
+      return;
     if (Date.now() > firedAtRef.current + FIRE_WINDOW_MS) return;
 
     const capture = reactionTimerRef.current.captureRaise(Date.now());
@@ -241,6 +243,11 @@ export function PreRound({
       reactionMs: capture.reactionMs
     });
   };
+
+  useEffect(() => {
+    if (Platform.OS !== "android" || phase !== "fire") return undefined;
+    return subscribeVolumeFire(handleFire);
+  }, [phase]);
 
   const separated = isSeparatedByRssi(rssi);
 
@@ -366,9 +373,8 @@ export function PreRound({
           </Button>
         )}
 
-      {/* The draw itself: a full-screen target, so neither player loses the
-          round hunting for a small button. Tap anywhere on either platform —
-          the accelerometer raise gesture (ticket #37) is still unwired. */}
+      {/* Keep the full-screen tap target for iOS and accessibility. Android's
+          volume buttons use the same handler while the fire window is active. */}
       {phase === "fire" && (
         <Pressable
           accessibilityLabel="Fire"
@@ -379,7 +385,9 @@ export function PreRound({
           <Text style={styles.fireHeading}>FIRE!</Text>
           <Text style={styles.fireDetail}>
             {selfReactionMs === null
-              ? "TAP ANYWHERE"
+              ? Platform.OS === "android"
+                ? "PRESS VOLUME OR TAP ANYWHERE"
+                : "TAP ANYWHERE"
               : `${selfReactionMs}ms — ${
                   opponentReactionMs === null
                     ? "waiting for your opponent"
