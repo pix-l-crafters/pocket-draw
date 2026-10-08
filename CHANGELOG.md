@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file. See [conven
 
 ---
 
+## [0.3.1](https://github.com/pix-l-crafters/pocket-draw/compare/v0.3.0..v0.3.1) - 2026-10-08
+
+### Miscellaneous Chores
+
+- **(map)** share encrypted Android Maps API key - ([571ab50](https://github.com/pix-l-crafters/pocket-draw/commit/571ab5000e0b8125eeb0f258282011d4dd16d6d2)) - Ethan
+- ignore native android modules - ([5a9bbdd](https://github.com/pix-l-crafters/pocket-draw/commit/5a9bbddf2f90a0103b287d167102a3f72c61fdea)) - MRDGH2821
+
+---
+
 ## [0.3.0](https://github.com/pix-l-crafters/pocket-draw/compare/v0.2.0..v0.3.0) - 2026-10-08
 
 ### Bug Fixes
