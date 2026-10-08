@@ -6,7 +6,7 @@ import type { EloOutcome } from "./elo";
 export const DEFAULT_ELO_RATING = 1500;
 
 /**
- * Firestore document written to `matchResults/{matchId}`. Mirrors the shared
+ * Firestore document written to `matches/{matchId}`. Mirrors the shared
  * MatchResult contract plus upload metadata.
  */
 export type MatchResultDocument = MatchResult & {
@@ -32,7 +32,8 @@ export type PlayerStatsRepository = {
   updateEloRating(
     uid: string,
     opponentUid: string,
-    outcome: EloOutcome
+    outcome: EloOutcome,
+    matchId: string
   ): Promise<number>;
 };
 
