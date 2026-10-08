@@ -4,7 +4,7 @@ import {
   getDoc,
   getDocs,
   query,
-  setDoc,
+  runTransaction,
   where
 } from "firebase/firestore";
 
@@ -53,7 +53,7 @@ export const playerStatsRepository: PlayerStatsRepository = {
 
     const trimmedName = displayName.trim() || "Player";
     const matchesQuery = query(
-      collection(db, "matches"),
+      collection(db, "matchResults"),
       where("participantIds", "array-contains", uid)
     );
     const [snapshot, userSnapshot] = await Promise.all([
@@ -81,24 +81,31 @@ export const playerStatsRepository: PlayerStatsRepository = {
     };
   },
 
-  async updateEloRating(uid, opponentUid, outcome): Promise<number> {
+  async updateEloRating(uid, opponentUid, outcome, matchId): Promise<number> {
     if (!uid.trim() || !opponentUid.trim() || uid === opponentUid) {
       throw new Error("Two distinct player uids are required to update ELO.");
     }
 
     const userRef = doc(db, "users", uid);
     const opponentRef = doc(db, "users", opponentUid);
-    const [userSnapshot, opponentSnapshot] = await Promise.all([
-      getDoc(userRef),
-      getDoc(opponentRef)
-    ]);
-    const [nextRating] = updateEloPair(
-      storedElo(userSnapshot.data()),
-      storedElo(opponentSnapshot.data()),
-      outcome
-    );
-
-    await setDoc(userRef, { eloRating: nextRating }, { merge: true });
-    return nextRating;
+    if (!matchId.trim()) throw new Error("matchId is required to update ELO.");
+    const receiptRef = doc(db, "users", uid, "ratedMatches", matchId);
+    return runTransaction(db, async (transaction) => {
+      const [userSnapshot, opponentSnapshot, receipt] = await Promise.all([
+        transaction.get(userRef),
+        transaction.get(opponentRef),
+        transaction.get(receiptRef)
+      ]);
+      if (receipt.exists()) return storedElo(userSnapshot.data());
+      const [nextRating] = updateEloPair(
+        storedElo(userSnapshot.data()),
+        storedElo(opponentSnapshot.data()),
+        outcome
+      );
+      // The receipt and rating commit together, including SDK transaction retries.
+      transaction.set(userRef, { eloRating: nextRating }, { merge: true });
+      transaction.set(receiptRef, { matchId });
+      return nextRating;
+    });
   }
 };

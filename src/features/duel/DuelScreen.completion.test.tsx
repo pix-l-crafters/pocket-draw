@@ -3,7 +3,10 @@ import { PaperProvider } from "react-native-paper";
 
 import { createMockDuelChannelPair } from "../../contracts/mocks/mockDuelChannel";
 import { appTheme } from "../../theme/appTheme";
-import { submitMatchResult } from "../backend/matchResultsService";
+import {
+  subscribeMatchResultStatus,
+  submitMatchResult
+} from "../backend/matchResultsService";
 import type { SubmitMatchResultOutcome } from "../backend/types";
 import { createDuelLink } from "../challenge/session/duelLink";
 import { DuelScreen } from "./DuelScreen";
@@ -15,6 +18,7 @@ jest.mock("../qr/utils/qr.tokens", () => ({
 }));
 
 jest.mock("../backend/matchResultsService", () => ({
+  subscribeMatchResultStatus: jest.fn(() => () => undefined),
   submitMatchResult: jest.fn()
 }));
 
@@ -124,6 +128,13 @@ describe("DuelScreen result saving", () => {
       );
       await fireEvent.press(view.getByText("See match result"));
       expect(view.getByText("Match complete")).toBeTruthy();
+      expect(
+        view.getByText(
+          status === "written"
+            ? "Result saved"
+            : "Result saved on this device · waiting to sync"
+        )
+      ).toBeTruthy();
       expect(submitMatchResult).toHaveBeenCalledTimes(1);
       await view.unmount();
     }
@@ -149,9 +160,10 @@ describe("DuelScreen result saving", () => {
       saveError
     );
     const firstResult = jest.mocked(submitMatchResult).mock.calls[0][0];
+    await fireEvent.press(view.getByText("See match result"));
+    expect(view.getByText("Could not sync result. Please retry.")).toBeTruthy();
     await fireEvent.press(view.getByText("Retry saving result"));
     expect(jest.mocked(submitMatchResult).mock.calls[1][0]).toBe(firstResult);
-    await fireEvent.press(view.getByText("See match result"));
     expect(view.getByText("Match complete")).toBeTruthy();
     await view.unmount();
     warn.mockRestore();
@@ -176,4 +188,24 @@ describe("DuelScreen result saving", () => {
     );
     await view.unmount();
   });
+});
+
+test("an open queued summary becomes written when background synchronization succeeds", async () => {
+  jest.mocked(submitMatchResult).mockResolvedValue({
+    status: "queued",
+    matchId: "match-1",
+    reason: "offline"
+  });
+  const view = await renderDuel();
+  await finishMatch(view);
+  await fireEvent.press(view.getByText("See match result"));
+  expect(
+    view.getByText("Result saved on this device · waiting to sync")
+  ).toBeTruthy();
+  const listener = jest
+    .mocked(subscribeMatchResultStatus)
+    .mock.calls.at(-1)![2];
+  await act(async () => listener("written"));
+  expect(view.getByText("Result saved")).toBeTruthy();
+  await view.unmount();
 });

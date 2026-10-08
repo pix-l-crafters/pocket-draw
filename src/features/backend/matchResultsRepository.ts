@@ -4,7 +4,7 @@ import type { MatchResult } from "../../contracts/matchResult";
 import { db } from "../../lib/firebase";
 import type { MatchResultsRepository } from "./types";
 
-function validateMatchResult(result: MatchResult, uploadedBy: string) {
+export function validateMatchResult(result: MatchResult, uploadedBy: string) {
   if (!result.matchId.trim()) {
     throw new Error("matchId is required.");
   }
@@ -65,7 +65,7 @@ export const matchResultsRepository: MatchResultsRepository = {
   async writeMatchResult(result, uploadedBy) {
     validateMatchResult(result, uploadedBy);
 
-    const matchRef = doc(db, "matches", result.matchId);
+    const matchRef = doc(db, "matchResults", result.matchId);
     await runTransaction(db, async (transaction) => {
       const existing = await transaction.get(matchRef);
 
@@ -77,6 +77,7 @@ export const matchResultsRepository: MatchResultsRepository = {
         matchId: result.matchId,
         participantIds: result.participantIds,
         results: result.results,
+        roundCount: result.roundCount,
         rounds: result.rounds,
         completedAt: result.completedAt,
         uploadedBy,

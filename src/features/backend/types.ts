@@ -32,7 +32,8 @@ export type PlayerStatsRepository = {
   updateEloRating(
     uid: string,
     opponentUid: string,
-    outcome: EloOutcome
+    outcome: EloOutcome,
+    matchId: string
   ): Promise<number>;
 };
 

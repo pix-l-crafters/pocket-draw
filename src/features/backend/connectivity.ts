@@ -1,20 +1,27 @@
-/**
- * Connectivity helpers for offline match-result upload (5.3).
- *
- * TODO(mihir): add `@react-native-community/netinfo` via `npx expo install
- * @react-native-community/netinfo` and replace the optimistic fallback below.
- * Without NetInfo we assume online and rely on Firestore write failures to
- * enqueue.
- */
+import {
+  addNetworkStateListener,
+  getNetworkStateAsync,
+  type NetworkState
+} from "expo-network";
+
+function isOnline(state: NetworkState): boolean {
+  return state.isConnected !== false && state.isInternetReachable !== false;
+}
 
 export async function isNetworkAvailable(): Promise<boolean> {
-  // Optimistic fallback until NetInfo is installed.
-  return true;
+  try {
+    return isOnline(await getNetworkStateAsync());
+  } catch {
+    // Unknown connectivity still permits a write; transport errors queue it.
+    return true;
+  }
 }
 
 export function subscribeNetworkChanges(
-  _listener: (online: boolean) => void
+  listener: (online: boolean) => void
 ): () => void {
-  // No-op until NetInfo is available.
-  return () => undefined;
+  const subscription = addNetworkStateListener((state) =>
+    listener(isOnline(state))
+  );
+  return () => subscription.remove();
 }

@@ -1,7 +1,5 @@
 // 6.1 — match summary screen (final score, winner, per-round reaction
 // times, ELO), 6.2 — rematch offer, 6.3 — return-to-map flow.
-// Presentational only, same as RoundResultScreen: wired up by whoever
-// assembles the full duel flow.
 
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
@@ -21,6 +19,8 @@ type MatchSummaryScreenProps = {
   onReturnToMap: () => void;
   playerNames: Record<string, string>;
   playerStats?: Record<string, PlayerStats>;
+  saveStatus?: "saving" | "written" | "queued" | "error";
+  onRetrySave?: () => void;
   /** A rematch needs both players, so the offer can be pending or gone. */
   rematchDisabled?: boolean;
   rematchLabel?: string;
@@ -47,6 +47,8 @@ export function MatchSummaryScreen({
   onReturnToMap,
   playerNames,
   playerStats,
+  saveStatus,
+  onRetrySave,
   rematchDisabled = false,
   rematchLabel = "Rematch",
   rematchNote
@@ -109,9 +111,28 @@ export function MatchSummaryScreen({
       </View>
 
       <View style={styles.actions}>
+        {saveStatus ? (
+          <StatusTag>
+            {saveStatus === "written"
+              ? "Result saved"
+              : saveStatus === "queued"
+                ? "Result saved on this device · waiting to sync"
+                : saveStatus === "error"
+                  ? "Could not sync result. Please retry."
+                  : "Saving result…"}
+          </StatusTag>
+        ) : null}
+        {(saveStatus === "queued" || saveStatus === "error") && onRetrySave ? (
+          <CutCornerButton
+            label="Retry saving result"
+            onPress={onRetrySave}
+          />
+        ) : null}
         {rematchNote ? <StatusTag>{rematchNote}</StatusTag> : null}
         <CutCornerButton
-          disabled={rematchDisabled}
+          disabled={
+            rematchDisabled || saveStatus === "saving" || saveStatus === "error"
+          }
           label={rematchLabel}
           onPress={onRematch}
         />

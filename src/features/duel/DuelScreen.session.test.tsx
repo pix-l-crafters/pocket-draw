@@ -27,6 +27,7 @@ jest.mock("../qr/utils/qr.tokens", () => ({ generateMatchId: jest.fn() }));
 
 // Saving is covered by DuelScreen.completion.test; here every save succeeds.
 jest.mock("../backend/matchResultsService", () => ({
+  subscribeMatchResultStatus: jest.fn(() => () => undefined),
   submitMatchResult: async (result: { matchId: string }) => ({
     status: "written",
     matchId: result.matchId
