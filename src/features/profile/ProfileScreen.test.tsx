@@ -23,6 +23,10 @@ jest.mock("../leaderboard/LeaderboardScreen", () => ({
   LeaderboardScreen: () => null
 }));
 
+jest.mock("./PermissionStatusScreen", () => ({
+  PermissionStatusScreen: () => null
+}));
+
 jest.mock("../../lib/appVersion", () => ({
   getAppVersion: () => "9.8.7"
 }));
@@ -78,6 +82,15 @@ describe("ProfileScreen", () => {
 
     expect(screen.getByText("Version")).toBeTruthy();
     expect(screen.getByText("9.8.7")).toBeTruthy();
+  });
+
+  test("opens permission status from settings", async () => {
+    const user = userEvent.setup();
+    const screen = await renderProfile();
+
+    await user.press(screen.getByText("Permissions"));
+
+    expect(screen.queryByText("Leaderboard")).toBeNull();
   });
 
   test("signs the player out from settings", async () => {

@@ -1,5 +1,13 @@
+import { Camera } from "expo-camera";
+import {
+  getForegroundPermissionsAsync,
+  requestForegroundPermissionsAsync
+} from "expo-location";
+import { Accelerometer } from "expo-sensors";
+
 import {
   ensureAndroidPermissions,
+  getAppPermissionStatuses,
   nearbyWifiPermissions,
   PermissionDeniedError
 } from "./appPermissions";
@@ -10,6 +18,23 @@ const mockRequestMultiple = jest.fn<
   Promise<Record<string, string>>,
   [string[]]
 >();
+
+jest.mock("expo-camera", () => ({
+  Camera: {
+    getCameraPermissionsAsync: jest.fn(),
+    requestCameraPermissionsAsync: jest.fn()
+  }
+}));
+jest.mock("expo-location", () => ({
+  getForegroundPermissionsAsync: jest.fn(),
+  requestForegroundPermissionsAsync: jest.fn()
+}));
+jest.mock("expo-sensors", () => ({
+  Accelerometer: {
+    getPermissionsAsync: jest.fn(),
+    requestPermissionsAsync: jest.fn()
+  }
+}));
 
 jest.mock("react-native", () => ({
   get Platform() {
@@ -144,5 +169,75 @@ describe("PermissionDeniedError", () => {
     const error = new PermissionDeniedError("Nearby Wi-Fi", false);
 
     expect(error.message).toContain("Settings");
+  });
+});
+
+describe("getAppPermissionStatuses", () => {
+  beforeEach(() => {
+    jest.resetAllMocks();
+    mockPlatform.OS = "android";
+    mockPlatform.Version = 33;
+    jest
+      .mocked(Camera.getCameraPermissionsAsync)
+      .mockResolvedValue({ granted: true } as never);
+    jest
+      .mocked(getForegroundPermissionsAsync)
+      .mockResolvedValue({ granted: false } as never);
+    jest
+      .mocked(Accelerometer.getPermissionsAsync)
+      .mockResolvedValue({ granted: true } as never);
+  });
+
+  it("reads every status without requesting a permission", async () => {
+    mockCheck.mockResolvedValue(false);
+
+    await expect(getAppPermissionStatuses()).resolves.toEqual({
+      Camera: "granted",
+      Motion: "granted",
+      Location: "notGranted",
+      "Nearby Wi-Fi": "notGranted"
+    });
+    expect(mockCheck).toHaveBeenCalledWith(
+      "android.permission.NEARBY_WIFI_DEVICES"
+    );
+    expect(mockRequestMultiple).not.toHaveBeenCalled();
+    expect(Camera.requestCameraPermissionsAsync).not.toHaveBeenCalled();
+    expect(requestForegroundPermissionsAsync).not.toHaveBeenCalled();
+    expect(Accelerometer.requestPermissionsAsync).not.toHaveBeenCalled();
+  });
+
+  it("uses the existing API-level Wi-Fi permission selection", async () => {
+    mockPlatform.Version = 32;
+    mockCheck.mockResolvedValue(true);
+
+    await expect(getAppPermissionStatuses()).resolves.toMatchObject({
+      "Nearby Wi-Fi": "granted"
+    });
+    expect(mockCheck).toHaveBeenCalledWith(
+      "android.permission.ACCESS_FINE_LOCATION"
+    );
+  });
+
+  it("marks Android-only Wi-Fi permission as not required on iOS", async () => {
+    mockPlatform.OS = "ios";
+
+    await expect(getAppPermissionStatuses()).resolves.toMatchObject({
+      "Nearby Wi-Fi": "notRequired"
+    });
+    expect(mockCheck).not.toHaveBeenCalled();
+  });
+
+  it("keeps other statuses visible if one read fails", async () => {
+    mockCheck.mockResolvedValue(true);
+    jest
+      .mocked(Camera.getCameraPermissionsAsync)
+      .mockRejectedValue(new Error("read failed"));
+
+    await expect(getAppPermissionStatuses()).resolves.toEqual({
+      Camera: "unavailable",
+      Motion: "granted",
+      Location: "notGranted",
+      "Nearby Wi-Fi": "granted"
+    });
   });
 });

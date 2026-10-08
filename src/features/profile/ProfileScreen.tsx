@@ -12,6 +12,7 @@ import { colors, fonts } from "../../theme/tokens";
 import { LeaderboardScreen } from "../leaderboard/LeaderboardScreen";
 import { ChangePasswordDialog } from "./ChangePasswordDialog";
 import { EditUsernameDialog } from "./EditUsernameDialog";
+import { PermissionStatusScreen } from "./PermissionStatusScreen";
 
 type ProfileScreenProps = {
   displayName: string;
@@ -25,6 +26,7 @@ export function ProfileScreen({ displayName, email, uid }: ProfileScreenProps) {
   );
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showPermissions, setShowPermissions] = useState(false);
   const stats = usePlayerStats({ uid, displayName });
 
   const format = (value: number | undefined) =>
@@ -43,6 +45,10 @@ export function ProfileScreen({ displayName, email, uid }: ProfileScreenProps) {
 
   if (showLeaderboard) {
     return <LeaderboardScreen onBack={() => setShowLeaderboard(false)} />;
+  }
+
+  if (showPermissions) {
+    return <PermissionStatusScreen onBack={() => setShowPermissions(false)} />;
   }
 
   return (
@@ -106,6 +112,10 @@ export function ProfileScreen({ displayName, email, uid }: ProfileScreenProps) {
           <CutCornerButton
             label="Leaderboard"
             onPress={() => setShowLeaderboard(true)}
+          />
+          <CutCornerButton
+            label="Permissions"
+            onPress={() => setShowPermissions(true)}
           />
           <CutCornerButton
             label="Edit Username"

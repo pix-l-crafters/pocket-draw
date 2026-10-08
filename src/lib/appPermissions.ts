@@ -1,10 +1,67 @@
+import { Camera } from "expo-camera";
+import { getForegroundPermissionsAsync } from "expo-location";
+import { Accelerometer } from "expo-sensors";
 import { PermissionsAndroid, Platform, type Permission } from "react-native";
 
 /**
  * The permission-gated capabilities this app uses, named as a player would say
  * them. A closed set so a typo can't reach the UI copy, which interpolates it.
  */
-export type Capability = "Camera" | "Motion" | "Nearby Wi-Fi";
+export type Capability = "Camera" | "Motion" | "Location" | "Nearby Wi-Fi";
+
+export type AppPermissionStatus =
+  | "granted"
+  | "notGranted"
+  | "notRequired"
+  | "unavailable";
+
+export type AppPermissionStatuses = Record<Capability, AppPermissionStatus>;
+
+async function readGrantedStatus(
+  check: () => Promise<boolean>
+): Promise<AppPermissionStatus> {
+  try {
+    return (await check()) ? "granted" : "notGranted";
+  } catch {
+    return "unavailable";
+  }
+}
+
+/**
+ * Reads the current OS state for the profile page. Never shows a permission
+ * prompt.
+ */
+export async function getAppPermissionStatuses(): Promise<AppPermissionStatuses> {
+  const [camera, motion, location, nearbyWifi] = await Promise.all([
+    readGrantedStatus(
+      async () => (await Camera.getCameraPermissionsAsync()).granted
+    ),
+    readGrantedStatus(
+      async () => (await Accelerometer.getPermissionsAsync()).granted
+    ),
+    readGrantedStatus(
+      async () => (await getForegroundPermissionsAsync()).granted
+    ),
+    Platform.OS === "android"
+      ? readGrantedStatus(async () =>
+          (
+            await Promise.all(
+              nearbyWifiPermissions().map((permission) =>
+                PermissionsAndroid.check(permission)
+              )
+            )
+          ).every(Boolean)
+        )
+      : Promise.resolve<AppPermissionStatus>("notRequired")
+  ]);
+
+  return {
+    Camera: camera,
+    Motion: motion,
+    Location: location,
+    "Nearby Wi-Fi": nearbyWifi
+  };
+}
 
 /** The result of checking a capability's permissions, and prompting if needed. */
 export type PermissionOutcome = {
