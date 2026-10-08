@@ -27,6 +27,32 @@ describe("ClockOffsetCalibrator", () => {
     expect(host.getOffsetMs()).toBe(0);
   });
 
+  test("calibrates when Promise.withResolvers is unavailable", async () => {
+    const originalDescriptor = Object.getOwnPropertyDescriptor(
+      Promise,
+      "withResolvers"
+    );
+    Object.defineProperty(Promise, "withResolvers", {
+      configurable: true,
+      value: undefined
+    });
+    const [guestChannel, hostChannel] = createMockDuelChannelPair();
+    const guest = new ClockOffsetCalibrator(guestChannel, () => 10_000);
+    const host = new ClockOffsetCalibrator(hostChannel, () => 10_400);
+
+    try {
+      await expect(guest.calibrate(1)).resolves.toBe(400);
+    } finally {
+      guest.dispose();
+      host.dispose();
+      if (originalDescriptor) {
+        Object.defineProperty(Promise, "withResolvers", originalDescriptor);
+      } else {
+        Reflect.deleteProperty(Promise, "withResolvers");
+      }
+    }
+  });
+
   test("both peers learn opposite offsets over the handed-off channel", async () => {
     const [guestChannel, hostChannel] = createMockDuelChannelPair();
     const guest = new ClockOffsetCalibrator(guestChannel, () => 10_000);

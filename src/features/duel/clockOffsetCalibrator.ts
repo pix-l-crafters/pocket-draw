@@ -67,8 +67,12 @@ export class ClockOffsetCalibrator {
   }
 
   private runOneSample(): Promise<ClockOffsetSample> {
-    const { promise, resolve, reject } =
-      Promise.withResolvers<ClockOffsetSample>();
+    let resolveSample!: (sample: ClockOffsetSample) => void;
+    let rejectSample!: (error: Error) => void;
+    const promise = new Promise<ClockOffsetSample>((resolve, reject) => {
+      resolveSample = resolve;
+      rejectSample = reject;
+    });
     const pendingPingTimes = new Set<number>();
     let unsubscribe: (() => void) | undefined;
     let timeout: ReturnType<typeof setTimeout>;
@@ -87,27 +91,27 @@ export class ClockOffsetCalibrator {
         this.channel.send({ type: "clockPing", t0 });
       } catch {
         finish(() =>
-          reject(new Error("Clock calibration could not send a ping."))
+          rejectSample(new Error("Clock calibration could not send a ping."))
         );
       }
     };
     unsubscribe = this.channel.onMessage((message) => {
-      if (message.type !== "clockPong" || !pendingPingTimes.has(message.t0)) {
+      if (message.type !== "clockPong") return;
+      if (!pendingPingTimes.has(message.t0)) {
         return;
       }
       const t3 = this.now();
       finish(() =>
-        resolve({
+        resolveSample({
           offsetMs: (message.t1 - message.t0 - (t3 - message.t2)) / 2,
           rttMs: t3 - message.t0
         })
       );
     });
-    this.cancelPendingSample = (error) => finish(() => reject(error));
-    timeout = setTimeout(
-      () => finish(() => reject(new Error("Clock calibration timed out."))),
-      SAMPLE_TIMEOUT_MS
-    );
+    this.cancelPendingSample = (error) => finish(() => rejectSample(error));
+    timeout = setTimeout(() => {
+      finish(() => rejectSample(new Error("Clock calibration timed out.")));
+    }, SAMPLE_TIMEOUT_MS);
     retryTimer = setInterval(sendPing, 250);
     sendPing();
     return promise;
