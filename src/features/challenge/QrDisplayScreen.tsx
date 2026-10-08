@@ -16,8 +16,8 @@ import { CutCornerSurface } from "../../components/CutCornerSurface";
 import { PermissionNotice } from "../../components/PermissionNotice";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { StatusTag } from "../../components/StatusTag";
-import type { DuelChannel } from "../../contracts/duelChannel";
 import type { DuelConnectionInfo } from "../../contracts/duelConnection";
+import type { DuelLink } from "../../contracts/duelLink";
 import { PermissionDeniedError } from "../../lib/appPermissions";
 import { useForegroundRecheck } from "../../lib/useForegroundRecheck";
 import { colors, fonts } from "../../theme/tokens";
@@ -40,14 +40,19 @@ import {
   startAndroidLocalOnlyHotspot,
   stopAndroidLocalOnlyHotspot
 } from "./network/hotspot";
-import { startNativeWebRtcDuelHost } from "./webrtc/nativeWebRtcTransport";
+import { createDuelLink } from "./session/duelLink";
+import {
+  reconnectNativeWebRtcDuelHost,
+  startNativeWebRtcDuelHost
+} from "./webrtc/nativeWebRtcTransport";
 
 const INVITE_LIFETIME_MS = 60_000;
 const IOS_PERSONAL_HOTSPOT_IP = "172.20.10.1";
 
 type QrDisplayScreenProps = {
   currentUser: { displayName: string; uid: string };
-  onHostConnected?: (channel: DuelChannel, invite: QrInvitePayload) => void;
+  /** A guest authenticated; the returned link owns the session from here. */
+  onHostConnected?: (link: DuelLink, invite: QrInvitePayload) => void;
 };
 
 type InviteIdentity = Omit<QrInvitePayload, "connection">;
@@ -94,9 +99,14 @@ export function QrDisplayScreen({
   // Once a guest connects over the hotspot, the duel depends on it, so leaving
   // this screen must not tear the hotspot down.
   const hotspotHandedOff = useRef(false);
+  // An Error rather than a string, so a refused permission can be told apart
+  // from an ordinary setup failure and offered the right recovery.
   const [setupError, setSetupError] = useState<Error | null>(null);
   // Bumped to re-run the hotspot effect after a refused permission is granted.
   const [hotspotAttempt, setHotspotAttempt] = useState(0);
+  // Survives the regeneration it triggers, so the host sees why the code
+  // changed under them.
+  const [joinFailure, setJoinFailure] = useState<string | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(() =>
     Math.max(0, Math.ceil((identity.expiresAt - Date.now()) / 1000))
   );
@@ -109,6 +119,7 @@ export function QrDisplayScreen({
   const changeConnectionMode = useCallback(
     (value: string) => {
       setConnectionMode(value as ConnectionMode);
+      setJoinFailure(null);
       regenerate();
     },
     [regenerate]
@@ -215,14 +226,14 @@ export function QrDisplayScreen({
           );
         }
 
-        const host = await startNativeWebRtcDuelHost(
-          {
-            matchId: identity.matchId,
-            challengeToken: identity.challengeToken,
-            discoveryToken: identity.discoveryToken
-          },
-          { signal: controller.signal }
-        );
+        const auth = {
+          matchId: identity.matchId,
+          challengeToken: identity.challengeToken,
+          discoveryToken: identity.discoveryToken
+        };
+        const host = await startNativeWebRtcDuelHost(auth, {
+          signal: controller.signal
+        });
         stopHost = host.stop;
         if (!active) {
           host.stop();
@@ -237,15 +248,36 @@ export function QrDisplayScreen({
 
         void host.connection.then(
           (duelConnection) => {
-            if (!active) return;
-            if (connection.mode === "hotspot") hotspotHandedOff.current = true;
-            onHostConnected?.(duelConnection.channel, readyInvite);
+            if (!active) {
+              duelConnection.disconnect();
+              return;
+            }
+            const ownsAndroidHotspot =
+              connection.mode === "hotspot" && Platform.OS === "android";
+            if (ownsAndroidHotspot) hotspotHandedOff.current = true;
+            onHostConnected?.(
+              createDuelLink({
+                connection: duelConnection,
+                reconnect: (signal) =>
+                  reconnectNativeWebRtcDuelHost(auth, host.port, signal),
+                release: ownsAndroidHotspot
+                  ? () => stopAndroidLocalOnlyHotspot()
+                  : undefined
+              }),
+              readyInvite
+            );
           },
           (error: unknown) => {
             if (!active || controller.signal.aborted) return;
-            setSetupError(
-              toSetupError(error, "The local duel connection failed.")
+            // The listener closed with this attempt (wrong code, or a guest
+            // that dropped mid-handshake). A fresh code listens again rather
+            // than leaving a dead QR on screen.
+            setJoinFailure(
+              error instanceof Error
+                ? error.message
+                : "The local duel connection failed."
             );
+            regenerate();
           }
         );
       } catch (error) {
@@ -268,7 +300,8 @@ export function QrDisplayScreen({
     identity,
     manualPassword,
     manualSsid,
-    onHostConnected
+    onHostConnected,
+    regenerate
   ]);
 
   useEffect(() => {
@@ -361,6 +394,11 @@ export function QrDisplayScreen({
               />
             </View>
           ) : null}
+          {joinFailure && !setupError ? (
+            <StatusTag tone="warning">
+              {`A join attempt failed (${joinFailure}). This is a fresh code.`}
+            </StatusTag>
+          ) : null}
           {setupError instanceof PermissionDeniedError ? (
             <PermissionNotice
               canAskAgain={setupError.canAskAgain}
@@ -386,7 +424,10 @@ export function QrDisplayScreen({
         </CutCornerSurface>
         <CutCornerButton
           label="Generate New Code"
-          onPress={regenerate}
+          onPress={() => {
+            setJoinFailure(null);
+            regenerate();
+          }}
         />
       </ScrollView>
     </KeyboardAvoidingView>

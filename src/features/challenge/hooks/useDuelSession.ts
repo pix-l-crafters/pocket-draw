@@ -104,7 +104,7 @@ export function useDuelSession(
             }
           });
 
-          setState({ status: "connected", channel: connection.channel });
+          setState({ status: "connected", connection });
           return;
         } catch (error) {
           if (disposed || isAbortError(error)) {

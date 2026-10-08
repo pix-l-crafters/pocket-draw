@@ -1,5 +1,5 @@
 // Field checks and full-invite validation for QR invite payloads parsed from
-// untrusted JSON. These checks do not verify that a BLE host session is
+// untrusted JSON. These checks do not verify that a WebRTC host session is
 // active or that a token was securely generated.
 
 import type { QrInvitePayload, QrValidationResult } from "../types/qr.types";

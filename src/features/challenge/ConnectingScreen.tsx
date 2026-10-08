@@ -7,12 +7,17 @@ import { PermissionNotice } from "../../components/PermissionNotice";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { StatusTag } from "../../components/StatusTag";
 import type { ChallengeHandoff } from "../../contracts/challengeHandoff";
-import type { DuelChannel } from "../../contracts/duelChannel";
+import type { DuelLink } from "../../contracts/duelLink";
 import { useForegroundRecheck } from "../../lib/useForegroundRecheck";
 import { colors } from "../../theme/tokens";
 import { useDuelSession } from "./hooks/useDuelSession";
-import { withNetworkPreparation } from "./network/hotspot";
+import {
+  withNetworkPreparation,
+  withReconnectPreparation
+} from "./network/hotspot";
+import { createDuelLink } from "./session/duelLink";
 import { DUEL_CONNECT_MAX_AUTO_RETRIES } from "./session/duelSession.constants";
+import type { DuelSessionParams } from "./session/duelSession.types";
 import { createNativeWebRtcGuestTransport } from "./webrtc/nativeWebRtcTransport";
 
 /** How often the guest re-announces itself until the host's popup answers. */
@@ -23,7 +28,8 @@ type ChallengeApproval = "pending" | "accepted" | "declined";
 type ConnectingScreenProps = {
   currentUser: { displayName: string; uid: string };
   handoff: ChallengeHandoff;
-  onConnected: (channel: DuelChannel, handoff: ChallengeHandoff) => void;
+  /** The host accepted: the duel now owns this session. */
+  onConnected: (link: DuelLink, handoff: ChallengeHandoff) => void;
   onExit: () => void;
 };
 
@@ -34,23 +40,30 @@ export function ConnectingScreen({
   onExit
 }: ConnectingScreenProps) {
   const opponentName = handoff.scannedPlayerName;
-  const transport = useMemo(() => {
+  const { transport, reconnectTransport } = useMemo(() => {
     const webRtcTransport = createNativeWebRtcGuestTransport({
       hostIp: handoff.connection.hostIp,
       signalPort: handoff.connection.signalPort,
       challengeToken: handoff.challengeToken
     });
-    return withNetworkPreparation(handoff.connection, webRtcTransport);
+    return {
+      transport: withNetworkPreparation(handoff.connection, webRtcTransport),
+      reconnectTransport: withReconnectPreparation(
+        handoff.connection,
+        webRtcTransport
+      )
+    };
   }, [handoff.challengeToken, handoff.connection]);
-  const { state, retry, cancel, handOff } = useDuelSession(
-    {
+  const params = useMemo<DuelSessionParams>(
+    () => ({
       role: "guest",
       matchId: handoff.matchId,
       discoveryToken: handoff.discoveryToken,
       opponentId: handoff.scannedPlayerId
-    },
-    transport
+    }),
+    [handoff.discoveryToken, handoff.matchId, handoff.scannedPlayerId]
   );
+  const { state, retry, cancel, handOff } = useDuelSession(params, transport);
 
   const [approval, setApproval] = useState<ChallengeApproval>("pending");
 
@@ -67,7 +80,7 @@ export function ConnectingScreen({
       return undefined;
     }
 
-    const { channel } = state;
+    const { channel } = state.connection;
     const unsubscribe = channel.onMessage((message) => {
       if (message.type === "challengeAccepted") setApproval("accepted");
       if (message.type === "challengeDeclined") setApproval("declined");
@@ -98,9 +111,23 @@ export function ConnectingScreen({
       // Hand off before notifying: the caller swaps this screen out for the
       // duel, and the unmount must not close the channel the duel just got.
       handOff();
-      onConnected(state.channel, handoff);
+      onConnected(
+        createDuelLink({
+          connection: state.connection,
+          reconnect: (signal) => reconnectTransport.connect(params, signal)
+        }),
+        handoff
+      );
     }
-  }, [approval, state, handoff, onConnected, handOff]);
+  }, [
+    approval,
+    state,
+    handoff,
+    onConnected,
+    handOff,
+    params,
+    reconnectTransport
+  ]);
 
   const isBusy = state.status === "connecting" || state.status === "retrying";
   const totalAttempts = DUEL_CONNECT_MAX_AUTO_RETRIES + 1;
@@ -153,7 +180,8 @@ export function ConnectingScreen({
           </StatusTag>
         ) : null}
 
-        {state.status === "disconnected" ? (
+        {/* A declining host closes the connection right after saying so. */}
+        {state.status === "disconnected" && approval !== "declined" ? (
           <StatusTag tone="warning">{state.message}</StatusTag>
         ) : null}
       </View>

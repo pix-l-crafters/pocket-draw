@@ -1,5 +1,5 @@
-import type { DuelChannel } from "../../../contracts/duelChannel";
 import type { PermissionDeniedError } from "../../../lib/appPermissions";
+import type { DuelTransportConnection } from "./duelSessionTransport";
 
 export type DuelRole = "host" | "guest";
 
@@ -16,7 +16,8 @@ export type DuelSessionParams = {
  *
  * - `connecting` while an attempt is in flight; `attempt` counts from 1.
  * - `retrying` between automatic attempts (see PRESENCE-style backoff constants).
- * - `connected` carries the live channel handed to the duel logic.
+ * - `connected` carries the live connection; its channel is what the duel logic
+ *   talks to, and whoever takes ownership disconnects it.
  * - `failed` means the automatic retries are exhausted; the user can retry
  *   manually.
  * - `disconnected` means the link dropped after it was established — the duel
@@ -26,7 +27,7 @@ export type DuelSessionState =
   | { status: "idle" }
   | { status: "connecting"; attempt: number }
   | { status: "retrying"; attempt: number; message: string }
-  | { status: "connected"; channel: DuelChannel }
+  | { status: "connected"; connection: DuelTransportConnection }
   | {
       status: "failed";
       message: string;

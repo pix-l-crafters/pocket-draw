@@ -2,6 +2,7 @@ import type { DuelChannel } from "../../contracts/duelChannel";
 import {
   DuelDisconnectRecovery,
   MAX_RECONNECT_ATTEMPTS,
+  RECONNECT_ATTEMPT_INTERVAL_MS,
   type DisconnectContext
 } from "./disconnectRecovery";
 import { createRoundLoop } from "./roundLoop";
@@ -61,7 +62,8 @@ describe("DuelDisconnectRecovery", () => {
       async () => false,
       (context) => {
         abortedWith = context;
-      }
+      },
+      { attemptIntervalMs: 0 }
     );
     const context: DisconnectContext = {
       phase: "match",
@@ -76,5 +78,26 @@ describe("DuelDisconnectRecovery", () => {
       context
     });
     expect(abortedWith).toEqual(context);
+  });
+
+  test("spaces out attempts that fail instantly so the budget is not spent at once", async () => {
+    jest.useFakeTimers();
+    try {
+      const channel = createFakeChannel(false);
+      const reconnect = jest.fn(async () => {
+        // A refused connection: the opponent is not listening again yet.
+        throw new Error("ECONNREFUSED");
+      });
+      const recovery = new DuelDisconnectRecovery(channel, reconnect);
+      void recovery.recover({ phase: "round" });
+
+      await jest.advanceTimersByTimeAsync(RECONNECT_ATTEMPT_INTERVAL_MS - 1);
+      expect(reconnect).toHaveBeenCalledTimes(1);
+      await jest.advanceTimersByTimeAsync(1);
+      expect(reconnect).toHaveBeenCalledTimes(2);
+      recovery.dispose();
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });

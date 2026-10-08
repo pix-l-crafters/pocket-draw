@@ -4,7 +4,7 @@ import { PermissionsAndroid, Platform, type Permission } from "react-native";
  * The permission-gated capabilities this app uses, named as a player would say
  * them. A closed set so a typo can't reach the UI copy, which interpolates it.
  */
-export type Capability = "Bluetooth" | "Camera" | "Motion" | "Nearby Wi-Fi";
+export type Capability = "Camera" | "Motion" | "Nearby Wi-Fi";
 
 /** The result of checking a capability's permissions, and prompting if needed. */
 export type PermissionOutcome = {
@@ -81,16 +81,6 @@ export async function ensureAndroidPermissions(
       (result) => result !== PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN
     )
   };
-}
-
-/** BLE scanning moved off location onto its own permissions in Android 12. */
-export function bluetoothPermissions(): Permission[] {
-  return Number(Platform.Version) >= 31
-    ? [
-        PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
-        PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT
-      ]
-    : [PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION];
 }
 
 /** Wi-Fi peer discovery moved onto NEARBY_WIFI_DEVICES in Android 13. */

@@ -18,7 +18,7 @@ import { BottomNavigation, PaperProvider } from "react-native-paper";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
 import type { ChallengeHandoff } from "./src/contracts/challengeHandoff";
-import type { DuelChannel } from "./src/contracts/duelChannel";
+import type { DuelLink } from "./src/contracts/duelLink";
 import { ChallengeScreen } from "./src/features/challenge/ChallengeScreen";
 import { ConnectingScreen } from "./src/features/challenge/ConnectingScreen";
 import {
@@ -28,7 +28,6 @@ import {
 import { challengeRequestRepository } from "./src/features/challenge/services/challengeRequestRepository";
 import { DuelScreen, type DuelPlayer } from "./src/features/duel/DuelScreen";
 import type { DuelRole } from "./src/features/duel/fireSignalCoordinator";
-import { GameInstructionsScreen } from "./src/features/duel/GameInstructionsScreen";
 import { MapScreen } from "./src/features/map/MapScreen";
 import type { CurrentUser } from "./src/features/map/types/map.types";
 import { ProfileScreen } from "./src/features/profile/ProfileScreen";
@@ -46,7 +45,7 @@ function toCurrentUser(user: User, displayName: string): CurrentUser {
 type AppTab = "map" | "challenge" | "profile";
 
 type ActiveDuel = {
-  channel: DuelChannel;
+  link: DuelLink;
   matchId: string;
   opponent: DuelPlayer;
   role: DuelRole;
@@ -55,7 +54,7 @@ type ActiveDuel = {
 
 /** A guest has opened the duel channel and is waiting on this player's answer. */
 type IncomingChallenge = {
-  channel: DuelChannel;
+  link: DuelLink;
   matchId: string;
 };
 
@@ -95,14 +94,21 @@ export default function App() {
   const [activeDuel, setActiveDuel] = useState<ActiveDuel | null>(null);
   const [incomingChallenge, setIncomingChallenge] =
     useState<IncomingChallenge | null>(null);
-  const [instructionsSeen, setInstructionsSeen] = useState(false);
 
+  // Leaving is idempotent; whoever ends a session releases its connection,
+  // and a hotspot this phone created for it.
   const exitDuel = () => {
+    activeDuel?.link.leave();
+    incomingChallenge?.link.leave();
     setActiveDuel(null);
     setIncomingChallenge(null);
-    setInstructionsSeen(false);
     setPendingHandoff(null);
     setActiveTab("map");
+  };
+
+  const declineChallenge = () => {
+    incomingChallenge?.link.leave();
+    setIncomingChallenge(null);
   };
 
   const self: DuelPlayer = { id: user?.uid ?? "", name: displayName };
@@ -112,16 +118,16 @@ export default function App() {
   // and restart it, dropping any guest mid-join. The guest is connected but
   // not yet accepted here — the popup that follows is what starts the duel.
   const onHostConnected = useCallback(
-    (channel: DuelChannel, invite: QrInvitePayload) =>
-      setIncomingChallenge({ channel, matchId: invite.matchId }),
+    (link: DuelLink, invite: QrInvitePayload) =>
+      setIncomingChallenge({ link, matchId: invite.matchId }),
     []
   );
 
   // The guest side: the host has already accepted by the time this runs.
   const onGuestConnected = useCallback(
-    (channel: DuelChannel, handoff: ChallengeHandoff) =>
+    (link: DuelLink, handoff: ChallengeHandoff) =>
       setActiveDuel({
-        channel,
+        link,
         matchId: handoff.matchId,
         opponent: {
           id: handoff.scannedPlayerId,
@@ -136,7 +142,7 @@ export default function App() {
   const acceptChallenge = (challenger: Challenger) => {
     if (!incomingChallenge) return;
     setActiveDuel({
-      channel: incomingChallenge.channel,
+      link: incomingChallenge.link,
       matchId: incomingChallenge.matchId,
       opponent: { id: challenger.playerId, name: challenger.playerName },
       role: "host",
@@ -206,25 +212,21 @@ export default function App() {
           >
             {activeDuel ? (
               // 只有在与另一位玩家的对局中才显示 Duel 界面，不作为常驻标签。
-              !instructionsSeen ? (
-                <GameInstructionsScreen
-                  onContinue={() => setInstructionsSeen(true)}
-                />
-              ) : (
-                <DuelScreen
-                  channel={activeDuel.channel}
-                  matchId={activeDuel.matchId}
-                  onExit={exitDuel}
-                  opponent={activeDuel.opponent}
-                  role={activeDuel.role}
-                  self={activeDuel.self}
-                />
-              )
+              // DuelScreen opens on the instructions itself, so it can answer
+              // the opponent's clock pings while this player is still reading.
+              <DuelScreen
+                link={activeDuel.link}
+                matchId={activeDuel.matchId}
+                onExit={exitDuel}
+                opponent={activeDuel.opponent}
+                role={activeDuel.role}
+                self={activeDuel.self}
+              />
             ) : incomingChallenge ? (
               <IncomingChallengeScreen
-                channel={incomingChallenge.channel}
+                link={incomingChallenge.link}
                 onAccept={acceptChallenge}
-                onDecline={() => setIncomingChallenge(null)}
+                onDecline={declineChallenge}
               />
             ) : (
               <>

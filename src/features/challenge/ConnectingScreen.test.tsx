@@ -7,7 +7,10 @@ import { ConnectingScreen } from "./ConnectingScreen";
 import { useDuelSession } from "./hooks/useDuelSession";
 
 jest.mock("./hooks/useDuelSession", () => ({ useDuelSession: jest.fn() }));
-jest.mock("./network/hotspot", () => ({ withNetworkPreparation: jest.fn() }));
+jest.mock("./network/hotspot", () => ({
+  withNetworkPreparation: jest.fn(),
+  withReconnectPreparation: jest.fn()
+}));
 jest.mock("./webrtc/nativeWebRtcTransport", () => ({
   createNativeWebRtcGuestTransport: jest.fn()
 }));

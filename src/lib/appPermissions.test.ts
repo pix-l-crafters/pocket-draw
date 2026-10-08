@@ -1,5 +1,4 @@
 import {
-  bluetoothPermissions,
   ensureAndroidPermissions,
   nearbyWifiPermissions,
   PermissionDeniedError
@@ -19,8 +18,6 @@ jest.mock("react-native", () => ({
   PermissionsAndroid: {
     PERMISSIONS: {
       ACCESS_FINE_LOCATION: "android.permission.ACCESS_FINE_LOCATION",
-      BLUETOOTH_CONNECT: "android.permission.BLUETOOTH_CONNECT",
-      BLUETOOTH_SCAN: "android.permission.BLUETOOTH_SCAN",
       NEARBY_WIFI_DEVICES: "android.permission.NEARBY_WIFI_DEVICES"
     },
     RESULTS: {
@@ -44,52 +41,53 @@ describe("ensureAndroidPermissions", () => {
     mockCheck.mockResolvedValue(true);
 
     await expect(
-      ensureAndroidPermissions(["android.permission.BLUETOOTH_SCAN"])
+      ensureAndroidPermissions(["android.permission.NEARBY_WIFI_DEVICES"])
     ).resolves.toEqual({ granted: true, canAskAgain: true });
     expect(mockRequestMultiple).not.toHaveBeenCalled();
   });
 
   it("requests only the missing permissions", async () => {
     mockCheck.mockImplementation(
-      async (permission) => permission === "android.permission.BLUETOOTH_SCAN"
+      async (permission) =>
+        permission === "android.permission.NEARBY_WIFI_DEVICES"
     );
     mockRequestMultiple.mockResolvedValue({
-      "android.permission.BLUETOOTH_CONNECT": "granted"
+      "android.permission.ACCESS_FINE_LOCATION": "granted"
     });
 
     await expect(
       ensureAndroidPermissions([
-        "android.permission.BLUETOOTH_SCAN",
-        "android.permission.BLUETOOTH_CONNECT"
+        "android.permission.NEARBY_WIFI_DEVICES",
+        "android.permission.ACCESS_FINE_LOCATION"
       ])
     ).resolves.toEqual({ granted: true, canAskAgain: true });
     expect(mockRequestMultiple).toHaveBeenCalledWith([
-      "android.permission.BLUETOOTH_CONNECT"
+      "android.permission.ACCESS_FINE_LOCATION"
     ]);
   });
 
   it("reports a denial the user can still be asked about", async () => {
     mockCheck.mockResolvedValue(false);
     mockRequestMultiple.mockResolvedValue({
-      "android.permission.BLUETOOTH_SCAN": "denied"
+      "android.permission.NEARBY_WIFI_DEVICES": "denied"
     });
 
     await expect(
-      ensureAndroidPermissions(["android.permission.BLUETOOTH_SCAN"])
+      ensureAndroidPermissions(["android.permission.NEARBY_WIFI_DEVICES"])
     ).resolves.toEqual({ granted: false, canAskAgain: true });
   });
 
   it("reports a permanent denial when any permission says never ask again", async () => {
     mockCheck.mockResolvedValue(false);
     mockRequestMultiple.mockResolvedValue({
-      "android.permission.BLUETOOTH_SCAN": "granted",
-      "android.permission.BLUETOOTH_CONNECT": "never_ask_again"
+      "android.permission.NEARBY_WIFI_DEVICES": "granted",
+      "android.permission.ACCESS_FINE_LOCATION": "never_ask_again"
     });
 
     await expect(
       ensureAndroidPermissions([
-        "android.permission.BLUETOOTH_SCAN",
-        "android.permission.BLUETOOTH_CONNECT"
+        "android.permission.NEARBY_WIFI_DEVICES",
+        "android.permission.ACCESS_FINE_LOCATION"
       ])
     ).resolves.toEqual({ granted: false, canAskAgain: false });
   });
@@ -99,7 +97,7 @@ describe("ensureAndroidPermissions", () => {
     mockRequestMultiple.mockResolvedValue({});
 
     await expect(
-      ensureAndroidPermissions(["android.permission.BLUETOOTH_SCAN"])
+      ensureAndroidPermissions(["android.permission.NEARBY_WIFI_DEVICES"])
     ).resolves.toEqual({ granted: false, canAskAgain: true });
   });
 
@@ -107,7 +105,7 @@ describe("ensureAndroidPermissions", () => {
     mockPlatform.OS = "ios";
 
     await expect(
-      ensureAndroidPermissions(["android.permission.BLUETOOTH_SCAN"])
+      ensureAndroidPermissions(["android.permission.NEARBY_WIFI_DEVICES"])
     ).resolves.toEqual({ granted: true, canAskAgain: true });
     expect(mockCheck).not.toHaveBeenCalled();
   });
@@ -116,21 +114,6 @@ describe("ensureAndroidPermissions", () => {
 describe("permission sets per Android version", () => {
   beforeEach(() => {
     mockPlatform.OS = "android";
-  });
-
-  it("uses the dedicated Bluetooth permissions from Android 12", () => {
-    mockPlatform.Version = 31;
-    expect(bluetoothPermissions()).toEqual([
-      "android.permission.BLUETOOTH_SCAN",
-      "android.permission.BLUETOOTH_CONNECT"
-    ]);
-  });
-
-  it("falls back to fine location for Bluetooth before Android 12", () => {
-    mockPlatform.Version = 30;
-    expect(bluetoothPermissions()).toEqual([
-      "android.permission.ACCESS_FINE_LOCATION"
-    ]);
   });
 
   it("uses nearby Wi-Fi devices from Android 13", () => {
