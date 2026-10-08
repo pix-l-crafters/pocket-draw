@@ -357,6 +357,8 @@ export function PreRound({
       zone
     });
   };
+  const handleFireRef = useRef(handleFire);
+  handleFireRef.current = handleFire;
 
   useEffect(() => {
     if (
@@ -365,7 +367,7 @@ export function PreRound({
     ) {
       return undefined;
     }
-    return subscribeVolumeFire(handleFire);
+    return subscribeVolumeFire(() => handleFireRef.current());
   }, [phase]);
 
   const startCountdown = () => {

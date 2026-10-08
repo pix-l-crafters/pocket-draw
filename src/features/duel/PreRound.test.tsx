@@ -130,11 +130,11 @@ async function renderPreRound(
     isConnected: () => true
   };
 
-  const view = await render(
+  const screen = (thetaShoulder: number) => (
     <PaperProvider theme={appTheme}>
       <PreRound
         channel={channel}
-        calibration={{ thetaReady: 0, thetaShoulder: 1 }}
+        calibration={{ thetaReady: 0, thetaShoulder }}
         selfPlayerId="host"
         opponentPlayerId="guest"
         clockCalibrationStatus={options.clockCalibrationStatus ?? "ready"}
@@ -147,6 +147,9 @@ async function renderPreRound(
       />
     </PaperProvider>
   );
+  const view = await render(screen(1));
+  const changeShoulderCalibration = (thetaShoulder: number) =>
+    act(() => view.rerender(screen(thetaShoulder)));
 
   // Stands in for the opponent's device putting a message on the wire.
   const deliver = (message: DuelMessage) =>
@@ -191,6 +194,7 @@ async function renderPreRound(
   };
 
   return {
+    changeShoulderCalibration,
     completeRitual,
     deliver,
     pressVolume,
@@ -379,6 +383,29 @@ describe("PreRound countdown and draw", () => {
       );
     }
   );
+
+  it("uses the current calibration when volume fires after a rerender", async () => {
+    const {
+      changeShoulderCalibration,
+      completeRitual,
+      pressVolume,
+      sent,
+      wait
+    } = await renderPreRound("host", {}, "ios");
+    await completeRitual({ x: 0, y: 1, z: 0 });
+    await wait(COUNTDOWN_DURATION_MS + 200);
+    await changeShoulderCalibration(2);
+    await pressVolume("up");
+
+    expect(sent.filter((message) => message.type === "raised")).toEqual([
+      {
+        type: "raised",
+        atMs: expect.any(Number),
+        reactionMs: 200,
+        zone: "miss"
+      }
+    ]);
+  });
 
   it("snapshots live aim on volume fire and lets the slower opponent score after a miss", async () => {
     const { completeRitual, deliver, pressVolume, sent, shots, view, wait } =
