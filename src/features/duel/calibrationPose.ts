@@ -12,9 +12,9 @@ export function isTopEdgeDown(
   return topEdgePointsDown && Math.abs(x) < 0.35 && Math.abs(z) < 0.35;
 }
 
-/** The level-phone tilt used for the top-edge-forward shoulder pose. */
-export function isTopEdgeForward(x: number, y: number, z: number): boolean {
-  return Math.abs(x) < 0.35 && Math.abs(y) < 0.35 && Math.abs(z) > 0.75;
+/** The top edge is level, regardless of phone roll. */
+export function isTopEdgeForward(_x: number, y: number, _z: number): boolean {
+  return Math.abs(y) < 0.35;
 }
 
 const HOLD_MS = 2_000;

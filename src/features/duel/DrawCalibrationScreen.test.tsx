@@ -11,11 +11,25 @@ const mockMotionListeners = new Set<
 const mockTiltListeners = new Set<
   (reading: { x: number; y: number; z: number }) => void
 >();
+const mockVolumeListeners = new Set<
+  (event: { direction: "up" | "down" }) => void
+>();
 let mockGranted = true;
 
 jest.mock("expo-haptics", () => ({
+  impactAsync: jest.fn(async () => undefined),
+  ImpactFeedbackStyle: { Light: "light" },
   notificationAsync: jest.fn(async () => undefined),
   NotificationFeedbackType: { Success: "success" }
+}));
+
+jest.mock("./volumeFireTrigger", () => ({
+  subscribeVolumeFire: (
+    listener: (event: { direction: "up" | "down" }) => void
+  ) => {
+    mockVolumeListeners.add(listener);
+    return () => mockVolumeListeners.delete(listener);
+  }
 }));
 
 jest.mock("expo-sensors", () => ({
@@ -91,8 +105,10 @@ describe("DrawCalibrationScreen", () => {
     jest.setSystemTime(10_000);
     mockMotionListeners.clear();
     mockTiltListeners.clear();
+    mockVolumeListeners.clear();
     mockGranted = true;
     jest.mocked(Haptics.notificationAsync).mockClear();
+    jest.mocked(Haptics.impactAsync).mockClear();
   });
 
   afterEach(() => jest.useRealTimers());
@@ -126,6 +142,74 @@ describe("DrawCalibrationScreen", () => {
     expect(view.getByText("Clock: calibration failed")).toBeTruthy();
     await fireEvent.press(view.getByText("Retry clock"));
     expect(onRetryClockCalibration).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not confirm a pose from stale motion readings", async () => {
+    const { view } = await renderCalibration();
+    await fireEvent.press(view.getByText("Start calibration"));
+    await act(() => {
+      mockMotionListeners.forEach((listener) =>
+        listener({ rotation: { beta: 0.2 } })
+      );
+      mockTiltListeners.forEach((listener) => listener({ x: 0, y: 0.9, z: 0 }));
+      jest.advanceTimersByTime(351);
+      mockVolumeListeners.forEach((listener) => listener({ direction: "up" }));
+    });
+    expect(view.queryByText("Shoulder pose")).toBeNull();
+    expect(Haptics.impactAsync).toHaveBeenCalledTimes(1);
+  });
+
+  it("confirms only a fresh valid pose on volume up and gives an error hint otherwise", async () => {
+    const { view, onComplete } = await renderCalibration();
+    expect(mockVolumeListeners.size).toBe(0);
+    await fireEvent.press(view.getByText("Start calibration"));
+    expect(mockVolumeListeners.size).toBe(1);
+    expect(view.getByText(/Hold steady or press volume up/)).toBeTruthy();
+    await act(() => {
+      mockMotionListeners.forEach((listener) =>
+        listener({ rotation: { beta: 0.2 } })
+      );
+      mockTiltListeners.forEach((listener) =>
+        listener({ x: 0, y: -0.9, z: 0 })
+      );
+      mockVolumeListeners.forEach((listener) => listener({ direction: "up" }));
+    });
+    expect(view.getByText(/Point the top edge down first/)).toBeTruthy();
+    expect(Haptics.impactAsync).toHaveBeenCalledTimes(1);
+    expect(view.queryByText("Shoulder pose")).toBeNull();
+
+    await act(() => {
+      mockTiltListeners.forEach((listener) => listener({ x: 0, y: 0.9, z: 0 }));
+      mockVolumeListeners.forEach((listener) =>
+        listener({ direction: "down" })
+      );
+    });
+    expect(view.queryByText("Shoulder pose")).toBeNull();
+    await act(() =>
+      mockVolumeListeners.forEach((listener) => listener({ direction: "up" }))
+    );
+    expect(view.getByText("Shoulder pose")).toBeTruthy();
+    expect(view.getAllByText("✓")).toHaveLength(1);
+
+    await act(() => {
+      mockTiltListeners.forEach((listener) =>
+        listener({ x: 0.95, y: 0, z: 0 })
+      );
+      mockVolumeListeners.forEach((listener) => listener({ direction: "up" }));
+    });
+    expect(view.getByText(/raise the phone from ready first/)).toBeTruthy();
+    await act(() => {
+      mockMotionListeners.forEach((listener) =>
+        listener({ rotation: { beta: 1.2 } })
+      );
+      mockVolumeListeners.forEach((listener) => listener({ direction: "up" }));
+    });
+    expect(view.getByText("Calibration passed")).toBeTruthy();
+    expect(mockVolumeListeners.size).toBe(0);
+    expect(Haptics.notificationAsync).toHaveBeenCalledTimes(2);
+    expect(onComplete).not.toHaveBeenCalled();
+    expect(view.getByTestId("ready-pose-illustration")).toBeTruthy();
+    expect(view.getByTestId("shoulder-pose-illustration")).toBeTruthy();
   });
 
   it("keeps motion permission recovery available", async () => {

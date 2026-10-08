@@ -72,6 +72,10 @@ jest.mock("expo-haptics", () => ({
   NotificationFeedbackType: { Success: "success" }
 }));
 
+jest.mock("./volumeFireTrigger", () => ({
+  subscribeVolumeFire: () => () => undefined
+}));
+
 describe("DuelScreen clock calibration", () => {
   beforeEach(() => {
     Platform.OS = "ios";

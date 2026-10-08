@@ -6,6 +6,7 @@ describe("calibration pose", () => {
     expect(isTopEdgeDown(0, -0.9, 0, "android")).toBe(true);
     expect(isTopEdgeDown(0, -0.9, 0, "ios")).toBe(false);
     expect(isTopEdgeForward(0, 0, 0.95)).toBe(true);
+    expect(isTopEdgeForward(0.95, 0, 0)).toBe(true);
     expect(isTopEdgeForward(0, 0.9, 0)).toBe(false);
   });
 
