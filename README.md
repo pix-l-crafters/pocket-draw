@@ -11,7 +11,10 @@ This is a [React Native](https://reactnative.dev/) app built with [Expo](https:/
 - [Node.js](https://nodejs.org/) (v24 recommended, see `mise.toml`)
 - npm (comes with Node.js)
 
-You do **not** need Xcode or Android Studio installed to run the app during development — see below.
+Metro can serve an already installed development build without Xcode or Android
+Studio. Building and installing an iPhone development build locally with
+`npx expo run:ios --device` requires full Xcode and a signed physical device.
+An EAS development build is another way to install the app on an iPhone.
 
 ### 2. Install dependencies
 
@@ -22,18 +25,47 @@ npm install
 ### 3. Run the app
 
 ```bash
-npx expo start
+npm run start:dev-client
 ```
 
-This starts the Metro bundler and prints a QR code in your terminal.
+This starts Metro for the development build and prints a QR code. On university
+Wi-Fi, use `npm run start:tunnel` instead: the network may block connections
+between the iPhone and Mac even when both are on the same Wi-Fi.
 
 ### 4. View it on your iPhone
 
 This project targets **Expo SDK 54** and duels over a local WebRTC connection (`react-native-webrtc`, `react-native-tcp-socket`), so it must run in an Expo development build. Expo Go does not include these native modules.
 
-1. Build and install the development client on your iPhone with `npx expo run:ios --device`.
-2. Start Metro with `npm run start:dev-client`.
-3. Open the Pocket Draw development client and connect to the displayed server.
+1. Install a development build on your iPhone. The `development` profile in
+   `eas.json` builds with Xcode 26: run
+   `npx eas build --platform ios --profile development` if you need a new build.
+   `npx expo run:ios --device` is another option with a compatible local Xcode.
+2. Start Metro with `npm run start:tunnel` on university Wi-Fi, or
+   `npm run start:dev-client` on a network that allows devices to reach each other.
+3. Open the installed Pocket Draw development client and scan the current QR code.
+   Do not scan it with Expo Go. Keep Metro running while testing.
+
+If the iPhone scanner says the QR code has unusable data, open Pocket Draw
+directly and enter the HTTPS tunnel URL shown after `url=` in Metro's
+`exp+pocket-draw://` link into the development launcher. If there is no
+development launcher, install a development build on that iPhone first.
+With the iPhone connected to the Mac, the full `exp+pocket-draw://` link can
+also be opened using `xcrun devicectl device process openURL --device <UDID> '<link>'`.
+
+If the app cannot load, open the Metro URL's `/status` endpoint in iPhone Safari.
+It should say `packager-status:running`. For a LAN session, use the Mac's Wi-Fi
+address and Metro port (usually `http://<mac-ip>:8081/status`). If that works
+on the Mac but not the phone, check that both devices are on the same network
+and that the network allows device-to-device traffic. Check the macOS firewall
+if it is enabled. On a restricted network, restart Metro with
+`npm run start:tunnel` and test the HTTPS tunnel URL's `/status` endpoint.
+If the tunnel URL works in Safari but Pocket Draw still cannot load, check that
+the development build is installed and rebuild it after native dependency or
+app configuration changes.
+On iOS 27, a development build compiled locally with Xcode 27 may exit at
+launch before it requests a Metro bundle because this SDK 54 native app does
+not yet use the iOS scene lifecycle. Use the `development` EAS profile above,
+which builds with Xcode 26, and install that build on the registered iPhone.
 
 > ⚠️ **Why SDK 54, not the latest one:** Expo Go on the App Store only supports one SDK
 > version at a time, and Apple's review process means it regularly lags behind the newest
@@ -43,10 +75,10 @@ This project targets **Expo SDK 54** and duels over a local WebRTC connection (`
 > `npx expo start` will say "project is incompatible with this version of Expo Go" if
 > you do. The native WebRTC and socket modules require the development build described above.
 >
-> Note: your iPhone and your computer need to be on the same Wi-Fi network for the QR
-> code to connect. On restrictive networks (e.g. university wifi with client isolation),
-> run `npm run start:tunnel` instead — it routes the connection over the internet so
-> it works even when your phone and laptop can't see each other on the LAN.
+> The tunnel carries the Expo development bundle. Duels still use a direct
+> phone-to-phone connection, so university Wi-Fi client isolation can also block
+> pairing. Use a network that allows devices to reach each other or the app's
+> hotspot mode for a two-phone duel.
 
 ### 5. View it on an Android phone
 
