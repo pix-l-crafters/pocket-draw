@@ -51,11 +51,10 @@ describe("getLeaderboard", () => {
       ["new", 1500],
       ["low", 1400]
     ]);
-    expect(board[0]).toMatchObject({
+    expect(board[0]).toEqual({
+      uid: "high",
       displayName: "High",
-      wins: 4,
-      losses: 2,
-      avgReactionMs: null
+      eloRating: 1800
     });
   });
 

@@ -17,10 +17,7 @@ describe("LeaderboardScreen", () => {
       {
         uid: "player",
         displayName: "Quick Draw",
-        eloRating: 1500,
-        wins: 0,
-        losses: 0,
-        avgReactionMs: null
+        eloRating: 1500
       }
     ]);
     const screen = await render(<LeaderboardScreen onBack={jest.fn()} />);

@@ -1,15 +1,15 @@
 import { collection, getDocs } from "firebase/firestore";
 
-import type { LeaderboardEntry } from "../../contracts/leaderboardEntry";
+import type { LeaderboardRanking } from "../../contracts/leaderboardEntry";
 import { db } from "../../lib/firebase";
 import { DEFAULT_ELO_RATING } from "./types";
 
 const LEADERBOARD_LIMIT = 100;
 
-export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
+export async function getLeaderboard(): Promise<LeaderboardRanking[]> {
   // Read every user so players without a rating participate at the default.
   const usersSnapshot = await getDocs(collection(db, "users"));
-  const entries: LeaderboardEntry[] = usersSnapshot.docs.map((docSnap) => {
+  const entries: LeaderboardRanking[] = usersSnapshot.docs.map((docSnap) => {
     const data = docSnap.data();
 
     return {
@@ -18,13 +18,10 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
         typeof data.displayName === "string" && data.displayName.trim()
           ? data.displayName
           : "Player",
-      wins: typeof data.win === "number" ? data.win : 0,
-      losses: typeof data.lose === "number" ? data.lose : 0,
       eloRating:
         typeof data.eloRating === "number" && Number.isFinite(data.eloRating)
           ? data.eloRating
-          : DEFAULT_ELO_RATING,
-      avgReactionMs: null
+          : DEFAULT_ELO_RATING
     };
   });
 

@@ -5,7 +5,7 @@ import { ActivityIndicator } from "react-native-paper";
 import { CutCornerButton } from "../../components/CutCornerButton";
 import { KickerLabel } from "../../components/KickerLabel";
 import { ScreenHeader } from "../../components/ScreenHeader";
-import type { LeaderboardEntry } from "../../contracts/leaderboardEntry";
+import type { LeaderboardRanking } from "../../contracts/leaderboardEntry";
 import { colors, fonts } from "../../theme/tokens";
 import { getLeaderboard } from "../backend/leaderboardRepository";
 
@@ -14,7 +14,7 @@ type LeaderboardScreenProps = {
 };
 
 export function LeaderboardScreen({ onBack }: LeaderboardScreenProps) {
-  const [entries, setEntries] = useState<LeaderboardEntry[] | null>(null);
+  const [entries, setEntries] = useState<LeaderboardRanking[] | null>(null);
   const [error, setError] = useState(false);
   const [requestId, setRequestId] = useState(0);
 
