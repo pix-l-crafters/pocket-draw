@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 
 import { CutCornerButton } from "../../components/CutCornerButton";
 import { CutCornerSurface } from "../../components/CutCornerSurface";
+import { PermissionNotice } from "../../components/PermissionNotice";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { StatusTag } from "../../components/StatusTag";
 import { colors, fonts } from "../../theme/tokens";
@@ -34,8 +35,7 @@ const statusCopy: Record<CalibrationStatus, string> = {
   idle: "Hold your phone down at your side, then start the test.",
   listening: "Draw now — raise your phone smoothly into the duel pose.",
   passed: "Draw detected. Your phone is ready for a duel.",
-  permissionDenied:
-    "Motion access is disabled. Enable it in device settings and retry.",
+  permissionDenied: "Motion access is disabled, so the draw can't be timed.",
   unavailable: "This device does not report an available accelerometer.",
   error: "Motion detection could not start. Check device settings and retry."
 };
@@ -162,11 +162,23 @@ export function DrawCalibrationScreen({
       </View>
 
       <View style={styles.actions}>
-        <CutCornerButton
-          disabled={status === "listening"}
-          label={buttonLabel}
-          onPress={status === "passed" ? handleContinue : startCalibration}
-        />
+        {status === "permissionDenied" ? (
+          // iOS never re-prompts for motion once it has been refused, and
+          // Android grants it without a prompt — so Settings is the only path
+          // back, and `onRetry` re-checks it on return.
+          <PermissionNotice
+            canAskAgain={false}
+            capability="Motion"
+            message="Pocket Draw times your draw from the phone's motion sensors. Without them a duel can't be judged."
+            onRetry={() => void startCalibration()}
+          />
+        ) : (
+          <CutCornerButton
+            disabled={status === "listening"}
+            label={buttonLabel}
+            onPress={status === "passed" ? handleContinue : startCalibration}
+          />
+        )}
       </View>
     </View>
   );

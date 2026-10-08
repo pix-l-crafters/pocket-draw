@@ -1,45 +1,31 @@
-import { useEffect, useState } from "react";
-import {
-  FlatList,
-  PermissionsAndroid,
-  Platform,
-  StyleSheet,
-  View
-} from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { FlatList, StyleSheet, View } from "react-native";
 import BleManager, { type Peripheral } from "react-native-ble-manager";
 import { Button, Card, Text } from "react-native-paper";
 
+import { PermissionNotice } from "../../components/PermissionNotice";
 import { colors } from "../../theme/tokens";
+import {
+  bluetoothPermissions,
+  ensureAndroidPermissions,
+  type PermissionOutcome
+} from "../permissions/appPermissions";
+import { useForegroundRecheck } from "../permissions/useForegroundRecheck";
 
 export function BleScreen() {
   const [status, setStatus] = useState("Initializing Bluetooth...");
   const [isScanning, setIsScanning] = useState(false);
   const [devices, setDevices] = useState<Peripheral[]>([]);
   const [isReady, setIsReady] = useState(false);
+  const [permission, setPermission] = useState<PermissionOutcome | null>(null);
+  // Bumped to re-run the init effect once a refused permission is granted.
+  const [initAttempt, setInitAttempt] = useState(0);
 
-  async function requestBluetoothPermissions() {
-    if (Platform.OS !== "android") {
-      return true;
-    }
-
-    if (Platform.Version >= 31) {
-      const granted = await PermissionsAndroid.requestMultiple([
-        PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
-        PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT
-      ]);
-      return (
-        granted[PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN] ===
-          PermissionsAndroid.RESULTS.GRANTED &&
-        granted[PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT] ===
-          PermissionsAndroid.RESULTS.GRANTED
-      );
-    }
-
-    const granted = await PermissionsAndroid.request(
-      PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
-    );
-    return granted === PermissionsAndroid.RESULTS.GRANTED;
-  }
+  const retryInit = useCallback(() => setInitAttempt((n) => n + 1), []);
+  const retryAfterSettings = useCallback(() => {
+    if (permission && !permission.granted) retryInit();
+  }, [permission, retryInit]);
+  useForegroundRecheck(retryAfterSettings);
 
   useEffect(() => {
     const subscriptions = [
@@ -58,8 +44,9 @@ export function BleScreen() {
 
     const initialize = async () => {
       try {
-        const hasPermissions = await requestBluetoothPermissions();
-        if (!hasPermissions) {
+        const outcome = await ensureAndroidPermissions(bluetoothPermissions());
+        setPermission(outcome);
+        if (!outcome.granted) {
           setStatus("Bluetooth permissions denied");
           return;
         }
@@ -79,7 +66,7 @@ export function BleScreen() {
     return () => {
       subscriptions.forEach((subscription) => subscription.remove());
     };
-  }, []);
+  }, [initAttempt]);
 
   const startScan = async () => {
     if (!isReady || isScanning) {
@@ -113,14 +100,23 @@ export function BleScreen() {
       >
         {status}
       </Text>
-      <Button
-        disabled={!isReady || isScanning}
-        mode="contained"
-        onPress={() => void startScan()}
-        style={styles.scanButton}
-      >
-        {isScanning ? "Scanning..." : "Scan for 5 seconds"}
-      </Button>
+      {permission && !permission.granted ? (
+        <PermissionNotice
+          canAskAgain={permission.canAskAgain}
+          capability="Bluetooth"
+          message="Scanning for nearby players needs Bluetooth access."
+          onRetry={retryInit}
+        />
+      ) : (
+        <Button
+          disabled={!isReady || isScanning}
+          mode="contained"
+          onPress={() => void startScan()}
+          style={styles.scanButton}
+        >
+          {isScanning ? "Scanning..." : "Scan for 5 seconds"}
+        </Button>
+      )}
       <FlatList
         contentContainerStyle={styles.list}
         data={devices}

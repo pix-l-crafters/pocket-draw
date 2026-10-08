@@ -13,11 +13,14 @@ import QRCode from "react-native-qrcode-svg";
 
 import { CutCornerButton } from "../../components/CutCornerButton";
 import { CutCornerSurface } from "../../components/CutCornerSurface";
+import { PermissionNotice } from "../../components/PermissionNotice";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { StatusTag } from "../../components/StatusTag";
 import type { DuelChannel } from "../../contracts/duelChannel";
 import type { DuelConnectionInfo } from "../../contracts/duelConnection";
 import { colors, fonts } from "../../theme/tokens";
+import { PermissionDeniedError } from "../permissions/appPermissions";
+import { useForegroundRecheck } from "../permissions/useForegroundRecheck";
 import type { QrInvitePayload } from "../qr/types/qr.types";
 import {
   isValidHotspotPassword,
@@ -49,6 +52,10 @@ type QrDisplayScreenProps = {
 
 type InviteIdentity = Omit<QrInvitePayload, "connection">;
 type ConnectionMode = DuelConnectionInfo["mode"];
+
+function toSetupError(error: unknown, fallback: string): Error {
+  return error instanceof Error ? error : new Error(fallback);
+}
 
 function createInviteIdentity(
   hostUid: string,
@@ -87,7 +94,9 @@ export function QrDisplayScreen({
   // Once a guest connects over the hotspot, the duel depends on it, so leaving
   // this screen must not tear the hotspot down.
   const hotspotHandedOff = useRef(false);
-  const [setupError, setSetupError] = useState<string | null>(null);
+  const [setupError, setSetupError] = useState<Error | null>(null);
+  // Bumped to re-run the hotspot effect after a refused permission is granted.
+  const [hotspotAttempt, setHotspotAttempt] = useState(0);
   const [secondsLeft, setSecondsLeft] = useState(() =>
     Math.max(0, Math.ceil((identity.expiresAt - Date.now()) / 1000))
   );
@@ -110,6 +119,21 @@ export function QrDisplayScreen({
     return subscribeToNetworkChanges(regenerate);
   }, [connectionMode, regenerate]);
 
+  // Regenerating alone only rotates the invite — the hotspot effect below is
+  // keyed on the mode, so retrying a refused permission needs its own trigger.
+  const retrySetup = useCallback(() => {
+    setSetupError(null);
+    setHotspotAttempt((attempt) => attempt + 1);
+    regenerate();
+  }, [regenerate]);
+
+  // A permission granted in Settings only reaches this screen on the way back,
+  // so retry there rather than making the player restart the app.
+  const retryAfterSettings = useCallback(() => {
+    if (setupError instanceof PermissionDeniedError) retrySetup();
+  }, [retrySetup, setupError]);
+  useForegroundRecheck(retryAfterSettings);
+
   // The Android hotspot outlives individual invites: regenerating a QR code
   // must not rotate the SSID/password or drop a guest who is already joining.
   useEffect(() => {
@@ -125,9 +149,7 @@ export function QrDisplayScreen({
       (error: unknown) => {
         if (!active) return;
         setSetupError(
-          error instanceof Error
-            ? error.message
-            : "Could not create an Android hotspot."
+          toSetupError(error, "Could not create an Android hotspot.")
         );
       }
     );
@@ -136,7 +158,7 @@ export function QrDisplayScreen({
       setAndroidHotspot(null);
       if (!hotspotHandedOff.current) stopAndroidLocalOnlyHotspot();
     };
-  }, [connectionMode]);
+  }, [connectionMode, hotspotAttempt]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -222,18 +244,14 @@ export function QrDisplayScreen({
           (error: unknown) => {
             if (!active || controller.signal.aborted) return;
             setSetupError(
-              error instanceof Error
-                ? error.message
-                : "The local duel connection failed."
+              toSetupError(error, "The local duel connection failed.")
             );
           }
         );
       } catch (error) {
         if (!active || controller.signal.aborted) return;
         setSetupError(
-          error instanceof Error
-            ? error.message
-            : "Could not create a local duel invite."
+          toSetupError(error, "Could not create a local duel invite.")
         );
       }
     };
@@ -343,8 +361,15 @@ export function QrDisplayScreen({
               />
             </View>
           ) : null}
-          {setupError ? (
-            <StatusTag tone="warning">{setupError}</StatusTag>
+          {setupError instanceof PermissionDeniedError ? (
+            <PermissionNotice
+              canAskAgain={setupError.canAskAgain}
+              capability={setupError.capability}
+              message="Hosting over your own hotspot needs it. Until then, switch to Shared Wi-Fi and put both phones on the same network."
+              onRetry={retrySetup}
+            />
+          ) : setupError ? (
+            <StatusTag tone="warning">{setupError.message}</StatusTag>
           ) : waitingForIosDetails ? (
             <StatusTag>Enter your Personal Hotspot details above.</StatusTag>
           ) : invite ? (

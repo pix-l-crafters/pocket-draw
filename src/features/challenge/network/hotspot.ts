@@ -1,9 +1,13 @@
-import { PermissionsAndroid, Platform } from "react-native";
-
 import type {
   DuelConnectionInfo,
   HotspotConnection
 } from "../../../contracts/duelConnection";
+import {
+  ensureAndroidPermissions,
+  nearbyWifiPermissions,
+  PermissionDeniedError,
+  type PermissionOutcome
+} from "../../permissions/appPermissions";
 import {
   isUsableIpv4Address,
   isValidHotspotPassword,
@@ -27,8 +31,13 @@ type WifiConnector = {
   }): Promise<void>;
 };
 
+/** Joining a hotspot needs the same nearby-Wi-Fi grant as creating one. */
+type JoinHotspotDependencies = WifiConnector & {
+  ensurePermission: () => Promise<PermissionOutcome>;
+};
+
 type AndroidHotspotDependencies = {
-  requestPermission: () => Promise<boolean>;
+  requestPermission: () => Promise<PermissionOutcome>;
   startAsync: () => Promise<HotspotNetwork>;
   stop: () => void;
 };
@@ -43,6 +52,13 @@ function getWifiConnector(): WifiConnector {
   return require("react-native-wifi-reborn").default as WifiConnector;
 }
 
+function nativeJoinDependencies(): JoinHotspotDependencies {
+  return {
+    ...getWifiConnector(),
+    ensurePermission: ensureNearbyWifiPermission
+  };
+}
+
 function getLocalOnlyHotspotModule(): {
   startAsync: () => Promise<HotspotNetwork>;
   stop: () => void;
@@ -50,20 +66,14 @@ function getLocalOnlyHotspotModule(): {
   return require("../../../../modules/local-only-hotspot").default;
 }
 
-async function requestAndroidHotspotPermission(): Promise<boolean> {
-  if (Platform.OS !== "android") return false;
-  const permission =
-    Number(Platform.Version) >= 33
-      ? PermissionsAndroid.PERMISSIONS.NEARBY_WIFI_DEVICES
-      : PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION;
-  const result = await PermissionsAndroid.request(permission);
-  return result === PermissionsAndroid.RESULTS.GRANTED;
+function ensureNearbyWifiPermission(): Promise<PermissionOutcome> {
+  return ensureAndroidPermissions(nearbyWifiPermissions());
 }
 
 function nativeAndroidDependencies(): AndroidHotspotDependencies {
   const hotspot = getLocalOnlyHotspotModule();
   return {
-    requestPermission: requestAndroidHotspotPermission,
+    requestPermission: ensureNearbyWifiPermission,
     startAsync: hotspot.startAsync,
     stop: hotspot.stop
   };
@@ -82,8 +92,13 @@ function assertValidHotspotNetwork(network: HotspotNetwork): void {
 export async function startAndroidLocalOnlyHotspot(
   dependencies: AndroidHotspotDependencies = nativeAndroidDependencies()
 ): Promise<HotspotNetwork> {
-  if (!(await dependencies.requestPermission())) {
-    throw new Error("Nearby Wi-Fi permission is required to create a hotspot.");
+  const permission = await dependencies.requestPermission();
+  if (!permission.granted) {
+    throw new PermissionDeniedError(
+      "Nearby Wi-Fi",
+      permission.canAskAgain,
+      "Nearby Wi-Fi permission is required to create a hotspot."
+    );
   }
   const network = await dependencies.startAsync();
   assertValidHotspotNetwork(network);
@@ -101,9 +116,18 @@ export function stopAndroidLocalOnlyHotspot(
 
 export async function joinHotspot(
   connection: HotspotConnection,
-  connector: WifiConnector = getWifiConnector()
+  dependencies: JoinHotspotDependencies = nativeJoinDependencies()
 ): Promise<void> {
-  await connector.connectToProtectedWifiSSID({
+  const permission = await dependencies.ensurePermission();
+  if (!permission.granted) {
+    throw new PermissionDeniedError(
+      "Nearby Wi-Fi",
+      permission.canAskAgain,
+      `Nearby Wi-Fi permission is required to join ${connection.ssid}.`
+    );
+  }
+
+  await dependencies.connectToProtectedWifiSSID({
     ssid: connection.ssid,
     password: connection.password,
     isWEP: false,
@@ -115,7 +139,7 @@ export async function joinHotspot(
 export function withNetworkPreparation(
   connection: DuelConnectionInfo,
   transport: DuelSessionTransport,
-  connector: WifiConnector = getWifiConnector()
+  dependencies: JoinHotspotDependencies = nativeJoinDependencies()
 ): DuelSessionTransport {
   let prepared = connection.mode === "existingWifi";
   let preparation: Promise<void> | null = null;
@@ -124,7 +148,7 @@ export function withNetworkPreparation(
     async connect(params, signal) {
       if (signal.aborted) throw abortError();
       if (!prepared && connection.mode === "hotspot") {
-        preparation ??= joinHotspot(connection, connector)
+        preparation ??= joinHotspot(connection, dependencies)
           .then(() => {
             prepared = true;
           })
