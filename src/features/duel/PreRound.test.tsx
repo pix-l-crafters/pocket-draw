@@ -1,9 +1,7 @@
-// Guards the two things that were broken end to end: the countdown is a fixed
-// three seconds (it used to start after a random 1-3s delay), and FIRE arrives
-// when it hits zero (the guest used to jump straight to the draw, and the host
-// never got there at all).
+// Guards cross-platform phone positioning and the fixed countdown-to-FIRE flow.
 
 import { act, fireEvent, render } from "@testing-library/react-native";
+import { Platform } from "react-native";
 import { PaperProvider } from "react-native-paper";
 
 import type { DuelChannel, DuelMessage } from "../../contracts/duelChannel";
@@ -13,6 +11,7 @@ import { COUNTDOWN_DURATION_MS, PreRound } from "./PreRound";
 import type { RoundShots } from "./roundShots";
 
 type Reading = { x: number; y: number; z: number };
+type MobilePlatform = "ios" | "android";
 
 const accelerometerListeners: ((reading: Reading) => void)[] = [];
 
@@ -38,7 +37,11 @@ jest.mock("expo-haptics", () => ({
   NotificationFeedbackType: { Success: "success" }
 }));
 
-async function renderPreRound(role: DuelRole) {
+async function renderPreRound(
+  role: DuelRole,
+  platform: MobilePlatform = "android"
+) {
+  Platform.OS = platform;
   const sent: DuelMessage[] = [];
   const shots: RoundShots[] = [];
   const handlers = new Set<(message: DuelMessage) => void>();
@@ -72,22 +75,22 @@ async function renderPreRound(role: DuelRole) {
     });
 
   const wait = (ms: number) => act(() => jest.advanceTimersByTime(ms));
+  const setReading = (reading: Reading) =>
+    act(() => {
+      accelerometerListeners.forEach((listener) => listener(reading));
+    });
 
   /** Walks the ritual to the point the countdown can start. */
-  const completeRitual = async () => {
+  const completeRitual = async (reading: Reading = { x: 0, y: -1, z: 0 }) => {
     // The separation reading resolves on a microtask.
     await act(async () => undefined);
     await fireEvent.press(view.getByText("CONFIRM"));
 
-    await act(() => {
-      accelerometerListeners.forEach((listener) =>
-        listener({ x: 0, y: 0, z: -1 })
-      );
-    });
+    await setReading(reading);
     await fireEvent.press(view.getByText("CONFIRM"));
   };
 
-  return { completeRitual, deliver, sent, shots, view, wait };
+  return { completeRitual, deliver, sent, setReading, shots, view, wait };
 }
 
 describe("PreRound countdown and draw", () => {
@@ -99,6 +102,26 @@ describe("PreRound countdown and draw", () => {
   afterEach(() => {
     jest.useRealTimers();
   });
+
+  it.each([
+    ["ios", { x: 0, y: 1, z: 0 }, { x: 0, y: -1, z: 0 }],
+    ["android", { x: 0, y: -1, z: 0 }, { x: 0, y: 1, z: 0 }]
+  ] as const)(
+    "requires the top edge to point down on %s",
+    async (platform, topEdgeDown, topEdgeUp) => {
+      const { completeRitual, sent, setReading, view } = await renderPreRound(
+        "host",
+        platform
+      );
+      await completeRitual(topEdgeUp);
+
+      expect(sent).toEqual([]);
+
+      await setReading(topEdgeDown);
+      await fireEvent.press(view.getByText("CONFIRM"));
+      expect(sent).toEqual([{ type: "countdown", value: 3 }]);
+    }
+  );
 
   it("ticks 3-2-1 one second apart and fires exactly on zero", async () => {
     const { completeRitual, sent, view, wait } = await renderPreRound("host");

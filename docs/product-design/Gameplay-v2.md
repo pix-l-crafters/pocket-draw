@@ -14,7 +14,7 @@ This screen shows instructions on how to play the game.
 4. There will be 3 rounds per match. Once the scores are tallied, the winner is determined by the highest score — the **sum of each player's round points** across all 3 rounds (bodyshot/headshot/miss values below), not simply who won more individual rounds.
    a. If the point totals are tied, a tie breaker round is initiated. Whatever the result of tie breaker, the match ends and the scores of the entire match is saved, be it win/lose/tie.
 
-5. When the phones are down, the game will begin a count down timer of 3 seconds. Once the timer is out, the phone will buzz which is an indicator that the players should now shoot.
+5. Once both phones are in the ready position (top edge toward the ground), the game starts a 3-second countdown. A buzz at zero tells players to shoot.
 
 6. Players will then raise their arm and shoot (by pressing a button). Body shot counts as 1 point. Headshot as 2 points. Misfire and wrong shots count as 0 points.
 
@@ -23,7 +23,7 @@ This screen shows instructions on how to play the game.
 Two positions are vital to calibrate the gameplay.
 
 1. Arm raised at shoulder position with the phone's top edge pointing the opponent. Let's call this the "shoulder" position.
-2. Arm straight down with the phone's lower edge parallel/pointing to the ground. Let's call this the "ready" position.
+2. Arm straight down with the phone's top edge pointing toward the ground. Let's call this the "ready" position.
 
 These sensors help determine the spatial coordinates and orientation of the phone, which are used to determine the player's position and movement.
 
