@@ -69,7 +69,23 @@ export function isDuelMessage(value: unknown): value is DuelMessage {
         isFiniteNumber(message.atMs) &&
         message.atMs >= 0 &&
         isFiniteNumber(message.reactionMs) &&
-        message.reactionMs >= 0
+        message.reactionMs >= 0 &&
+        (message.zone === "miss" ||
+          message.zone === "bodyshot" ||
+          message.zone === "headshot")
+      );
+    case "aimPosition":
+      return (
+        isFiniteNumber(message.latitude) &&
+        message.latitude >= -90 &&
+        message.latitude <= 90 &&
+        isFiniteNumber(message.longitude) &&
+        message.longitude >= -180 &&
+        message.longitude <= 180 &&
+        isFiniteNumber(message.accuracy) &&
+        message.accuracy >= 0 &&
+        isFiniteNumber(message.sampleAtMs) &&
+        message.sampleAtMs >= 0
       );
     case "fire":
     case "falseStart":

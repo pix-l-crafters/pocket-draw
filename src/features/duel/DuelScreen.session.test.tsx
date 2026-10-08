@@ -18,6 +18,8 @@ import type { DuelTransportConnection } from "../challenge/session/duelSessionTr
 import { generateMatchId } from "../qr/utils/qr.tokens";
 import { DuelScreen } from "./DuelScreen";
 import type { DuelRole } from "./fireSignalCoordinator";
+import type { PitchCalibration } from "./pitchMonitor";
+import type { RoundShots } from "./roundShots";
 
 const FIRST_MATCH = "11111111-1111-4111-8111-111111111111";
 const REMATCH = "22222222-2222-4222-8222-222222222222";
@@ -41,13 +43,29 @@ jest.mock("./clockOffsetCalibrator", () => ({
   }))
 }));
 
-// The host fires in 100ms and the guest in 200ms, seen from either phone.
+jest.mock("./DrawCalibrationScreen", () => ({
+  DrawCalibrationScreen: ({
+    onComplete
+  }: {
+    onComplete: (calibration: PitchCalibration) => void;
+  }) => {
+    const { Button } = require("react-native");
+    return (
+      <Button
+        title="Complete calibration"
+        onPress={() => onComplete({ thetaReady: 0, thetaShoulder: 1 })}
+      />
+    );
+  }
+}));
+
+// The host fires in 100ms and the guest in 300ms, seen from either phone.
 jest.mock("./PreRound", () => ({
   PreRound: ({
     onRoundShots,
     role
   }: {
-    onRoundShots: (shots: unknown) => void;
+    onRoundShots: (shots: RoundShots) => void;
     role: DuelRole;
   }) => {
     const { Button } = require("react-native");
@@ -57,8 +75,20 @@ jest.mock("./PreRound", () => ({
         onPress={() =>
           onRoundShots(
             role === "host"
-              ? { selfReactionMs: 100, opponentReactionMs: 200 }
-              : { selfReactionMs: 200, opponentReactionMs: 100 }
+              ? {
+                  selfReactionMs: 100,
+                  opponentReactionMs: 300,
+                  selfZone: "bodyshot",
+                  opponentZone: "bodyshot",
+                  falseStartPlayer: null
+                }
+              : {
+                  selfReactionMs: 300,
+                  opponentReactionMs: 100,
+                  selfZone: "bodyshot",
+                  opponentZone: "bodyshot",
+                  falseStartPlayer: null
+                }
           )
         }
       />
@@ -207,6 +237,7 @@ async function renderPhones(network = testNetwork()) {
   const guest = within(view.getByTestId("guest"));
   for (const phone of [host, guest]) {
     await fireEvent.press(phone.getByText("I'm Ready"));
+    await fireEvent.press(phone.getByText("Complete calibration"));
   }
   return { host, guest, network, onExit };
 }

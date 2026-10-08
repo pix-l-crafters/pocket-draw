@@ -2,6 +2,8 @@
 // Duel game logic (Tanachat, Tianze, Mobark). Duel code should depend on
 // this interface, not on a WebRTC or signaling implementation directly.
 
+import type { Zone } from "./roundOutcome";
+
 export type DuelMessage =
   // Handshake: the guest announces itself as soon as the channel opens, and
   // the host answers once the player accepts or declines the challenge.
@@ -14,7 +16,16 @@ export type DuelMessage =
   | { type: "fire"; atMs: number }
   // `atMs` is the raiser's local timestamp; calibration translates received
   // FIRE timestamps before reaction timing, so `reactionMs` is comparable.
-  | { type: "raised"; atMs: number; reactionMs: number }
+  | { type: "raised"; atMs: number; reactionMs: number; zone: Zone }
+  // Precise foreground GPS is shared only with the accepted duel opponent.
+  // sampleAtMs is the GPS fix time in the sender's calibrated clock domain.
+  | {
+      type: "aimPosition";
+      latitude: number;
+      longitude: number;
+      accuracy: number;
+      sampleAtMs: number;
+    }
   | { type: "falseStart"; atMs: number }
   | { type: "clockPing"; t0: number }
   | { type: "clockPong"; t0: number; t1: number; t2: number }

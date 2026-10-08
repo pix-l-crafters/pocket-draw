@@ -49,7 +49,13 @@ test("both phones can save the same completed match under create-only rules", as
   const round = judgeRoundShots(
     { id: "player-a", name: "Alice" },
     { id: "player-b", name: "Bob" },
-    { selfReactionMs: 100, opponentReactionMs: 200 }
+    {
+      selfReactionMs: 100,
+      opponentReactionMs: 300,
+      selfZone: "bodyshot",
+      opponentZone: "bodyshot",
+      falseStartPlayer: null
+    }
   );
   for (let index = 0; index < 3; index += 1)
     loop = applyRoundOutcome(loop, round);

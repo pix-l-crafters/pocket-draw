@@ -7,12 +7,21 @@ import { Button, IconButton, ProgressBar } from "react-native-paper";
 
 import { PermissionNotice } from "../../components/PermissionNotice";
 import type { DuelChannel, DuelMessage } from "../../contracts/duelChannel";
+import type { Zone } from "../../contracts/roundOutcome";
 import { useForegroundRecheck } from "../../lib/useForegroundRecheck";
 import { colors, fonts } from "../../theme/tokens";
 import { COUNTDOWN_AUDIO_SOURCE } from "./countdownAudio";
+import { FalseStartCoordinator } from "./falseStartCoordinator";
 import { FireSignalCoordinator, type DuelRole } from "./fireSignalCoordinator";
+import {
+  PitchMonitor,
+  type PitchCalibration,
+  type PitchMonitorStartResult
+} from "./pitchMonitor";
+import { classifyZone, computeRaiseFraction } from "./pitchZoneClassifier";
 import { ReactionTimer } from "./reactionTimer";
 import { FIRE_WINDOW_MS, type RoundShots } from "./roundShots";
+import { useAimTracking } from "./useAimTracking";
 import { subscribeVolumeFire } from "./volumeFireTrigger";
 
 const COUNTDOWN_VALUES = [3, 2, 1] as const;
@@ -45,6 +54,9 @@ type Phase =
 
 type PreRoundProps = {
   channel: DuelChannel;
+  calibration: PitchCalibration;
+  selfPlayerId: string;
+  opponentPlayerId: string;
   /** The host owns the countdown and the FIRE signal; the guest follows. */
   role: DuelRole;
   /** True once the opponent has finished their own pre-round ritual. */
@@ -58,6 +70,9 @@ type PreRoundProps = {
 
 export function PreRound({
   channel,
+  calibration,
+  selfPlayerId,
+  opponentPlayerId,
   role,
   peerReady,
   clockCalibrationStatus,
@@ -68,6 +83,53 @@ export function PreRound({
 }: PreRoundProps) {
   const countdownAudio = useAudioPlayer(COUNTDOWN_AUDIO_SOURCE);
   const [phase, setPhase] = useState<Phase>("separate");
+  const phaseRef = useRef(phase);
+  phaseRef.current = phase;
+  const captureAim = useAimTracking(channel, clockOffsetMs);
+  const pitchMonitor = useMemo(() => new PitchMonitor(), []);
+  const [pitchStatus, setPitchStatus] = useState<
+    PitchMonitorStartResult | "starting"
+  >("starting");
+  const [pitchRetry, setPitchRetry] = useState(0);
+  const falseStarts = useMemo(
+    () => new FalseStartCoordinator(channel, selfPlayerId, opponentPlayerId),
+    [channel, selfPlayerId, opponentPlayerId]
+  );
+  const [falseStartPlayer, setFalseStartPlayer] = useState<
+    "self" | "opponent" | null
+  >(null);
+  const [selfZone, setSelfZone] = useState<Zone>("miss");
+  const [opponentZone, setOpponentZone] = useState<Zone>("miss");
+  const opponentShotReceivedRef = useRef(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setPitchStatus("starting");
+    void pitchMonitor
+      .start()
+      .then((result) => {
+        if (!cancelled) setPitchStatus(result);
+      })
+      .catch(() => {
+        if (!cancelled) setPitchStatus("error");
+      });
+    return () => {
+      cancelled = true;
+      pitchMonitor.stop();
+    };
+  }, [pitchMonitor, pitchRetry]);
+
+  useEffect(() => {
+    const unsubscribe = falseStarts.onOutcome((outcome) =>
+      setFalseStartPlayer(
+        outcome.playerId === selfPlayerId ? "self" : "opponent"
+      )
+    );
+    return () => {
+      unsubscribe();
+      falseStarts.dispose();
+    };
+  }, [falseStarts, selfPlayerId]);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [topEdgeDown, setTopEdgeDown] = useState(false);
   const [motionDenied, setMotionDenied] = useState(false);
@@ -143,51 +205,56 @@ export function PreRound({
       fireCoordinator.onFire((signal) => {
         firedAtRef.current = signal.atMs;
         reactionTimerRef.current.start(signal.atMs);
+        falseStarts.markFire(signal.atMs);
         setCountdown(0);
         setPhase("fire");
         void Haptics.notificationAsync(
           Haptics.NotificationFeedbackType.Success
         );
       }),
-    [fireCoordinator]
+    [fireCoordinator, falseStarts]
   );
 
   const recheckMotion = useCallback(() => {
     if (motionDenied) setMotionAttempt((attempt) => attempt + 1);
-  }, [motionDenied]);
+    if (pitchStatus !== "started" && pitchStatus !== "starting") {
+      setPitchRetry((attempt) => attempt + 1);
+    }
+  }, [motionDenied, pitchStatus]);
   useForegroundRecheck(recheckMotion);
 
   useEffect(() => {
     let mounted = true;
     let subscription: { remove(): void } | null = null;
-
-    // CONFIRM is gated on `topEdgeDown`, which only ever flips from this
-    // listener. Subscribing without checking motion access left a player who
-    // had refused it stuck on a disabled button with no prompt and no
-    // explanation — the restart loop this ticket is about.
     const startWatchingTilt = async () => {
       let permission = await Accelerometer.getPermissionsAsync();
       if (!permission.granted && permission.canAskAgain) {
         permission = await Accelerometer.requestPermissionsAsync();
       }
       if (!mounted) return;
-
       setMotionDenied(!permission.granted);
       if (!permission.granted) return;
-
       Accelerometer.setUpdateInterval(150);
       subscription = Accelerometer.addListener(({ x, y, z }) => {
-        if (mounted) setTopEdgeDown(isTopEdgeDown(x, y, z));
+        if (!mounted) return;
+        setTopEdgeDown(isTopEdgeDown(x, y, z));
+        if (phaseRef.current === "countdown") {
+          try {
+            falseStarts.processLocalSample({ x, y, z, atMs: Date.now() });
+          } catch {
+            setSendError("Lost the connection to your opponent.");
+          }
+        }
       });
     };
-
-    void startWatchingTilt();
-
+    void startWatchingTilt().catch(() => {
+      if (mounted) setMotionDenied(true);
+    });
     return () => {
       mounted = false;
       subscription?.remove();
     };
-  }, [motionAttempt]);
+  }, [motionAttempt, falseStarts]);
 
   useEffect(() => {
     // The countdown cue must be audible even with the iOS silent switch on —
@@ -198,14 +265,17 @@ export function PreRound({
   useEffect(() => {
     return channel.onMessage((message: DuelMessage) => {
       if (message.type === "countdown") {
+        if (message.value === 3) falseStarts.arm();
         setPhase((current) => (current === "fire" ? current : "countdown"));
         showTick(message.value);
       }
-      if (message.type === "raised") {
+      if (message.type === "raised" && !opponentShotReceivedRef.current) {
+        opponentShotReceivedRef.current = true;
+        setOpponentZone(message.zone);
         setOpponentReactionMs(message.reactionMs);
       }
     });
-  }, [channel]);
+  }, [channel, falseStarts]);
 
   // Both shots in, or the window closed: the round is decided either way.
   useEffect(() => {
@@ -215,10 +285,20 @@ export function PreRound({
       if (reportedRef.current) return;
       reportedRef.current = true;
       setPhase("done");
-      onRoundShots({ selfReactionMs, opponentReactionMs });
+      onRoundShots({
+        selfReactionMs,
+        opponentReactionMs,
+        selfZone,
+        opponentZone,
+        falseStartPlayer
+      });
     };
 
-    if (selfReactionMs !== null && opponentReactionMs !== null) {
+    if (
+      falseStartPlayer === null &&
+      selfReactionMs !== null &&
+      opponentReactionMs !== null
+    ) {
       report();
       return undefined;
     }
@@ -226,9 +306,28 @@ export function PreRound({
     const deadline = firedAtRef.current + FIRE_WINDOW_MS + PEER_SHOT_GRACE_MS;
     const timer = setTimeout(report, Math.max(0, deadline - Date.now()));
     return () => clearTimeout(timer);
-  }, [onRoundShots, opponentReactionMs, phase, selfReactionMs]);
+  }, [
+    onRoundShots,
+    opponentReactionMs,
+    phase,
+    selfReactionMs,
+    selfZone,
+    opponentZone,
+    falseStartPlayer
+  ]);
 
   const handleFire = () => {
+    if (phase !== "fire") {
+      if (phase === "countdown") {
+        try {
+          falseStarts.processLocalFire(Date.now());
+        } catch {
+          setSendError("Lost the connection to your opponent.");
+        }
+      }
+      return;
+    }
+    if (falseStarts.hasFalseStarted(selfPlayerId)) return;
     if (selfReactionMs !== null || reactionTimerRef.current.getCapture())
       return;
     if (Date.now() > firedAtRef.current + FIRE_WINDOW_MS) return;
@@ -236,18 +335,32 @@ export function PreRound({
     const capture = reactionTimerRef.current.captureRaise(Date.now());
     if (!capture) return;
 
+    const theta = pitchMonitor.currentTheta();
+    const zone = captureAim(
+      theta === null
+        ? "miss"
+        : classifyZone(
+            computeRaiseFraction(
+              theta,
+              calibration.thetaReady,
+              calibration.thetaShoulder
+            )
+          )
+    );
+    setSelfZone(zone);
     setSelfReactionMs(capture.reactionMs);
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     safeSend({
       type: "raised",
       atMs: capture.raisedAtMs,
-      reactionMs: capture.reactionMs
+      reactionMs: capture.reactionMs,
+      zone
     });
   };
 
   useEffect(() => {
     if (
-      phase !== "fire" ||
+      (phase !== "fire" && phase !== "countdown") ||
       (Platform.OS !== "android" && Platform.OS !== "ios")
     ) {
       return undefined;
@@ -256,6 +369,7 @@ export function PreRound({
   }, [phase]);
 
   const startCountdown = () => {
+    falseStarts.arm();
     if (!safeSend({ type: "countdown", value: COUNTDOWN_VALUES[0] })) return;
     onCountdownStart();
     setPhase("countdown");
@@ -351,8 +465,30 @@ export function PreRound({
           "The countdown starts when the host is ready."}
         {clockCalibrationStatus === "ready" &&
           phase === "countdown" &&
-          (countdown ? `${countdown}` : "")}
+          "Keep still until the buzz."}
       </Text>
+      <Text style={styles.detail}>
+        {pitchStatus !== "started"
+          ? pitchStatus === "starting"
+            ? "STARTING MOTION SENSORS"
+            : "MOTION UNAVAILABLE — enable motion access in settings, then retry."
+          : falseStartPlayer !== null
+            ? "FALSE START — the non-offending player can still shoot at FIRE."
+            : "Aim the top edge at your opponent. Missing GPS or a calibrated compass counts as a miss."}
+      </Text>
+      {!motionDenied &&
+        pitchStatus !== "started" &&
+        pitchStatus !== "starting" &&
+        (pitchStatus === "permissionDenied" ? (
+          <PermissionNotice
+            canAskAgain={false}
+            capability="Motion"
+            message="Pitch sensing is needed to capture calibrated shot zones."
+            onRetry={recheckMotion}
+          />
+        ) : (
+          <Button onPress={recheckMotion}>RETRY MOTION</Button>
+        ))}
       {clockCalibrationStatus === "failed" && (
         <Button
           mode="contained"
@@ -374,40 +510,48 @@ export function PreRound({
             canAskAgain={false}
             capability="Motion"
             message="Pocket Draw reads the phone's tilt to check your starting pose, so the round can't begin without motion access."
-            onRetry={() => setMotionAttempt((attempt) => attempt + 1)}
+            onRetry={recheckMotion}
           />
         ) : (
-          <Button
-            mode="contained"
-            disabled={confirmDisabled}
-            onPress={advance}
-          >
-            CONFIRM
-          </Button>
+          pitchStatus === "started" && (
+            <Button
+              mode="contained"
+              disabled={confirmDisabled}
+              onPress={advance}
+            >
+              CONFIRM
+            </Button>
+          )
         ))}
 
       {/* Android intercepts volume keys; iOS observes volume changes while
           preserving the normal volume adjustment. Tap remains available. */}
-      {phase === "fire" && (
+      {(phase === "fire" || phase === "countdown") && (
         <Pressable
           accessibilityLabel="Fire"
           accessibilityRole="button"
           onPress={handleFire}
           style={styles.fireOverlay}
         >
-          <Text style={styles.fireHeading}>FIRE!</Text>
+          <Text style={styles.fireHeading}>
+            {phase === "fire" ? "FIRE!" : countdown}
+          </Text>
           <Text style={styles.fireDetail}>
-            {selfReactionMs === null
-              ? Platform.OS === "android"
-                ? "PRESS VOLUME OR TAP ANYWHERE"
-                : Platform.OS === "ios"
-                  ? "VOLUME BUTTONS FIRE AND CHANGE VOLUME — OR TAP"
-                  : "TAP ANYWHERE"
-              : `${selfReactionMs}ms — ${
-                  opponentReactionMs === null
-                    ? "waiting for your opponent"
-                    : `they fired in ${opponentReactionMs}ms`
-                }`}
+            {phase === "countdown"
+              ? "WAIT FOR THE BUZZ — EARLY FIRE IS A FALSE START"
+              : falseStarts.hasFalseStarted(selfPlayerId)
+                ? "FALSE START — YOUR SHOT IS DISQUALIFIED"
+                : selfReactionMs === null
+                  ? Platform.OS === "android"
+                    ? "PRESS VOLUME OR TAP ANYWHERE"
+                    : Platform.OS === "ios"
+                      ? "VOLUME BUTTONS FIRE AND CHANGE VOLUME — OR TAP"
+                      : "TAP ANYWHERE"
+                  : `${selfReactionMs}ms — ${
+                      opponentReactionMs === null
+                        ? "waiting for your opponent"
+                        : `they fired in ${opponentReactionMs}ms`
+                    }`}
           </Text>
         </Pressable>
       )}
