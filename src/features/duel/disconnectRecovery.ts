@@ -1,8 +1,21 @@
 import type { DuelChannel } from "../../contracts/duelChannel";
 import type { RoundLoopState } from "./roundLoop";
 
-export const MAX_RECONNECT_ATTEMPTS = 2;
-export const RECONNECT_TIMEOUT_MS = 3_000;
+// Half a minute or more in all: long enough for the opponent's phone to notice
+// the same drop and start listening again, short enough not to feel stuck.
+export const MAX_RECONNECT_ATTEMPTS = 10;
+export const RECONNECT_TIMEOUT_MS = 5_000;
+/**
+ * Attempts start at least this far apart. A refused connection fails instantly,
+ * and without pacing the whole budget would go in a few seconds.
+ */
+export const RECONNECT_ATTEMPT_INTERVAL_MS = 3_000;
+
+export type RecoveryTiming = {
+  maxAttempts: number;
+  attemptTimeoutMs: number;
+  attemptIntervalMs: number;
+};
 
 export interface DisconnectContext {
   phase: "round" | "match";
@@ -29,7 +42,9 @@ export type ReconnectAttempt = (signal: AbortSignal) => Promise<boolean>;
 export class DuelDisconnectRecovery {
   private activeRecovery: Promise<DisconnectRecoveryState> | null = null;
   private currentAttempt: AbortController | null = null;
+  private cancelPause: (() => void) | null = null;
   private disposed = false;
+  private readonly timing: RecoveryTiming;
   private readonly listeners = new Set<
     (state: DisconnectRecoveryState) => void
   >();
@@ -37,8 +52,16 @@ export class DuelDisconnectRecovery {
   constructor(
     private readonly channel: DuelChannel,
     private readonly reconnect: ReconnectAttempt,
-    private readonly onAbort: (context: DisconnectContext) => void = () => {}
-  ) {}
+    private readonly onAbort: (context: DisconnectContext) => void = () => {},
+    timing: Partial<RecoveryTiming> = {}
+  ) {
+    this.timing = {
+      maxAttempts: MAX_RECONNECT_ATTEMPTS,
+      attemptTimeoutMs: RECONNECT_TIMEOUT_MS,
+      attemptIntervalMs: RECONNECT_ATTEMPT_INTERVAL_MS,
+      ...timing
+    };
+  }
 
   recover(context: DisconnectContext): Promise<DisconnectRecoveryState> {
     if (this.disposed) {
@@ -63,6 +86,7 @@ export class DuelDisconnectRecovery {
     this.disposed = true;
     this.currentAttempt?.abort();
     this.currentAttempt = null;
+    this.cancelPause?.();
     this.listeners.clear();
   }
 
@@ -73,14 +97,16 @@ export class DuelDisconnectRecovery {
       return this.publish({ status: "recovered", attempts: 0, context });
     }
 
-    for (let attempt = 1; attempt <= MAX_RECONNECT_ATTEMPTS; attempt += 1) {
+    const { maxAttempts } = this.timing;
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
       this.publish({
         status: "retrying",
         attempt,
-        maxAttempts: MAX_RECONNECT_ATTEMPTS,
+        maxAttempts,
         context
       });
 
+      const startedAt = Date.now();
       if ((await this.runAttempt()) && this.channel.isConnected()) {
         return this.publish({
           status: "recovered",
@@ -89,6 +115,11 @@ export class DuelDisconnectRecovery {
         });
       }
 
+      if (attempt < maxAttempts) {
+        await this.pause(
+          startedAt + this.timing.attemptIntervalMs - Date.now()
+        );
+      }
       if (this.disposed) {
         break;
       }
@@ -96,7 +127,7 @@ export class DuelDisconnectRecovery {
 
     const state: DisconnectRecoveryState = {
       status: "aborted",
-      attempts: MAX_RECONNECT_ATTEMPTS,
+      attempts: maxAttempts,
       context
     };
     this.onAbort(context);
@@ -121,11 +152,26 @@ export class DuelDisconnectRecovery {
       const timeout = setTimeout(() => {
         controller.abort();
         finish(false);
-      }, RECONNECT_TIMEOUT_MS);
+      }, this.timing.attemptTimeoutMs);
 
       this.reconnect(controller.signal)
         .then(finish)
         .catch(() => finish(false));
+    });
+  }
+
+  private pause(ms: number): Promise<void> {
+    if (ms <= 0 || this.disposed) return Promise.resolve();
+    return new Promise((resolve) => {
+      const timer = setTimeout(done, ms);
+      function done() {
+        clearTimeout(timer);
+        resolve();
+      }
+      this.cancelPause = () => {
+        this.cancelPause = null;
+        done();
+      };
     });
   }
 

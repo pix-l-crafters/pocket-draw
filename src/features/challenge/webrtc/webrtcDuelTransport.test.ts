@@ -105,6 +105,11 @@ class FakePeer implements PeerConnectionLike {
     this.handlers.get(type)?.delete(handler);
   }
 
+  setConnectionState(state: string) {
+    this.connectionState = state;
+    this.emit("connectionstatechange", {});
+  }
+
   private emit(type: PeerEvent, event: any) {
     for (const handler of this.handlers.get(type) ?? []) handler(event);
   }
@@ -293,6 +298,39 @@ describe("WebRTC duel session signaling", () => {
 
     await expect(result).rejects.toMatchObject({ name: "AbortError" });
     expect(hostSocket.closed).toBe(true);
+    expect(hostPeer.closed).toBe(true);
+  });
+
+  it("rides out a brief ICE disconnect but reports one that lasts, and closes the peer", async () => {
+    const [hostSocket, guestSocket] = socketPair();
+    const [hostPeer, guestPeer] = peerPair();
+    const [hostConnection] = await Promise.all([
+      hostWebRtcDuelSession(hostSocket, auth, new AbortController().signal, {
+        createPeerConnection: () => hostPeer
+      }),
+      connectWebRtcDuelGuest(guestSocket, auth, new AbortController().signal, {
+        createPeerConnection: () => guestPeer
+      })
+    ]);
+    const drops: string[] = [];
+    hostConnection.onDrop((message) => drops.push(message));
+
+    jest.useFakeTimers();
+    try {
+      hostPeer.setConnectionState("disconnected");
+      jest.advanceTimersByTime(1000);
+      hostPeer.setConnectionState("connected");
+      jest.advanceTimersByTime(10_000);
+      expect(drops).toEqual([]);
+
+      hostPeer.setConnectionState("disconnected");
+      jest.advanceTimersByTime(10_000);
+      expect(drops).toHaveLength(1);
+    } finally {
+      jest.useRealTimers();
+    }
+
+    hostConnection.disconnect();
     expect(hostPeer.closed).toBe(true);
   });
 });

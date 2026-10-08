@@ -17,7 +17,17 @@ export type DuelMessage =
   | { type: "raised"; atMs: number; reactionMs: number }
   | { type: "falseStart"; atMs: number }
   | { type: "clockPing"; t0: number }
-  | { type: "clockPong"; t0: number; t1: number; t2: number };
+  | { type: "clockPong"; t0: number; t1: number; t2: number }
+  // This player is leaving the session (back to map, declined rematch), so
+  // the channel closing next is not a drop to recover from.
+  | { type: "leave" }
+  // After a reconnect each phone sends the rounds it judged so both resume
+  // from the rounds they agree on. A `reply` is never answered.
+  | { type: "matchSync"; matchId: string; roundKeys: string[]; reply: boolean }
+  // Rematch: whoever asks first proposes the next match's id and the other
+  // accepts it. Offers that cross on the wire settle on the smaller id.
+  | { type: "rematchOffer"; matchId: string }
+  | { type: "rematchAccept"; matchId: string };
 
 export interface DuelChannel {
   send(message: DuelMessage): void;

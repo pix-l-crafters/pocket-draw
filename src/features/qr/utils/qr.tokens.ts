@@ -19,7 +19,7 @@ export function generateChallengeToken(): string {
 }
 
 /**
- * A random 8-hex-character BLE discovery token (4 bytes), matching
+ * A random 8-hex-character local-session discovery token (4 bytes), matching
  * hasValidDiscoveryToken.
  */
 export function generateDiscoveryToken(): string {

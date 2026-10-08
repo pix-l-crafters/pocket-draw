@@ -2,7 +2,7 @@ import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { SegmentedButtons } from "react-native-paper";
 
-import type { DuelChannel } from "../../contracts/duelChannel";
+import type { DuelLink } from "../../contracts/duelLink";
 import { colors } from "../../theme/tokens";
 import type { QrInvitePayload } from "../qr/types/qr.types";
 import { QrDisplayScreen } from "./QrDisplayScreen";
@@ -11,7 +11,7 @@ import { QrScannerScreen } from "./QrScannerScreen";
 
 type ChallengeScreenProps = {
   currentUser: { displayName: string; uid: string };
-  onHostConnected?: (channel: DuelChannel, invite: QrInvitePayload) => void;
+  onHostConnected?: (link: DuelLink, invite: QrInvitePayload) => void;
   onOpponentConfirmed: (opponent: ConfirmedOpponent) => void;
 };
 

@@ -1,6 +1,7 @@
 import type { DuelTransportConnection } from "../session/duelSessionTransport";
 import {
   createDuelDataChannelConnection,
+  type PeerLifecycle,
   type RtcDataChannelLike
 } from "./duelDataChannel";
 import {
@@ -64,6 +65,35 @@ function normalizeCandidate(candidate: any): IceCandidateDescription {
 
 type Role = "host" | "guest";
 
+const FAILED_PEER_STATES = new Set(["failed", "disconnected", "closed"]);
+/**
+ * ICE "disconnected" often heals by itself (Wi-Fi power save, a moment of
+ * interference); an established duel only counts it as a drop if it lasts.
+ */
+const DISCONNECTED_GRACE_MS = 3000;
+
+function peerLifecycle(peer: PeerConnectionLike): PeerLifecycle {
+  return {
+    close: () => peer.close(),
+    onFailure(handler) {
+      let grace: ReturnType<typeof setTimeout> | undefined;
+      const listener = () => {
+        clearTimeout(grace);
+        if (peer.connectionState === "disconnected") {
+          grace = setTimeout(handler, DISCONNECTED_GRACE_MS);
+        } else if (FAILED_PEER_STATES.has(peer.connectionState)) {
+          handler();
+        }
+      };
+      peer.addEventListener("connectionstatechange", listener);
+      return () => {
+        clearTimeout(grace);
+        peer.removeEventListener("connectionstatechange", listener);
+      };
+    }
+  };
+}
+
 function negotiateWebRtcDuel(
   role: Role,
   socket: SignalingSocket,
@@ -102,7 +132,7 @@ function negotiateWebRtcDuel(
         if (settled) return;
         settled = true;
         finishCleanup(false);
-        resolve(createDuelDataChannelConnection(channel));
+        resolve(createDuelDataChannelConnection(channel, peerLifecycle(peer)));
       };
       if (channel.readyState === "open") {
         complete();
@@ -132,11 +162,7 @@ function negotiateWebRtcDuel(
     );
 
     const onConnectionStateChange = () => {
-      if (
-        peer.connectionState === "failed" ||
-        peer.connectionState === "closed" ||
-        peer.connectionState === "disconnected"
-      ) {
+      if (FAILED_PEER_STATES.has(peer.connectionState)) {
         fail(new Error("WebRTC peer connection failed."));
       }
     };

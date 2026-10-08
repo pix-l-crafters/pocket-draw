@@ -5,7 +5,14 @@ import { createMockDuelChannelPair } from "../../contracts/mocks/mockDuelChannel
 import { appTheme } from "../../theme/appTheme";
 import { submitMatchResult } from "../backend/matchResultsService";
 import type { SubmitMatchResultOutcome } from "../backend/types";
+import { createDuelLink } from "../challenge/session/duelLink";
 import { DuelScreen } from "./DuelScreen";
+
+const REMATCH_ID = "22222222-2222-4222-8222-222222222222";
+
+jest.mock("../qr/utils/qr.tokens", () => ({
+  generateMatchId: () => "22222222-2222-4222-8222-222222222222"
+}));
 
 jest.mock("../backend/matchResultsService", () => ({
   submitMatchResult: jest.fn()
@@ -37,11 +44,26 @@ jest.mock("./PreRound", () => ({
 }));
 
 async function renderDuel() {
-  const [channel] = createMockDuelChannelPair();
-  return render(
+  const [channel, opponentChannel] = createMockDuelChannelPair();
+  // Stands in for the other phone, which accepts any rematch it is offered.
+  opponentChannel.onMessage((message) => {
+    if (message.type !== "rematchOffer") return;
+    void Promise.resolve().then(() =>
+      opponentChannel.send({ type: "rematchAccept", matchId: message.matchId })
+    );
+  });
+  const link = createDuelLink({
+    connection: {
+      channel,
+      onDrop: () => undefined,
+      disconnect: () => undefined
+    },
+    reconnect: () => Promise.reject(new Error("unused"))
+  });
+  const view = await render(
     <PaperProvider theme={appTheme}>
       <DuelScreen
-        channel={channel}
+        link={link}
         matchId="match-1"
         role="host"
         self={{ id: "player-a", name: "Alice" }}
@@ -49,6 +71,8 @@ async function renderDuel() {
       />
     </PaperProvider>
   );
+  await fireEvent.press(view.getByText("I'm Ready"));
+  return view;
 }
 
 async function finishMatch(view: Awaited<ReturnType<typeof renderDuel>>) {
@@ -145,6 +169,10 @@ describe("DuelScreen result saving", () => {
     expect(submitMatchResult).toHaveBeenCalledTimes(2);
     expect(jest.mocked(submitMatchResult).mock.calls[1][0].matchId).not.toBe(
       "match-1"
+    );
+    // The id both phones agreed when the rematch was accepted.
+    expect(jest.mocked(submitMatchResult).mock.calls[1][0].matchId).toBe(
+      REMATCH_ID
     );
     await view.unmount();
   });
