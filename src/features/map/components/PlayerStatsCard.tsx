@@ -56,6 +56,10 @@ export function PlayerStatsCard({
           value={format(stats?.losses)}
         />
         <StatTile
+          label="Draws"
+          value={format(stats?.draws)}
+        />
+        <StatTile
           label="ELO"
           value={format(stats?.eloRating)}
         />

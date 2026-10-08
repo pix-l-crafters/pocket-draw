@@ -44,7 +44,7 @@ function storedElo(data: Record<string, unknown> | undefined): number {
     : DEFAULT_ELO_RATING;
 }
 
-/** Aggregates wins/losses and loads the persisted ELO from `users/{uid}`. */
+/** Aggregates match outcomes and loads persisted ELO from `users/{uid}`. */
 export const playerStatsRepository: PlayerStatsRepository = {
   async getPlayerStats(uid, displayName): Promise<PlayerStats> {
     if (!uid.trim()) {
@@ -62,19 +62,21 @@ export const playerStatsRepository: PlayerStatsRepository = {
     ]);
     let wins = 0;
     let losses = 0;
+    let draws = 0;
 
     for (const data of snapshot.docs
       .map((docSnap) => docSnap.data())
       .filter(isMatchResultDocument)) {
       if (data.results[uid] === "win") wins += 1;
       if (data.results[uid] === "lose") losses += 1;
+      if (data.results[uid] === "draw") draws += 1;
     }
-
     return {
       uid,
       displayName: trimmedName,
       wins,
       losses,
+      draws,
       eloRating: storedElo(userSnapshot.data())
     };
   },
