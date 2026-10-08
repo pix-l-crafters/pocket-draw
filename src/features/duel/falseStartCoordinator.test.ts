@@ -19,85 +19,37 @@ function queuedPair() {
 }
 
 describe("FalseStartCoordinator", () => {
-  test("first offenses warn both phones, restart keeps counts, and the second disqualifies", () => {
-    const { channels, deliveries } = queuedPair();
-    const local = new FalseStartCoordinator(channels[0], "local", "peer");
-    const peer = new FalseStartCoordinator(channels[1], "peer", "local");
-    local.arm(0);
-    peer.arm(0);
-    expect(local.processLocalFire(100)).toEqual({
-      kind: "warning",
-      playerId: "local",
-      count: 1
-    });
-    deliveries.shift()?.();
-    expect(peer.getWarningCount("local")).toBe(1);
-    expect(peer.getOutcome()).toEqual({
-      kind: "warning",
-      playerId: "local",
-      count: 1
-    });
-    expect(local.hasFalseStarted("local")).toBe(false);
-    local.arm(1);
-    peer.arm(1);
-    expect(local.processLocalSample(movement(200))).toEqual({
-      kind: "falseStart",
-      playerId: "local"
-    });
-    deliveries.shift()?.();
-    expect(peer.hasFalseStarted("local")).toBe(true);
-    local.dispose();
-    peer.dispose();
-  });
-
-  test("crossed early inputs warn both players and ignore an old attempt", () => {
-    const { channels, deliveries } = queuedPair();
-    const a = new FalseStartCoordinator(channels[0], "a", "b");
-    const b = new FalseStartCoordinator(channels[1], "b", "a");
-    a.arm(0);
-    b.arm(0);
-    a.processLocalFire(100);
-    b.processLocalSample(movement(100));
-    deliveries[1]();
-    deliveries[0]();
-    expect(a.getWarningCount("a")).toBe(1);
-    expect(a.getWarningCount("b")).toBe(1);
-    expect(b.getWarningCount("a")).toBe(1);
-    expect(b.getWarningCount("b")).toBe(1);
-    a.arm(1);
-    b.arm(1);
-    deliveries[0]();
-    expect(b.hasFalseStarted("a")).toBe(false);
-    a.dispose();
-    b.dispose();
-  });
-
-  test("crossed second offenses disqualify both on either delivery order", () => {
-    const { channels, deliveries } = queuedPair();
-    const a = new FalseStartCoordinator(channels[0], "a", "b", undefined, {
-      a: 1,
-      b: 1
-    });
-    const b = new FalseStartCoordinator(channels[1], "b", "a", undefined, {
-      a: 1,
-      b: 1
-    });
-    a.arm(2);
-    b.arm(2);
-    a.processLocalFire(100);
-    b.processLocalSample(movement(100));
-    deliveries[1]();
-    deliveries[0]();
-    for (const coordinator of [a, b]) {
-      expect(coordinator.getOutcome()).toEqual({
-        kind: "falseStart",
-        playerId: "a"
-      });
-      expect(coordinator.hasFalseStarted("a")).toBe(true);
-      expect(coordinator.hasFalseStarted("b")).toBe(true);
-      coordinator.dispose();
+  test.each([
+    [0, 1],
+    [1, 0]
+  ])(
+    "crossed second offenses disqualify both in delivery order %s, %s",
+    (first, second) => {
+      const { channels, deliveries } = queuedPair();
+      const a = new FalseStartCoordinator(channels[0], "a", "b");
+      const b = new FalseStartCoordinator(channels[1], "b", "a");
+      a.arm(0);
+      b.arm(0);
+      a.processLocalFire(50);
+      b.processLocalFire(50);
+      deliveries.splice(0).forEach((deliver) => deliver());
+      a.arm(1);
+      b.arm(1);
+      a.processLocalFire(100);
+      b.processLocalSample(movement(100));
+      deliveries[first]();
+      deliveries[second]();
+      for (const coordinator of [a, b]) {
+        expect(coordinator.getOutcome()).toEqual({
+          kind: "falseStart",
+          playerId: "a"
+        });
+        expect(coordinator.hasFalseStarted("a")).toBe(true);
+        expect(coordinator.hasFalseStarted("b")).toBe(true);
+        coordinator.dispose();
+      }
     }
-  });
+  );
   test.each(["button", "movement"])(
     "early %s reports one shared violation",
     (input) => {
@@ -113,18 +65,32 @@ describe("FalseStartCoordinator", () => {
         input === "button"
           ? local.processLocalFire(100)
           : local.processLocalSample(movement(100));
-      expect(outcome).toEqual({ kind: "warning", playerId: "local", count: 1 });
+      expect(outcome).toEqual({ kind: "warning", playerId: "local" });
       local.processLocalFire(101);
       local.processLocalSample(movement(102));
       expect(deliveries).toHaveLength(1);
       deliveries[0]();
-      expect(notices).toEqual([
-        { kind: "warning", playerId: "local", count: 1 }
-      ]);
+      expect(notices).toEqual([{ kind: "warning", playerId: "local" }]);
       expect(local.getWarningCount("local")).toBe(1);
       expect(peer.getWarningCount("local")).toBe(1);
+      const oldDelivery = deliveries[0];
+      local.endRound();
+      peer.endRound();
+      local.arm(1);
+      peer.arm(1);
+      oldDelivery();
+      expect(peer.hasFalseStarted("local")).toBe(false);
+      expect(local.processLocalFire(200)).toEqual({
+        kind: "falseStart",
+        playerId: "local"
+      });
+      deliveries[1]();
+      expect(peer.hasFalseStarted("local")).toBe(true);
       local.dispose();
       peer.dispose();
+      const rematch = new FalseStartCoordinator(channels[0], "local", "peer");
+      expect(rematch.getWarningCounts()).toEqual({ local: 0, peer: 0 });
+      rematch.dispose();
     }
   );
 
@@ -165,8 +131,7 @@ describe("FalseStartCoordinator", () => {
       // Invalid movement must not consume the detector's one-shot arm.
       expect(local.processLocalSample(movement(0))).toEqual({
         kind: "warning",
-        playerId: "local",
-        count: 1
+        playerId: "local"
       });
       expect(deliveries).toHaveLength(1);
       local.dispose();
@@ -201,13 +166,11 @@ describe("FalseStartCoordinator", () => {
 
       expect(zuluNotice).toEqual({
         kind: "warning",
-        playerId: "alpha",
-        count: 1
+        playerId: "alpha"
       });
       expect(alphaNotice).toEqual({
         kind: "warning",
-        playerId: "zulu",
-        count: 1
+        playerId: "zulu"
       });
       for (const coordinator of [zulu, alpha]) {
         expect(coordinator.getWarningCount("zulu")).toBe(1);
@@ -282,17 +245,13 @@ describe("FalseStartCoordinator", () => {
       } else {
         expect(local.processLocalFire(100)).toEqual({
           kind: "warning",
-          playerId: "local",
-          count: 1
+          playerId: "local"
         });
       }
-      expect(notices).toEqual([
-        { kind: "warning", playerId: "local", count: 1 }
-      ]);
+      expect(notices).toEqual([{ kind: "warning", playerId: "local" }]);
       expect(local.getOutcome()).toEqual({
         kind: "warning",
-        playerId: "local",
-        count: 1
+        playerId: "local"
       });
       expect(local.processLocalSample(movement(101))).toBeNull();
       local.dispose();

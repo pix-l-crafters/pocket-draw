@@ -1,6 +1,5 @@
 import {
   applyRoundOutcome,
-  applyFalseStartWarning,
   createRoundLoop,
   isMatchDecided,
   matchResults,
@@ -29,15 +28,6 @@ const tie = () => ({
 });
 
 describe("roundLoop", () => {
-  it("records one warning without scoring or advancing and clears it in a new match", () => {
-    const fresh = createRoundLoop(["a", "b"]);
-    const warned = applyFalseStartWarning(fresh, "a");
-    expect(warned.warningCounts).toEqual({ a: 1, b: 0 });
-    expect(warned.rounds).toHaveLength(0);
-    expect(warned.scores).toEqual({ a: 0, b: 0 });
-    expect(applyFalseStartWarning(warned, "a").warningCounts.a).toBe(1);
-    expect(createRoundLoop(["a", "b"]).warningCounts).toEqual({ a: 0, b: 0 });
-  });
   it("plays all three regular rounds and decides by total points", () => {
     let state = createRoundLoop(["a", "b"]);
 

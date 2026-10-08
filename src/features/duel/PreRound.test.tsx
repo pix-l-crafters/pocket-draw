@@ -7,6 +7,7 @@ import { PaperProvider } from "react-native-paper";
 
 import type { DuelChannel, DuelMessage } from "../../contracts/duelChannel";
 import { appTheme } from "../../theme/appTheme";
+import { FalseStartCoordinator } from "./falseStartCoordinator";
 import type { DuelRole } from "./fireSignalCoordinator";
 import { COUNTDOWN_DURATION_MS, PreRound } from "./PreRound";
 import type { RoundShots } from "./roundShots";
@@ -130,6 +131,7 @@ async function renderPreRound(
     },
     isConnected: () => true
   };
+  const falseStarts = new FalseStartCoordinator(channel, "host", "guest");
 
   const view = await render(
     <PaperProvider theme={appTheme}>
@@ -137,7 +139,9 @@ async function renderPreRound(
         channel={channel}
         calibration={{ thetaReady: 0, thetaShoulder: 1 }}
         selfPlayerId="host"
-        opponentPlayerId="guest"
+        falseStarts={falseStarts}
+        selfName="You"
+        opponentName="Opponent"
         clockCalibrationStatus={options.clockCalibrationStatus ?? "ready"}
         clockOffsetMs={options.clockOffsetMs ?? 0}
         onRetryClockCalibration={retries}

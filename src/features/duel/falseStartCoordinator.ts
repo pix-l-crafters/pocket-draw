@@ -6,15 +6,15 @@ import {
 import type { AccelerationSample } from "./raiseGestureDetector";
 
 // Reports an early violation; the round producer enriches it with both shots.
-export type FalseStartOutcome =
-  | { kind: "falseStart"; playerId: string }
-  | { kind: "warning"; playerId: string; count: 1 };
+export type FalseStartOutcome = {
+  kind: "falseStart" | "warning";
+  playerId: string;
+};
 
 export class FalseStartCoordinator {
   private outcome: FalseStartOutcome | null = null;
-  private readonly offenders = new Set<string>();
-  private readonly reported = new Set<string>();
-  private readonly warningCounts: Record<string, number>;
+  private readonly violations = new Map<string, 1 | 2>();
+  private readonly warningCounts: Record<string, number> = {};
   private attempt = 0;
   private roundStarted = false;
   private beforeFire = false;
@@ -25,10 +25,8 @@ export class FalseStartCoordinator {
     private readonly channel: DuelChannel,
     private readonly localPlayerId: string,
     private readonly opponentPlayerId: string,
-    private readonly detector = new FalseStartDetector(),
-    warningCounts: Record<string, number> = {}
+    private readonly detector = new FalseStartDetector()
   ) {
-    this.warningCounts = { ...warningCounts };
     this.unsubscribeFromChannel = channel.onMessage((message) => {
       if (
         message.type === "falseStart" &&
@@ -44,12 +42,19 @@ export class FalseStartCoordinator {
 
   arm(attempt = 0): void {
     this.outcome = null;
-    this.offenders.clear();
-    this.reported.clear();
+    this.violations.clear();
     this.attempt = attempt;
     this.roundStarted = true;
     this.beforeFire = true;
     this.detector.arm();
+  }
+
+  endRound(): void {
+    this.roundStarted = false;
+    this.beforeFire = false;
+    this.outcome = null;
+    this.violations.clear();
+    this.detector.reset();
   }
 
   markFire(atMs: number): void {
@@ -72,17 +77,30 @@ export class FalseStartCoordinator {
   }
 
   hasFalseStarted(playerId: string): boolean {
-    return this.offenders.has(playerId);
+    return this.violations.get(playerId) === 2;
   }
 
   getWarningCount(playerId: string): number {
     return this.warningCounts[playerId] ?? 0;
   }
 
+  getWarningCounts(): Record<string, number> {
+    return {
+      [this.localPlayerId]: this.getWarningCount(this.localPlayerId),
+      [this.opponentPlayerId]: this.getWarningCount(this.opponentPlayerId)
+    };
+  }
+
+  syncPeerWarningCount(count: number | undefined): void {
+    if (count === 0 || count === 1) {
+      this.warningCounts[this.opponentPlayerId] = count;
+    }
+  }
+
   private reportLocalViolation(atMs: number): FalseStartOutcome | null {
     if (
       !this.beforeFire ||
-      this.reported.has(this.localPlayerId) ||
+      this.violations.has(this.localPlayerId) ||
       !Number.isFinite(atMs) ||
       atMs < 0
     ) {
@@ -90,9 +108,7 @@ export class FalseStartCoordinator {
     }
     // A button press must also disarm movement detection for this round.
     this.detector.reset();
-    const count = (this.getWarningCount(this.localPlayerId) === 0 ? 1 : 2) as
-      | 1
-      | 2;
+    const count: 1 | 2 = this.getWarningCount(this.localPlayerId) === 0 ? 1 : 2;
     const outcome = this.acceptViolation(this.localPlayerId, count)!;
     if (this.channel.isConnected()) {
       this.channel.send({
@@ -121,25 +137,20 @@ export class FalseStartCoordinator {
   dispose(): void {
     this.unsubscribeFromChannel();
     this.listeners.clear();
-    this.detector.reset();
-    this.roundStarted = false;
-    this.beforeFire = false;
-    this.offenders.clear();
-    this.reported.clear();
+    this.endRound();
   }
 
   private acceptViolation(
     playerId: string,
     count: 1 | 2
   ): FalseStartOutcome | null {
-    if (this.reported.has(playerId)) return null;
-    this.reported.add(playerId);
+    if (this.violations.has(playerId)) return null;
+    this.violations.set(playerId, count);
     const outcome: FalseStartOutcome =
       count === 1
-        ? { kind: "warning", playerId, count: 1 }
+        ? { kind: "warning", playerId }
         : { kind: "falseStart", playerId };
     this.warningCounts[playerId] = 1;
-    if (count === 2) this.offenders.add(playerId);
     if (
       !this.outcome ||
       (outcome.kind === "falseStart" &&

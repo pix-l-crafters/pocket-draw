@@ -20,13 +20,13 @@ import {
   DuelConnectionScreen,
   type DuelConnectionState
 } from "./DuelConnectionScreen";
+import { FalseStartCoordinator } from "./falseStartCoordinator";
 import type { DuelRole } from "./fireSignalCoordinator";
 import { GameInstructionsScreen } from "./GameInstructionsScreen";
 import type { PitchCalibration } from "./pitchMonitor";
 import { PreRound } from "./PreRound";
 import {
   applyRoundOutcome,
-  applyFalseStartWarning,
   createRoundLoop,
   isMatchDecided,
   reconcileRounds,
@@ -79,6 +79,11 @@ export function DuelScreen({
   const [instructionsSeen, setInstructionsSeen] = useState(false);
   const [calibration, setCalibration] = useState<PitchCalibration | null>(null);
   const [matchId, setMatchId] = useState(firstMatchId);
+  const falseStarts = useMemo(
+    () => new FalseStartCoordinator(channel, self.id, opponent.id),
+    [channel, self.id, opponent.id, matchId]
+  );
+  useEffect(() => () => falseStarts.dispose(), [falseStarts]);
   const matchIdRef = useRef(matchId);
   matchIdRef.current = matchId;
   const [loop, setLoop] = useState(() =>
@@ -307,7 +312,7 @@ export function DuelScreen({
                 type: "matchSync",
                 matchId: matchIdRef.current,
                 roundKeys: roundKeys(loopRef.current),
-                warningCounts: loopRef.current.warningCounts,
+                warningCounts: falseStarts.getWarningCounts(),
                 reply: true
               });
             }
@@ -319,25 +324,15 @@ export function DuelScreen({
             type: "matchSync",
             matchId: matchIdRef.current,
             roundKeys: roundKeys(loopRef.current),
-            warningCounts: loopRef.current.warningCounts,
+            warningCounts: falseStarts.getWarningCounts(),
             reply: true
           });
         }
         if (!syncingRef.current) return;
 
         syncingRef.current = false;
-        const reconciled = reconcileRounds(loopRef.current, message.roundKeys);
-        const peerCount = message.warningCounts?.[opponent.id];
-        const resumed =
-          peerCount === 0 || peerCount === 1
-            ? {
-                ...reconciled,
-                warningCounts: {
-                  ...reconciled.warningCounts,
-                  [opponent.id]: peerCount
-                }
-              }
-            : reconciled;
+        const resumed = reconcileRounds(loopRef.current, message.roundKeys);
+        falseStarts.syncPeerWarningCount(message.warningCounts?.[opponent.id]);
         if (resumed !== loopRef.current) {
           loopRef.current = resumed;
           setLoop(resumed);
@@ -352,6 +347,7 @@ export function DuelScreen({
       }),
     [
       channel,
+      falseStarts,
       opponent.id,
       runClockCalibration,
       safeSend,
@@ -369,7 +365,7 @@ export function DuelScreen({
         type: "matchSync",
         matchId: matchIdRef.current,
         roundKeys: roundKeys(loopRef.current),
-        warningCounts: loopRef.current.warningCounts,
+        warningCounts: falseStarts.getWarningCounts(),
         reply: false
       });
     ask();
@@ -382,7 +378,7 @@ export function DuelScreen({
       clearInterval(timer);
       clearTimeout(giveUp);
     };
-  }, [connection.status, safeSend]);
+  }, [connection.status, falseStarts, safeSend]);
 
   const exit = () => {
     link.leave();
@@ -399,10 +395,6 @@ export function DuelScreen({
     },
     [opponent, self]
   );
-
-  const handleWarning = useCallback((playerId: string) => {
-    setLoop((state) => applyFalseStartWarning(state, playerId));
-  }, []);
 
   const consumePeerReady = useCallback(() => setPeerReady(false), []);
 
@@ -553,11 +545,9 @@ export function DuelScreen({
         channel={channel}
         calibration={calibration}
         selfPlayerId={self.id}
-        opponentPlayerId={opponent.id}
+        falseStarts={falseStarts}
         opponentName={opponent.name}
         selfName={self.name}
-        warningCounts={loop.warningCounts}
-        onWarning={handleWarning}
         clockCalibrationStatus={clockCalibrationStatus}
         clockOffsetMs={clockOffsetMs}
         onCountdownStart={consumePeerReady}

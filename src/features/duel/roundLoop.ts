@@ -16,7 +16,6 @@ export interface RoundLoopState {
   participantIds: [string, string];
   rounds: RoundOutcome[];
   scores: Record<string, number>;
-  warningCounts: Record<string, number>;
 }
 
 export function createRoundLoop(
@@ -26,19 +25,7 @@ export function createRoundLoop(
   return {
     participantIds,
     rounds: [],
-    scores: { [a]: 0, [b]: 0 },
-    warningCounts: { [a]: 0, [b]: 0 }
-  };
-}
-
-export function applyFalseStartWarning(
-  state: RoundLoopState,
-  playerId: string
-): RoundLoopState {
-  if (!state.participantIds.includes(playerId)) return state;
-  return {
-    ...state,
-    warningCounts: { ...state.warningCounts, [playerId]: 1 }
+    scores: { [a]: 0, [b]: 0 }
   };
 }
 

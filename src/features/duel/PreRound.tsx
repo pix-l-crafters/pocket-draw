@@ -57,11 +57,9 @@ type PreRoundProps = {
   channel: DuelChannel;
   calibration: PitchCalibration;
   selfPlayerId: string;
-  opponentPlayerId: string;
-  opponentName?: string;
-  selfName?: string;
-  warningCounts?: Record<string, number>;
-  onWarning?: (playerId: string) => void;
+  falseStarts: FalseStartCoordinator;
+  opponentName: string;
+  selfName: string;
   /** The host owns the countdown and the FIRE signal; the guest follows. */
   role: DuelRole;
   /** True once the opponent has finished their own pre-round ritual. */
@@ -77,11 +75,9 @@ export function PreRound({
   channel,
   calibration,
   selfPlayerId,
-  opponentPlayerId,
-  opponentName = "Opponent",
-  selfName = "You",
-  warningCounts = {},
-  onWarning = () => undefined,
+  falseStarts,
+  opponentName,
+  selfName,
   role,
   peerReady,
   clockCalibrationStatus,
@@ -100,17 +96,6 @@ export function PreRound({
     PitchMonitorStartResult | "starting"
   >("starting");
   const [pitchRetry, setPitchRetry] = useState(0);
-  const falseStarts = useMemo(
-    () =>
-      new FalseStartCoordinator(
-        channel,
-        selfPlayerId,
-        opponentPlayerId,
-        undefined,
-        warningCounts
-      ),
-    [channel, selfPlayerId, opponentPlayerId]
-  );
   const [falseStartPlayer, setFalseStartPlayer] = useState<
     "self" | "opponent" | null
   >(null);
@@ -140,7 +125,6 @@ export function PreRound({
   useEffect(() => {
     const unsubscribe = falseStarts.onOutcome((outcome) => {
       if (outcome.kind === "warning") {
-        onWarning(outcome.playerId);
         setWarnedPlayers((players) =>
           players.includes(outcome.playerId)
             ? players
@@ -165,7 +149,7 @@ export function PreRound({
     });
     return () => {
       unsubscribe();
-      falseStarts.dispose();
+      falseStarts.endRound();
     };
   }, [falseStarts, selfPlayerId]);
   const [countdown, setCountdown] = useState<number | null>(null);
