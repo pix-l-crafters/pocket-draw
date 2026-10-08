@@ -49,6 +49,7 @@ service cloud.firestore {
         'participantIds',
         'rounds',
         'results',
+        'roundCount',
         'completedAt',
         'uploadedBy',
         'createdAt'
@@ -57,6 +58,7 @@ service cloud.firestore {
         'participantIds',
         'rounds',
         'results',
+        'roundCount',
         'completedAt',
         'uploadedBy',
         'createdAt'
@@ -74,6 +76,7 @@ service cloud.firestore {
         && data.participantIds[0].size() > 0
         && data.participantIds[1].size() > 0
         && data.participantIds[0] != data.participantIds[1]
+        && data.roundCount == 3
         && data.rounds is list
         && data.rounds.size() >= 3
         && data.rounds.size() <= 4
@@ -170,6 +173,15 @@ service cloud.firestore {
     // Directory of uid -> displayName, used to resolve names on the
     // leaderboard (matches only stores uids).
     match /users/{uid} {
+      // A create-only receipt commits atomically with this player's rating.
+      match /ratedMatches/{matchId} {
+        allow read: if isPresenceOwner(uid);
+        allow create: if isPresenceOwner(uid)
+          && request.resource.data.keys().hasOnly(['matchId'])
+          && request.resource.data.matchId == matchId
+          && uid in get(/databases/$(database)/documents/matches/$(matchId)).data.participantIds;
+        allow update, delete: if false;
+      }
       allow read: if isSignedIn();
       allow create, update: if isPresenceOwner(uid)
         && request.resource.data.keys().hasOnly(['displayName', 'eloRating'])

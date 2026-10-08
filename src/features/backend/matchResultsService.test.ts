@@ -4,6 +4,10 @@ import { matchResultsRepository } from "./matchResultsRepository";
 import { submitMatchResult } from "./matchResultsService";
 import { playerStatsRepository } from "./playerStatsRepository";
 
+jest.mock("../../lib/firebase", () => ({
+  auth: { currentUser: { uid: "player-a" } }
+}));
+
 jest.mock("./connectivity", () => ({
   isNetworkAvailable: jest.fn(),
   subscribeNetworkChanges: jest.fn()
@@ -17,7 +21,8 @@ jest.mock("./matchResultQueue", () => ({
 }));
 
 jest.mock("./matchResultsRepository", () => ({
-  matchResultsRepository: { writeMatchResult: jest.fn() }
+  matchResultsRepository: { writeMatchResult: jest.fn() },
+  validateMatchResult: jest.fn()
 }));
 
 jest.mock("./playerStatsRepository", () => ({
@@ -66,7 +71,8 @@ describe("submitMatchResult", () => {
     expect(playerStatsRepository.updateEloRating).toHaveBeenCalledWith(
       "player-a",
       "player-b",
-      "win"
+      "win",
+      "match-1"
     );
   });
 
@@ -81,7 +87,8 @@ describe("submitMatchResult", () => {
     expect(playerStatsRepository.updateEloRating).toHaveBeenCalledWith(
       "player-a",
       "player-b",
-      "draw"
+      "draw",
+      "match-1"
     );
   });
 });

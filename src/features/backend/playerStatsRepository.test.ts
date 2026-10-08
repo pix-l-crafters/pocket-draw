@@ -5,6 +5,7 @@ import {
   getDocs,
   query,
   setDoc,
+  runTransaction,
   where
 } from "firebase/firestore";
 
@@ -17,6 +18,7 @@ jest.mock("firebase/firestore", () => ({
   getDocs: jest.fn(),
   query: jest.fn(),
   setDoc: jest.fn(),
+  runTransaction: jest.fn(),
   where: jest.fn()
 }));
 
@@ -30,7 +32,7 @@ const userReferences = {
 };
 
 function snapshot(data: Record<string, unknown> | undefined) {
-  return { data: () => data } as never;
+  return { exists: () => data !== undefined, data: () => data } as never;
 }
 
 describe("playerStatsRepository", () => {
@@ -48,6 +50,11 @@ describe("playerStatsRepository", () => {
           : (userReferences.playerB as never)
       );
     jest.mocked(setDoc).mockResolvedValue(undefined as never);
+    jest
+      .mocked(runTransaction)
+      .mockImplementation(async (_, update) =>
+        update({ get: getDoc, set: setDoc } as never)
+      );
   });
 
   test("counts draws from the player's match results", async () => {
@@ -97,10 +104,16 @@ describe("playerStatsRepository", () => {
     jest
       .mocked(getDoc)
       .mockResolvedValueOnce(snapshot({ eloRating: 1500 }))
-      .mockResolvedValueOnce(snapshot({ eloRating: 1500 }));
+      .mockResolvedValueOnce(snapshot({ eloRating: 1500 }))
+      .mockResolvedValueOnce(snapshot(undefined));
 
     await expect(
-      playerStatsRepository.updateEloRating("player-a", "player-b", "win")
+      playerStatsRepository.updateEloRating(
+        "player-a",
+        "player-b",
+        "win",
+        "match-1"
+      )
     ).resolves.toBe(1520);
 
     expect(setDoc).toHaveBeenCalledWith(

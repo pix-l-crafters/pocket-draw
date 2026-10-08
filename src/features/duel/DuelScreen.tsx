@@ -6,7 +6,10 @@ import type { DuelMessage } from "../../contracts/duelChannel";
 import type { DuelLink } from "../../contracts/duelLink";
 import type { MatchResult } from "../../contracts/matchResult";
 import type { RoundOutcome } from "../../contracts/roundOutcome";
-import { submitMatchResult } from "../backend/matchResultsService";
+import {
+  subscribeMatchResultStatus,
+  submitMatchResult
+} from "../backend/matchResultsService";
 import type { SubmitMatchResultOutcome } from "../backend/types";
 import { MatchSummaryScreen } from "../postmatch/MatchSummaryScreen";
 import { generateMatchId } from "../qr/utils/qr.tokens";
@@ -386,6 +389,16 @@ export function DuelScreen({
     result: MatchResult;
     status: SubmitMatchResultOutcome["status"] | "saving" | "error";
   } | null>(null);
+  useEffect(() => {
+    if (!completedResult) return;
+    return subscribeMatchResultStatus(
+      completedResult.matchId,
+      self.id,
+      (status) => {
+        setSaveState({ result: completedResult, status });
+      }
+    );
+  }, [completedResult, self.id]);
   const savingResultRef = useRef<MatchResult | null>(null);
   const saveResult = useCallback(async () => {
     if (!completedResult || savingResultRef.current === completedResult) return;
@@ -409,7 +422,6 @@ export function DuelScreen({
 
   const saveStatus =
     saveState?.result === completedResult ? saveState?.status : "saving";
-  const resultSaved = saveStatus === "written" || saveStatus === "queued";
 
   // A finished match stays readable after the opponent leaves; only the
   // rematch offer goes away.
@@ -431,10 +443,12 @@ export function DuelScreen({
     );
   }
 
-  if (completedResult && !roundResult && resultSaved) {
+  if (completedResult && !roundResult) {
     return (
       <MatchSummaryScreen
         matchResult={completedResult}
+        saveStatus={saveStatus}
+        onRetrySave={() => void saveResult()}
         onRematch={requestRematch}
         onReturnToMap={exit}
         playerNames={playerNames}
@@ -464,11 +478,9 @@ export function DuelScreen({
         continueLabel={
           !matchDecided
             ? "Next round"
-            : saveStatus === "error"
-              ? "Retry saving result"
-              : resultSaved
-                ? "See match result"
-                : "Saving result…"
+            : saveStatus === "saving"
+              ? "Saving result…"
+              : "See match result"
         }
         errorMessage={
           matchDecided && saveStatus === "error"
@@ -476,8 +488,7 @@ export function DuelScreen({
             : undefined
         }
         onContinue={() => {
-          if (!matchDecided || resultSaved) setRoundResult(null);
-          else if (saveStatus === "error") void saveResult();
+          if (!matchDecided || saveStatus !== "saving") setRoundResult(null);
         }}
         outcome={roundResult}
         playerNames={playerNames}

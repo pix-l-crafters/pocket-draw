@@ -12,7 +12,7 @@ import {
 } from "@expo-google-fonts/ibm-plex-mono";
 import { StatusBar } from "expo-status-bar";
 import type { User } from "firebase/auth";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { BottomNavigation, PaperProvider } from "react-native-paper";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
@@ -32,6 +32,7 @@ import { MapScreen } from "./src/features/map/MapScreen";
 import type { CurrentUser } from "./src/features/map/types/map.types";
 import { ProfileScreen } from "./src/features/profile/ProfileScreen";
 import type { QrInvitePayload } from "./src/features/qr/types/qr.types";
+import { useMatchResultQueueSync } from "./src/hooks/useMatchResultQueueSync";
 import { useAuthUser } from "./src/lib/useAuthUser";
 import LoginScreen from "./src/screens/LoginScreen";
 import RegisterScreen from "./src/screens/RegisterScreen";
@@ -94,6 +95,19 @@ export default function App() {
   const [activeDuel, setActiveDuel] = useState<ActiveDuel | null>(null);
   const [incomingChallenge, setIncomingChallenge] =
     useState<IncomingChallenge | null>(null);
+
+  useMatchResultQueueSync(authLoading ? null : (user?.uid ?? null));
+
+  const previousUid = useRef(user?.uid);
+  useEffect(() => {
+    if (previousUid.current === user?.uid) return;
+    previousUid.current = user?.uid;
+    activeDuel?.link.leave();
+    incomingChallenge?.link.leave();
+    setActiveDuel(null);
+    setIncomingChallenge(null);
+    setPendingHandoff(null);
+  }, [user?.uid, activeDuel, incomingChallenge]);
 
   // Leaving is idempotent; whoever ends a session releases its connection,
   // and a hotspot this phone created for it.
@@ -210,7 +224,7 @@ export default function App() {
             edges={["top", "bottom"]}
             style={styles.container}
           >
-            {activeDuel ? (
+            {activeDuel && activeDuel.self.id === user.uid ? (
               // 只有在与另一位玩家的对局中才显示 Duel 界面，不作为常驻标签。
               // DuelScreen opens on the instructions itself, so it can answer
               // the opponent's clock pings while this player is still reading.

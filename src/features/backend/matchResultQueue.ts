@@ -2,10 +2,19 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import type { MatchResult } from "../../contracts/matchResult";
 
+let pendingMutation = Promise.resolve();
+
+function mutateQueue(operation: () => Promise<void>): Promise<void> {
+  const next = pendingMutation.then(operation);
+  pendingMutation = next.catch(() => undefined);
+  return next;
+}
+
 const QUEUE_STORAGE_KEY = "@pocket-draw/match-result-queue";
 
 export type QueuedMatchResult = {
   result: MatchResult;
+  uploadedBy?: string;
   enqueuedAt: string;
   attempts: number;
 };
@@ -51,21 +60,27 @@ async function writeQueue(entries: QueuedMatchResult[]): Promise<void> {
   await AsyncStorage.setItem(QUEUE_STORAGE_KEY, JSON.stringify(entries));
 }
 
-export async function enqueueMatchResult(result: MatchResult): Promise<void> {
-  const queue = await readQueue();
-  const existing = queue.find(
-    (entry) => entry.result.matchId === result.matchId
-  );
-  const nextEntry: QueuedMatchResult = {
-    result,
-    enqueuedAt: existing?.enqueuedAt ?? new Date().toISOString(),
-    attempts: existing?.attempts ?? 0
-  };
-  const withoutDuplicate = queue.filter(
-    (entry) => entry.result.matchId !== result.matchId
-  );
+export async function enqueueMatchResult(
+  result: MatchResult,
+  uploadedBy?: string
+): Promise<void> {
+  return mutateQueue(async () => {
+    const queue = await readQueue();
+    const existing = queue.find(
+      (entry) => entry.result.matchId === result.matchId
+    );
+    const nextEntry: QueuedMatchResult = {
+      result,
+      uploadedBy: uploadedBy ?? existing?.uploadedBy,
+      enqueuedAt: existing?.enqueuedAt ?? new Date().toISOString(),
+      attempts: existing?.attempts ?? 0
+    };
+    const withoutDuplicate = queue.filter(
+      (entry) => entry.result.matchId !== result.matchId
+    );
 
-  await writeQueue([...withoutDuplicate, nextEntry]);
+    await writeQueue([...withoutDuplicate, nextEntry]);
+  });
 }
 
 export async function listQueuedMatchResults(): Promise<QueuedMatchResult[]> {
@@ -73,23 +88,27 @@ export async function listQueuedMatchResults(): Promise<QueuedMatchResult[]> {
 }
 
 export async function removeQueuedMatchResult(matchId: string): Promise<void> {
-  const queue = await readQueue();
-  await writeQueue(queue.filter((entry) => entry.result.matchId !== matchId));
+  return mutateQueue(async () => {
+    const queue = await readQueue();
+    await writeQueue(queue.filter((entry) => entry.result.matchId !== matchId));
+  });
 }
 
 export async function clearMatchResultQueue(): Promise<void> {
-  await AsyncStorage.removeItem(QUEUE_STORAGE_KEY);
+  return mutateQueue(() => AsyncStorage.removeItem(QUEUE_STORAGE_KEY));
 }
 
 export async function bumpQueuedMatchResultAttempt(
   matchId: string
 ): Promise<void> {
-  const queue = await readQueue();
-  const next = queue.map((entry) =>
-    entry.result.matchId === matchId
-      ? { ...entry, attempts: entry.attempts + 1 }
-      : entry
-  );
+  return mutateQueue(async () => {
+    const queue = await readQueue();
+    const next = queue.map((entry) =>
+      entry.result.matchId === matchId
+        ? { ...entry, attempts: entry.attempts + 1 }
+        : entry
+    );
 
-  await writeQueue(next);
+    await writeQueue(next);
+  });
 }
