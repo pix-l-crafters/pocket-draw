@@ -3,7 +3,10 @@ import { StyleSheet, View } from "react-native";
 
 import { CutCornerButton } from "../../components/CutCornerButton";
 import type { DuelChannel } from "../../contracts/duelChannel";
+import type { MatchResult } from "../../contracts/matchResult";
 import type { RoundOutcome } from "../../contracts/roundOutcome";
+import { submitMatchResult } from "../backend/matchResultsService";
+import type { SubmitMatchResultOutcome } from "../backend/types";
 import { MatchSummaryScreen } from "../postmatch/MatchSummaryScreen";
 import { ClockOffsetCalibrator } from "./clockOffsetCalibrator";
 import type { DuelRole } from "./fireSignalCoordinator";
@@ -114,12 +117,48 @@ export function DuelScreen({
 
   const playerNames = { [self.id]: self.name, [opponent.id]: opponent.name };
   const matchDecided = isMatchDecided(loop);
+  const [rematchNumber, setRematchNumber] = useState(0);
+  // Both phones derive the same ID for each rematch in this session.
+  const currentMatchId =
+    rematchNumber === 0 ? matchId : `${matchId}:rematch:${rematchNumber}`;
+  const completedResult = useMemo(
+    () => (matchDecided ? toMatchResult(loop, currentMatchId) : null),
+    [currentMatchId, loop, matchDecided]
+  );
+  const [saveState, setSaveState] = useState<{
+    result: MatchResult;
+    status: SubmitMatchResultOutcome["status"] | "saving" | "error";
+  } | null>(null);
+  const savingResultRef = useRef<MatchResult | null>(null);
+  const saveResult = useCallback(async () => {
+    if (!completedResult || savingResultRef.current === completedResult) return;
+    savingResultRef.current = completedResult;
+    setSaveState({ result: completedResult, status: "saving" });
+    try {
+      const outcome = await submitMatchResult(completedResult, self.id);
+      setSaveState({ result: completedResult, status: outcome.status });
+    } catch {
+      setSaveState({ result: completedResult, status: "error" });
+    } finally {
+      if (savingResultRef.current === completedResult)
+        savingResultRef.current = null;
+    }
+  }, [completedResult, self.id]);
 
-  if (matchDecided && !roundResult) {
+  useEffect(() => {
+    void saveResult();
+  }, [saveResult]);
+
+  const saveStatus =
+    saveState?.result === completedResult ? saveState?.status : "saving";
+  const resultSaved = saveStatus === "written" || saveStatus === "queued";
+
+  if (completedResult && !roundResult && resultSaved) {
     return (
       <MatchSummaryScreen
-        matchResult={toMatchResult(loop, matchId)}
+        matchResult={completedResult}
         onRematch={() => {
+          setRematchNumber((number) => number + 1);
           setLoop(createRoundLoop([self.id, opponent.id]));
           setRoundResult(null);
         }}
@@ -132,8 +171,25 @@ export function DuelScreen({
   if (roundResult) {
     return (
       <RoundResultScreen
-        continueLabel={matchDecided ? "See match result" : "Next round"}
-        onContinue={() => setRoundResult(null)}
+        continueDisabled={matchDecided && saveStatus === "saving"}
+        continueLabel={
+          !matchDecided
+            ? "Next round"
+            : saveStatus === "error"
+              ? "Retry saving result"
+              : resultSaved
+                ? "See match result"
+                : "Saving result…"
+        }
+        errorMessage={
+          matchDecided && saveStatus === "error"
+            ? "Could not save the match result. Please retry."
+            : undefined
+        }
+        onContinue={() => {
+          if (!matchDecided || resultSaved) setRoundResult(null);
+          else if (saveStatus === "error") void saveResult();
+        }}
         outcome={roundResult}
         playerNames={playerNames}
         roundNumber={loop.rounds.length}
