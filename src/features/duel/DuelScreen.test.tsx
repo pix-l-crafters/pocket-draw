@@ -10,6 +10,10 @@ type Reading = { x: number; y: number; z: number };
 
 const accelerometerListeners: ((reading: Reading) => void)[] = [];
 
+jest.mock("../backend/matchResultsService", () => ({
+  submitMatchResult: jest.fn()
+}));
+
 jest.mock("expo-sensors", () => ({
   Accelerometer: {
     addListener: (listener: (reading: Reading) => void) => {
