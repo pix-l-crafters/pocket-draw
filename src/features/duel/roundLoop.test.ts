@@ -3,6 +3,8 @@ import {
   createRoundLoop,
   isMatchDecided,
   matchResults,
+  reconcileRounds,
+  roundKeys,
   scoreFromRounds,
   toMatchResult
 } from "./roundLoop";
@@ -124,4 +126,39 @@ describe("roundLoop", () => {
       });
     }
   );
+});
+
+describe("reconcileRounds after a reconnect", () => {
+  it("replays a round only one phone finished judging before the drop", () => {
+    let local = createRoundLoop(["a", "b"]);
+    local = applyRoundOutcome(local, win("a"));
+    // The opponent's shot never arrived, so this phone scored them a miss.
+    local = applyRoundOutcome(local, win("a", 230));
+    const peer = applyRoundOutcome(createRoundLoop(["a", "b"]), win("a"));
+
+    const resumed = reconcileRounds(local, roundKeys(peer));
+
+    expect(resumed.rounds).toEqual([win("a")]);
+    expect(resumed.scores).toEqual({ a: 1, b: 0 });
+  });
+});
+
+describe("reconcileRounds when the phones already agree or the peer is ahead", () => {
+  it("keeps this phone's rounds when the peer has judged more of them", () => {
+    const local = applyRoundOutcome(createRoundLoop(["a", "b"]), win("a"));
+    const peer = applyRoundOutcome(local, win("b"));
+
+    expect(reconcileRounds(local, roundKeys(peer))).toBe(local);
+  });
+
+  it("replays a round the two phones judged differently", () => {
+    const base = applyRoundOutcome(createRoundLoop(["a", "b"]), tie());
+    const local = applyRoundOutcome(base, win("a", 250));
+    const peer = applyRoundOutcome(base, win("b", 260));
+
+    const resumed = reconcileRounds(local, roundKeys(peer));
+
+    expect(resumed.rounds).toEqual([tie()]);
+    expect(resumed.scores).toEqual({ a: 1, b: 1 });
+  });
 });

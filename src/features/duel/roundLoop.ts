@@ -135,3 +135,51 @@ export function toMatchResult(
     completedAt
   };
 }
+
+// Object key order is not part of an outcome's identity, so keys are sorted
+// before comparing what each phone recorded.
+function canonicalJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
+  if (value !== null && typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>)
+      .filter(([, field]) => field !== undefined)
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+    return `{${entries
+      .map(([key, field]) => `${JSON.stringify(key)}:${canonicalJson(field)}`)
+      .join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+/** One comparable key per judged round, exchanged after a reconnect. */
+export function roundKeys(state: RoundLoopState): string[] {
+  return state.rounds.map(canonicalJson);
+}
+
+/**
+ * Resumes from the rounds both phones agree on. A round only one phone judged —
+ * or judged differently because a shot was lost in the drop — is discarded and
+ * replayed, rather than scoring the missing shot as a miss.
+ */
+export function reconcileRounds(
+  state: RoundLoopState,
+  peerRoundKeys: readonly string[]
+): RoundLoopState {
+  const localKeys = roundKeys(state);
+  let agreed = 0;
+  while (
+    agreed < localKeys.length &&
+    agreed < peerRoundKeys.length &&
+    localKeys[agreed] === peerRoundKeys[agreed]
+  ) {
+    agreed += 1;
+  }
+  if (agreed === state.rounds.length) return state;
+
+  const rounds = state.rounds.slice(0, agreed);
+  return {
+    ...state,
+    rounds,
+    scores: scoreFromRounds(state.participantIds, rounds)
+  };
+}

@@ -16,9 +16,9 @@ const MOCK_CONNECT_FAILURE_RATE = 0.35;
 const MOCK_DROP_AFTER_MS: number | null = null;
 
 /**
- * Simulated transport: no BLE, no second device. Connects after a short delay,
- * fails a fraction of the time, and hands back a working in-memory channel.
- * Lets the whole 3.8 / 3.9 flow be built and demoed on one phone.
+ * Simulated transport: no network, no second device. Connects after a short
+ * delay, fails a fraction of the time, and hands back a working in-memory
+ * channel. Lets the whole 3.8 / 3.9 flow be built and demoed on one phone.
  */
 export const mockDuelSessionTransport: DuelSessionTransport = {
   async connect(_params, signal) {

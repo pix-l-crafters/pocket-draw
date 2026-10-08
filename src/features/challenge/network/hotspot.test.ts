@@ -1,9 +1,13 @@
 import type { HotspotConnection } from "../../../contracts/duelConnection";
-import type { DuelSessionTransport } from "../session/duelSessionTransport";
+import type {
+  DuelSessionTransport,
+  DuelTransportConnection
+} from "../session/duelSessionTransport";
 import {
   joinHotspot,
   startAndroidLocalOnlyHotspot,
-  withNetworkPreparation
+  withNetworkPreparation,
+  withReconnectPreparation
 } from "./hotspot";
 
 // Test-only hotspot passphrase.
@@ -103,5 +107,38 @@ describe("hotspot networking", () => {
     ).rejects.toThrow("signaling failed");
 
     expect(events).toEqual(["join", "connect", "connect"]);
+  });
+
+  it("re-joins the hotspot once per recovery, since a drop often means the phone left it", async () => {
+    const events: string[] = [];
+    const outcomes = [false, true, true];
+    const transport: DuelSessionTransport = {
+      async connect() {
+        events.push("connect");
+        if (!outcomes.shift()) throw new Error("host unreachable");
+        return {} as DuelTransportConnection;
+      }
+    };
+    const reconnecting = withReconnectPreparation(connection, transport, {
+      connectToProtectedWifiSSID: async () => {
+        events.push("join");
+      }
+    });
+    const params = {
+      role: "guest" as const,
+      matchId: "match-123",
+      discoveryToken: "89abcdef",
+      opponentId: "host-123"
+    };
+    const signal = new AbortController().signal;
+
+    await expect(reconnecting.connect(params, signal)).rejects.toThrow(
+      "host unreachable"
+    );
+    await reconnecting.connect(params, signal);
+    // A later drop starts a new recovery, which joins again.
+    await reconnecting.connect(params, signal);
+
+    expect(events).toEqual(["join", "connect", "connect", "join", "connect"]);
   });
 });

@@ -13,8 +13,6 @@ import { ReactionTimer } from "./reactionTimer";
 import { FIRE_WINDOW_MS, type RoundShots } from "./roundShots";
 import { subscribeVolumeFire } from "./volumeFireTrigger";
 
-export const SEPARATION_RSSI_THRESHOLD = -70;
-
 const COUNTDOWN_VALUES = [3, 2, 1] as const;
 const COUNTDOWN_TICK_MS = 1000;
 /** Fixed 3-2-1 countdown: one second per tick, FIRE on zero. Never random. */
@@ -26,15 +24,6 @@ export const COUNTDOWN_DURATION_MS =
  * devices can score the same last-instant shot differently.
  */
 const PEER_SHOT_GRACE_MS = 250;
-
-export type RssiReader = () => Promise<number | null>;
-
-export function isSeparatedByRssi(
-  rssi: number | null,
-  threshold = SEPARATION_RSSI_THRESHOLD
-): boolean {
-  return rssi !== null && rssi <= threshold;
-}
 
 export function isTopEdgeDown(x: number, y: number, z: number): boolean {
   // Expo forwards native readings; the top-edge-down Y sign differs by OS.
@@ -54,7 +43,6 @@ type Phase =
 
 type PreRoundProps = {
   channel: DuelChannel;
-  readRssi: RssiReader;
   /** The host owns the countdown and the FIRE signal; the guest follows. */
   role: DuelRole;
   /** True once the opponent has finished their own pre-round ritual. */
@@ -68,7 +56,6 @@ type PreRoundProps = {
 
 export function PreRound({
   channel,
-  readRssi,
   role,
   peerReady,
   clockCalibrationStatus,
@@ -79,7 +66,6 @@ export function PreRound({
 }: PreRoundProps) {
   const countdownAudio = useAudioPlayer(COUNTDOWN_AUDIO_SOURCE);
   const [phase, setPhase] = useState<Phase>("separate");
-  const [rssi, setRssi] = useState<number | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [topEdgeDown, setTopEdgeDown] = useState(false);
   const [selfReactionMs, setSelfReactionMs] = useState<number | null>(null);
@@ -191,21 +177,6 @@ export function PreRound({
     });
   }, [channel]);
 
-  useEffect(() => {
-    if (phase !== "separate") return undefined;
-    let mounted = true;
-    const poll = async () => {
-      const nextRssi = await readRssi();
-      if (mounted) setRssi(nextRssi);
-    };
-    void poll();
-    const interval = setInterval(() => void poll(), 1000);
-    return () => {
-      mounted = false;
-      clearInterval(interval);
-    };
-  }, [phase, readRssi]);
-
   // Both shots in, or the window closed: the round is decided either way.
   useEffect(() => {
     if (phase !== "fire") return undefined;
@@ -254,8 +225,6 @@ export function PreRound({
     return subscribeVolumeFire(handleFire);
   }, [phase]);
 
-  const separated = isSeparatedByRssi(rssi);
-
   const startCountdown = () => {
     if (!safeSend({ type: "countdown", value: COUNTDOWN_VALUES[0] })) return;
     onCountdownStart();
@@ -283,7 +252,9 @@ export function PreRound({
   };
 
   const advance = () => {
-    if (phase === "separate" && separated) {
+    // Separation is the players' own call: nothing on the phone measures
+    // the distance between them, so the step only asks.
+    if (phase === "separate") {
       setPhase("position");
       return;
     }
@@ -299,11 +270,10 @@ export function PreRound({
   };
 
   const confirmDisabled =
-    phase === "separate" ? !separated : !topEdgeDown || (isHost && !peerReady);
+    phase === "position" && (!topEdgeDown || (isHost && !peerReady));
 
   const status = useMemo(() => {
-    if (phase === "separate")
-      return separated ? "DISTANCE CONFIRMED" : "MOVE FURTHER APART";
+    if (phase === "separate") return "STAND APART";
     if (phase === "position") {
       if (!topEdgeDown) return "POINT THE TOP EDGE TOWARD THE GROUND";
       return isHost && !peerReady
@@ -313,7 +283,7 @@ export function PreRound({
     if (phase === "waiting") return "WAITING FOR THE DRAW";
     if (phase === "countdown") return "GET READY";
     return "DRAW!";
-  }, [isHost, peerReady, phase, separated, topEdgeDown]);
+  }, [isHost, peerReady, phase, topEdgeDown]);
 
   return (
     <View style={styles.container}>
@@ -340,7 +310,7 @@ export function PreRound({
           : clockCalibrationStatus === "calibrating"
             ? "Synchronizing both players’ clocks before timed play."
             : phase === "separate" &&
-              `BLE signal: ${rssi === null ? "—" : `${rssi} dBm`}`}
+              "Face your opponent from a few paces away, then confirm."}
         {clockCalibrationStatus === "ready" &&
           phase === "position" &&
           (isHost

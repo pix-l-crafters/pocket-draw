@@ -6,36 +6,47 @@ All notable changes to this project will be documented in this file. See [conven
 
 ### Features
 
-- Include drawn matches in player stats and show live stats in player popups and profile.
 - **(duel)** add iOS volume-change fire input alongside tap; volume adjustment remains active.
 
 ---
 
-## [Unreleased]
+## [0.2.0](https://github.com/pix-l-crafters/pocket-draw/compare/v0.1.0..v0.2.0) - 2026-10-08
 
 ### Bug Fixes
 
-- **(duel)** calibrate peer clocks before scoring reaction times
-
----
-
-## [0.1.1](https://github.com/pix-l-crafters/pocket-draw/compare/v0.1.0..v0.1.1) - 2026-10-05
-
-### Bug Fixes
-
+- **(app)** align match consumers with scoring contracts - ([0fe653f](https://github.com/pix-l-crafters/pocket-draw/commit/0fe653fb7a9f586cebfb6d054528c65d0e968d2e)) - MRDGH2821
+- **(duel)** align pre-duel phone position across platforms - ([97c5ac8](https://github.com/pix-l-crafters/pocket-draw/commit/97c5ac82356ba3acb551352b6734b09c58b2d71d)) - MRDGH2821
+- **(duel)** calibrate reaction clocks - ([cad5941](https://github.com/pix-l-crafters/pocket-draw/commit/cad5941a0cbca2997a5d96e7ea414b97209843dd)) - MRDGH2821
+- **(duel)** save results before opening match summary - ([26fe935](https://github.com/pix-l-crafters/pocket-draw/commit/26fe9358280e07d7e4a1f02b066317548aafe367)) - hbeat
+- **(duel)** support Hermes clock calibration - ([911b053](https://github.com/pix-l-crafters/pocket-draw/commit/911b0535844e018450017d1a46e539b147ab9063)) - MRDGH2821
 - **(expo)** force minimum iOS deployment target on Pod resource bundles - ([11fa904](https://github.com/pix-l-crafters/pocket-draw/commit/11fa904e3227524e24999cea19542486278b7285)) - Mobark Bacran
 - **(expo)** pin EAS iOS builds to the Xcode 26 image - ([d679eb4](https://github.com/pix-l-crafters/pocket-draw/commit/d679eb492ac8e08a13008f09d6cce1e19c457f78)) - Mobark Bacran
+- **(firebase)** save concurrent match results atomically - ([ec9e0ff](https://github.com/pix-l-crafters/pocket-draw/commit/ec9e0fff45a1ccc064ec5d5d506aeb7e7d2b0252)) - hbeat
+- apply linter fixes - ([a0fbe04](https://github.com/pix-l-crafters/pocket-draw/commit/a0fbe045d1dca319f56a81675ef64b507458bcad)) - MRDGH2821
 
 ### Documentation
 
+- **(firebase)** record device tests and rules deployment - ([247cb91](https://github.com/pix-l-crafters/pocket-draw/commit/247cb917074f0ea149ec58f84886e4dd80024d44)) - hbeat
 - align roadmap with assignment requirements - ([9297dc9](https://github.com/pix-l-crafters/pocket-draw/commit/9297dc95b86d6484a5f1f51dd717c7da9f27a13d)) - MRDGH2821
 - record issue and project board reconciliation - ([8a3da92](https://github.com/pix-l-crafters/pocket-draw/commit/8a3da92708a1e3da7b1733095a1db046331893dd)) - MRDGH2821
 - add Assignment 1 feedback - ([a6edde9](https://github.com/pix-l-crafters/pocket-draw/commit/a6edde9a847dd557f9a59f6e4cfce7fb04928a9e)) - MRDGH2821
 - record PR 84 metadata update - ([87f1d12](https://github.com/pix-l-crafters/pocket-draw/commit/87f1d1253139f2d2eab2917f81f3a448b4457cb1)) - MRDGH2821
+- add ai logs - ([3720d30](https://github.com/pix-l-crafters/pocket-draw/commit/3720d30408233b792ef219c36fa72cfaea4f8f72)) - MRDGH2821
+- record Android dev build test - ([bcb2261](https://github.com/pix-l-crafters/pocket-draw/commit/bcb2261d5b53e01db79002c4830455dcacd43a44)) - MRDGH2821
+- record clock calibration PR - ([985e8f9](https://github.com/pix-l-crafters/pocket-draw/commit/985e8f965e33e1eeb58582afd94b923d487910c7)) - MRDGH2821
+
+### Features
+
+- **(duel)** score non-offending shot on false starts - ([6dbad6d](https://github.com/pix-l-crafters/pocket-draw/commit/6dbad6d4647b2175d865ea3726df4004b45830ad)) - wutianze3
+- **(firebase)** load real user ratings for leaderboard - ([9a47046](https://github.com/pix-l-crafters/pocket-draw/commit/9a47046524020bd86a6982266afe95fa598718bc)) - hbeat
+- **(profile)** show draws in player stats - ([014a9f9](https://github.com/pix-l-crafters/pocket-draw/commit/014a9f9e8b77dfc43e34d1902de34d8c23931b68)) - MRDGH2821
+- **(profile)** display the installed app version - ([257a33f](https://github.com/pix-l-crafters/pocket-draw/commit/257a33f8c2200cbbe2bfdeb5e479c7e12b862ec5)) - tingyueh
+- add save result and eloRating - ([2d9d8f6](https://github.com/pix-l-crafters/pocket-draw/commit/2d9d8f65d287c6335d258965e3d0586677cb4668)) - hbeat
 
 ### Miscellaneous Chores
 
 - **(mise)** update tools & lock files - ([898fec8](https://github.com/pix-l-crafters/pocket-draw/commit/898fec8c290317316031850ecfa72cb3e2cc112e)) - MRDGH2821
+- **(mise)** streamline dependency and agent setup - ([06c5036](https://github.com/pix-l-crafters/pocket-draw/commit/06c5036da388ecb231d719e327eda9f19a6e899b)) - MRDGH2821
 - merge pull request #79 from pix-l-crafters/mobark/build/fix-deps - ([497529c](https://github.com/pix-l-crafters/pocket-draw/commit/497529c4a6eb12fa01698a6cbb93132162cdcc98)) - Mihir Rabade
 - use mattpocock's plugin - ([3101c9b](https://github.com/pix-l-crafters/pocket-draw/commit/3101c9b21f5420399d0c825f8cad8887a935f916)) - MRDGH2821
 - merge pull request #84 from pix-l-crafters/mihir/chore/update-work-list - ([c2f1213](https://github.com/pix-l-crafters/pocket-draw/commit/c2f1213ef2886c86d87039c278c3a84aadb725e4)) - Mihir Rabade
@@ -43,19 +54,55 @@ All notable changes to this project will be documented in this file. See [conven
 - merge pull request #87 from pix-l-crafters/mihir/chore/release-tag - ([fc28ee4](https://github.com/pix-l-crafters/pocket-draw/commit/fc28ee4207143ff52e9b9b1e36c72bc0ea6052df)) - Mihir Rabade
 - merge pull request #88 from pix-l-crafters/main - ([0cde9e3](https://github.com/pix-l-crafters/pocket-draw/commit/0cde9e37835d683bfb48d031242413e585d599e6)) - Mihir Rabade
 - merge pull request #89 from pix-l-crafters/release - ([e7f565b](https://github.com/pix-l-crafters/pocket-draw/commit/e7f565b3958c8865410fd743e8c6f2a0dd3d4880)) - Mihir Rabade
+- add linter dependencies - ([cc8e716](https://github.com/pix-l-crafters/pocket-draw/commit/cc8e71600560d6a2ff01f1a3e3d48acabba6e3cc)) - MRDGH2821
+- add tsc linter - ([59b0323](https://github.com/pix-l-crafters/pocket-draw/commit/59b032311e91beb0c30b0ac9b0e6931fedf6180f)) - MRDGH2821
+- add oxlint - ([b644e06](https://github.com/pix-l-crafters/pocket-draw/commit/b644e06d2c986a9307a00d3a7fb56baed21fc96a)) - MRDGH2821
+- merge pull request #92 from pix-l-crafters/mihir/chore/update-dev-env - ([cf8a068](https://github.com/pix-l-crafters/pocket-draw/commit/cf8a06828110007d85c3077519261abe658478a8)) - Mihir Rabade
+- merge branch 'dev' into tanachat/feature/save-result - ([4377157](https://github.com/pix-l-crafters/pocket-draw/commit/4377157de10cfa4286bb268a5ba15e688c1faea8)) - MRDGH2821
+- merge pull request #91 from pix-l-crafters/tanachat/feature/save-result - ([53e194b](https://github.com/pix-l-crafters/pocket-draw/commit/53e194b725037b6344af46e9a81b6497ceee3f68)) - Mihir Rabade
+- merge dev into false-start-shot - ([a8cc177](https://github.com/pix-l-crafters/pocket-draw/commit/a8cc177658cc256c1894c31a4dd3546d1cd10c7e)) - Tianze
+- merge pull request #85 from pix-l-crafters/tianze/feat/false-start-shot - ([2df0fbf](https://github.com/pix-l-crafters/pocket-draw/commit/2df0fbf1b2aa98b7cd9812481f68ccde5a0156ba)) - Mihir Rabade
+- ignore nested dirs - ([aaf87b9](https://github.com/pix-l-crafters/pocket-draw/commit/aaf87b9b3a3afa2da8ead559f25ce03e738b17e3)) - MRDGH2821
+- ignore worktrees - ([d097be5](https://github.com/pix-l-crafters/pocket-draw/commit/d097be53f4bad4e69be79a4c0661a39c7565bfac)) - MRDGH2821
+- merge pull request #93 from pix-l-crafters/MRDGH2821/draws-show-up-in-player-stats - ([bebc310](https://github.com/pix-l-crafters/pocket-draw/commit/bebc310afa823e9504c81d7f273e3b34c8cc5a44)) - Mihir Rabade
+- merge branch 'dev' into MRDGH2821/bug/pre-duel-phone-position-differs-between-ios - ([c377db8](https://github.com/pix-l-crafters/pocket-draw/commit/c377db8fa88facf1f8eca7bcff89feb76834c1fe)) - MRDGH2821
+- merge pull request #95 from pix-l-crafters/MRDGH2821/bug/pre-duel-phone-position-differs-between-ios - ([ee6af2f](https://github.com/pix-l-crafters/pocket-draw/commit/ee6af2f978c82cba548c98753de74cff0295c274)) - Mihir Rabade
+- save local build setup and simulator work log - ([983929d](https://github.com/pix-l-crafters/pocket-draw/commit/983929ddeb97eaf5e4088905bc03fedf0fab702e)) - hbeat
+- restore lockfiles to dev versions - ([2de59ac](https://github.com/pix-l-crafters/pocket-draw/commit/2de59ac700d138c876772652acc5b0d1d24d5f78)) - hbeat
+- merge pull request #97 from pix-l-crafters/hbeat/leaderboard-screen-shows-real-rankings - ([94bb6e9](https://github.com/pix-l-crafters/pocket-draw/commit/94bb6e9f1fb92cbc6b5c84c4aa1d0400cab45d88)) - Mihir Rabade
+- register Android CLI skill - ([537e5c3](https://github.com/pix-l-crafters/pocket-draw/commit/537e5c3f321d049418236b72a0e7dd91829ed4f7)) - MRDGH2821
+- merge branch 'dev' into MRDGH2821/fix/clock-offset-calibration-for-reaction-timing - ([c56c59d](https://github.com/pix-l-crafters/pocket-draw/commit/c56c59d24472b839b47245ce937e322e1183f61d)) - MRDGH2821
+- merge dev into clock calibration branch - ([e201af4](https://github.com/pix-l-crafters/pocket-draw/commit/e201af43b3f241370b04187c57852909033a40f1)) - MRDGH2821
+- merge pull request #96 from pix-l-crafters/MRDGH2821/fix/clock-offset-calibration-for-reaction-timing - ([e3d58ab](https://github.com/pix-l-crafters/pocket-draw/commit/e3d58abfd75d98a9074316d6b3a62fc6edbcf938)) - Mihir Rabade
+- merge pull request #101 from pix-l-crafters/hbeat/fix/save-result - ([6d897ff](https://github.com/pix-l-crafters/pocket-draw/commit/6d897ffed7e153a6b2a202a55ac750f32e3dd667)) - Mihir Rabade
+- merge pull request #100 from pix-l-crafters/tingyueh/display-the-game-version-on-the-profile-screen - ([359d3ae](https://github.com/pix-l-crafters/pocket-draw/commit/359d3aec17f97a5cb1be74fc3946e30c6e2219f0)) - Mihir Rabade
+- update lock file - ([1bfab0b](https://github.com/pix-l-crafters/pocket-draw/commit/1bfab0b184a7530e45d46ef0bf2775c612fe93cc)) - MRDGH2821
+- merge pull request #103 from pix-l-crafters/mrdgh2821/fix/clock-calibration - ([4b1e559](https://github.com/pix-l-crafters/pocket-draw/commit/4b1e559636fb7f8c725afa9b99448cac14e37db4)) - Mihir Rabade
+- merge pull request #105 from pix-l-crafters/hbeat/feature/fix-save-result - ([7f171da](https://github.com/pix-l-crafters/pocket-draw/commit/7f171da3a6d2323b6e5d2483dc89ae131937fb80)) - Mihir Rabade
+
+### Refactoring
+
+- **(firebase)** simplify leaderboard ranking fields - ([6a48441](https://github.com/pix-l-crafters/pocket-draw/commit/6a484416c43fc95c1121395c06bb6bfc4b6cb5e1)) - hbeat
 
 ### Style
 
 - format files - ([cffec78](https://github.com/pix-l-crafters/pocket-draw/commit/cffec7828a66562471fade9a0c8402359b378410)) - MRDGH2821
 - format files - ([0036bf3](https://github.com/pix-l-crafters/pocket-draw/commit/0036bf3b9bb6cf485eb8fdaacb2b3451ac1ea635)) - MRDGH2821
+- format files - ([83a56e6](https://github.com/pix-l-crafters/pocket-draw/commit/83a56e6a3e736b8c4d189cb26c589b6046f02d5c)) - MRDGH2821
+- format files - ([dd077f4](https://github.com/pix-l-crafters/pocket-draw/commit/dd077f454ce69cf3798c58ee6d6effe24016d2f7)) - MRDGH2821
 
 ### Build
 
 - **(mise)** update lock files - ([0feefbf](https://github.com/pix-l-crafters/pocket-draw/commit/0feefbf377a6e14b8f41113ebcbbf25771f4118a)) - MRDGH2821
+- **(mise)** configure local Android APK and AAB builds - ([95de635](https://github.com/pix-l-crafters/pocket-draw/commit/95de635b14e93f164c6351606703f6a1d8d669c2)) - MRDGH2821
+- **(mise)** remove enter hook & add lock files - ([0ea1d2b](https://github.com/pix-l-crafters/pocket-draw/commit/0ea1d2b6cfad004c39a281f3c974848b83efebdc)) - MRDGH2821
+- **(mise)** update tools & lock files - ([73cfb65](https://github.com/pix-l-crafters/pocket-draw/commit/73cfb65ef71f71e78bac447ce32ac37ca021c487)) - MRDGH2821
+- **(mise)** update task - ([c0a7c56](https://github.com/pix-l-crafters/pocket-draw/commit/c0a7c56682ac9b760aadbc7fad10f0fc3bda1b5e)) - MRDGH2821
 
 ### Ci
 
 - delete eas ci workflow - ([0a0da86](https://github.com/pix-l-crafters/pocket-draw/commit/0a0da86dd46b8bcb3a163a4c7a84d97a3f7ba911)) - MRDGH2821
+- delete react native CI - ([398f8ae](https://github.com/pix-l-crafters/pocket-draw/commit/398f8ae6cd6bc3804ec55d8a19e239121ae66305)) - MRDGH2821
 
 ---
 

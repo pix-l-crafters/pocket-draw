@@ -6,7 +6,7 @@ export interface MockFireSignalPair {
   host: FireSignalCoordinator;
 }
 
-/** Local two-player stand-in until the BLE-backed DuelChannel is available. */
+/** Local two-player stand-in for exercising FIRE timing without two phones. */
 export function createMockFireSignalPair(
   now: () => number = Date.now
 ): MockFireSignalPair {

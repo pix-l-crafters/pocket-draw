@@ -33,6 +33,8 @@ Per the design decision made this session, WebRTC becomes the **sole** transport
 
    Selected option 2 given the timeline, not because it's the strongest answer — whoever picks up this item should raise this tradeoff with their team before treating it as final.
 
+   **Confirmed 2026-10-08 (#51):** option 2 was raised and kept. The host re-listens on the invite's `signalPort` and accepts the same QR credentials for reconnects until the session is released; see `docs/adr/0001-webrtc-replaces-ble.md`.
+
 7. **Exchange SDP offer/answer and ICE candidates** over that authenticated socket. Host-only ICE candidates — same LAN, no STUN/TURN needed.
 8. **Establish `RTCPeerConnection` + `DataChannel`.** Once open, wrap it in an object implementing the existing `DuelChannel` interface (`send`/`onMessage`/`isConnected`) so `fireSignalCoordinator.ts`, `roundLoop.ts`, etc. work completely unmodified — this is the same seam `mockDuelSessionTransport.ts`/`bleDuelSessionTransport.ts` already sit behind.
 9. **Close the signaling socket** once the data channel is open — it's not needed afterward.

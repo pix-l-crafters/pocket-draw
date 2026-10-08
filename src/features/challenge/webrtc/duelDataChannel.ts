@@ -1,5 +1,12 @@
 import type { DuelChannel, DuelMessage } from "../../../contracts/duelChannel";
+import { MAX_ROUND_COUNT } from "../../duel/roundLoop";
+import { hasValidMatchId } from "../../qr/utils/qr.validation";
 import type { DuelTransportConnection } from "../session/duelSessionTransport";
+
+/** A round key is a small JSON object; anything longer is not one of ours. */
+const MAX_ROUND_KEY_LENGTH = 1024;
+/** Upper bound on waiting for a closing DataChannel before closing its peer. */
+const PEER_CLOSE_FALLBACK_MS = 1000;
 
 export interface RtcDataChannelLike {
   readyState: string;
@@ -9,6 +16,13 @@ export interface RtcDataChannelLike {
   onmessage: ((event: { data: unknown }) => void) | null;
   onclose: (() => void) | null;
   onerror: ((event: unknown) => void) | null;
+}
+
+/** The RTCPeerConnection under a DataChannel, which outlives the channel. */
+export interface PeerLifecycle {
+  /** Fires when the peer connection fails while the channel still looks open. */
+  onFailure(handler: () => void): () => void;
+  close(): void;
 }
 
 function isFiniteNumber(value: unknown): value is number {
@@ -28,7 +42,21 @@ export function isDuelMessage(value: unknown): value is DuelMessage {
     case "ready":
     case "challengeAccepted":
     case "challengeDeclined":
+    case "leave":
       return true;
+    case "rematchOffer":
+    case "rematchAccept":
+      return hasValidMatchId(message);
+    case "matchSync":
+      return (
+        hasValidMatchId(message) &&
+        typeof message.reply === "boolean" &&
+        Array.isArray(message.roundKeys) &&
+        message.roundKeys.length <= MAX_ROUND_COUNT &&
+        message.roundKeys.every(
+          (key) => typeof key === "string" && key.length <= MAX_ROUND_KEY_LENGTH
+        )
+      );
     case "challenge":
       return (
         isNonEmptyString(message.playerId) &&
@@ -60,12 +88,15 @@ export function isDuelMessage(value: unknown): value is DuelMessage {
 }
 
 export function createDuelDataChannelConnection(
-  rtcChannel: RtcDataChannelLike
+  rtcChannel: RtcDataChannelLike,
+  peer?: PeerLifecycle
 ): DuelTransportConnection {
   const messageHandlers = new Set<(message: DuelMessage) => void>();
   const dropHandlers = new Set<(message: string) => void>();
   let disconnectedLocally = false;
   let dropReported = false;
+  let peerClosed = false;
+  let peerCloseFallback: ReturnType<typeof setTimeout> | undefined;
 
   const reportDrop = () => {
     if (disconnectedLocally || dropReported) return;
@@ -88,6 +119,15 @@ export function createDuelDataChannelConnection(
   };
   rtcChannel.onclose = reportDrop;
   rtcChannel.onerror = reportDrop;
+  // ICE can fail long before the DataChannel notices it is gone.
+  const stopWatchingPeer = peer?.onFailure(reportDrop) ?? (() => undefined);
+
+  const closePeer = () => {
+    clearTimeout(peerCloseFallback);
+    if (peerClosed) return;
+    peerClosed = true;
+    peer?.close();
+  };
 
   const channel: DuelChannel = {
     send(message) {
@@ -111,9 +151,19 @@ export function createDuelDataChannelConnection(
       dropHandlers.add(handler);
     },
     disconnect() {
+      if (disconnectedLocally) return;
       disconnectedLocally = true;
       messageHandlers.clear();
       dropHandlers.clear();
+      stopWatchingPeer();
+      if (rtcChannel.readyState === "closed") {
+        closePeer();
+        return;
+      }
+      // Closing the channel first lets a queued goodbye reach the opponent;
+      // closing the peer connection straight away would discard it.
+      rtcChannel.onclose = closePeer;
+      peerCloseFallback = setTimeout(closePeer, PEER_CLOSE_FALLBACK_MS);
       rtcChannel.close();
     }
   };
