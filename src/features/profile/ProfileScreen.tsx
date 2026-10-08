@@ -6,6 +6,7 @@ import { KickerLabel } from "../../components/KickerLabel";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { StatTile } from "../../components/StatTile";
 import { usePlayerStats } from "../../hooks/usePlayerStats";
+import { getAppVersion } from "../../lib/appVersion";
 import { logoutUser } from "../../lib/auth";
 import { colors, fonts } from "../../theme/tokens";
 import { LeaderboardScreen } from "../leaderboard/LeaderboardScreen";
@@ -88,6 +89,16 @@ export function ProfileScreen({ displayName, email, uid }: ProfileScreenProps) {
             style={styles.detailValue}
           >
             {email ?? "—"}
+          </Text>
+        </View>
+
+        <View style={styles.detailRow}>
+          <Text style={styles.detailLabel}>Version</Text>
+          <Text
+            numberOfLines={1}
+            style={styles.detailValue}
+          >
+            {getAppVersion() ?? "—"}
           </Text>
         </View>
 

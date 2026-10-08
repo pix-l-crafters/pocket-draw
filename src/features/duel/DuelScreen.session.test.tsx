@@ -25,6 +25,14 @@ const LATER_REMATCH = "33333333-3333-4333-8333-333333333333";
 
 jest.mock("../qr/utils/qr.tokens", () => ({ generateMatchId: jest.fn() }));
 
+// Saving is covered by DuelScreen.completion.test; here every save succeeds.
+jest.mock("../backend/matchResultsService", () => ({
+  submitMatchResult: async (result: { matchId: string }) => ({
+    status: "written",
+    matchId: result.matchId
+  })
+}));
+
 jest.mock("./clockOffsetCalibrator", () => ({
   ClockOffsetCalibrator: jest.fn().mockImplementation(() => ({
     calibrate: async () => 0,
