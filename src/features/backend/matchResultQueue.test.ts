@@ -18,7 +18,6 @@ describe("match result queue", () => {
     const result: MatchResult = {
       matchId: "false-start-match",
       participantIds: ["a", "b"],
-      roundCount: 3,
       rounds: [
         {
           kind: "falseStart",

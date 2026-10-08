@@ -19,10 +19,6 @@ export function validateMatchResult(result: MatchResult, uploadedBy: string) {
     throw new Error("participantIds must be two distinct non-empty uids.");
   }
 
-  if (result.roundCount !== 3) {
-    throw new Error("roundCount must be 3.");
-  }
-
   if (result.rounds.length < 3 || result.rounds.length > 4) {
     throw new Error(
       "rounds must contain 3 regular rounds and at most 1 tiebreaker."
@@ -77,7 +73,6 @@ export const matchResultsRepository: MatchResultsRepository = {
         matchId: result.matchId,
         participantIds: result.participantIds,
         results: result.results,
-        roundCount: result.roundCount,
         rounds: result.rounds,
         completedAt: result.completedAt,
         uploadedBy,

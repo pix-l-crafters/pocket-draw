@@ -63,11 +63,33 @@ test("both phones can save the same completed match under create-only rules", as
   ).resolves.toEqual([undefined, undefined]);
   const saved = await getDoc(doc({} as never, "matches", result.matchId));
   expect(saved.data()).toMatchObject({
-    roundCount: 3,
     results: result.results
   });
+  expect(saved.data()).not.toHaveProperty("roundCount");
   // Retries must also skip the existing immutable result.
   await expect(
     matchResultsRepository.writeMatchResult(result, "player-a")
   ).resolves.toBeUndefined();
+});
+
+test("saves a four-round drawn match without roundCount metadata", async () => {
+  let loop = createRoundLoop(["draw-a", "draw-b"]);
+  for (let index = 0; index < 4; index += 1) {
+    loop = applyRoundOutcome(loop, {
+      kind: "tie",
+      zone: "bodyshot",
+      pointsEach: 1,
+      reactionMs: 100,
+      opponentReactionMs: 100
+    });
+  }
+  const result = toMatchResult(loop, "four-round-draw");
+  await matchResultsRepository.writeMatchResult(result, "draw-a");
+  const saved = await getDoc(doc({} as never, "matches", result.matchId));
+  expect(saved.data()).toMatchObject({
+    results: { "draw-a": "draw", "draw-b": "draw" },
+    rounds: expect.any(Array)
+  });
+  expect(saved.data()?.rounds).toHaveLength(4);
+  expect(saved.data()).not.toHaveProperty("roundCount");
 });

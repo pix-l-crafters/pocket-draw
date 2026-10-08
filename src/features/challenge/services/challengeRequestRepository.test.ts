@@ -48,7 +48,6 @@ describe("challengeRequestRepository", () => {
       },
       discoveryToken: "discovery-token-123",
       matchId: "match-123",
-      roundCount: 3,
       scannedPlayerId: "opponent-456",
       scannedPlayerName: "Opponent"
     });
@@ -56,7 +55,6 @@ describe("challengeRequestRepository", () => {
     expect(addDoc).toHaveBeenCalledWith(collectionReference, {
       challengerId: "challenger-123",
       matchId: "match-123",
-      roundCount: 3,
       scannedPlayerId: "opponent-456",
       scannedPlayerName: "Opponent",
       status: "pending",
