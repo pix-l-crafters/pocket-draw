@@ -63,31 +63,30 @@ public class VolumeFireModule: Module {
           UIApplication.shared.applicationState == .active else { return }
 
     let session = AVAudioSession.sharedInstance()
-    do {
-      // Keep Expo's playback category once it has configured duel audio.
-      if session.category == .soloAmbient { try session.setCategory(.ambient) }
-      try session.setActive(true)
-    } catch { return }
+    // Keep Expo's playback category once it has configured duel audio.
+    if session.category == .soloAmbient { _ = try? session.setCategory(.ambient) }
+    let canReset = (try? session.setActive(true)) != nil
 
-    guard let window = UIApplication.shared.connectedScenes
+    if canReset, let window = UIApplication.shared.connectedScenes
       .compactMap({ $0 as? UIWindowScene })
       .flatMap(\.windows)
-      .first(where: \.isKeyWindow) else { return }
-    let view = MPVolumeView(frame: CGRect(x: -1000, y: -1000, width: 100, height: 30))
-    view.alpha = 0.01
-    view.showsRouteButton = false
-    window.addSubview(view)
-    view.layoutIfNeeded()
-    guard let slider = view.subviews.compactMap({ $0 as? UISlider }).first else {
-      view.removeFromSuperview()
-      return
+      .first(where: \.isKeyWindow) {
+      let view = MPVolumeView(frame: CGRect(x: 0, y: 0, width: 100, height: 30))
+      view.alpha = 0.0001
+      view.showsRouteButton = false
+      window.addSubview(view)
+      view.layoutIfNeeded()
+      if let slider = view.subviews.compactMap({ $0 as? UISlider }).first {
+        volumeView = view
+        volumeSlider = slider
+        let baseline = session.outputVolume
+        originalVolume = baseline
+        // Leave room for a volume press at either endpoint.
+        resetVolume = baseline <= 0.05 || baseline >= 0.95 ? 0.5 : baseline
+      } else {
+        view.removeFromSuperview()
+      }
     }
-    volumeView = view
-    volumeSlider = slider
-    let baseline = session.outputVolume
-    originalVolume = baseline
-    // Leave room for a volume press at either endpoint.
-    resetVolume = baseline <= 0.05 || baseline >= 0.95 ? 0.5 : baseline
 
     volumeObservation = session.observe(
       \.outputVolume,
@@ -114,7 +113,8 @@ public class VolumeFireModule: Module {
         }
       }
     }
-    if let baseline = resetVolume, abs(session.outputVolume - baseline) > 0.04 {
+    if let slider = volumeSlider, let baseline = resetVolume,
+      abs(session.outputVolume - baseline) > 0.04 {
       pendingResetVolume = baseline
       slider.setValue(baseline, animated: false)
       slider.sendActions(for: .valueChanged)
