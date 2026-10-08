@@ -2,11 +2,43 @@
 
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
-## Unreleased
+---
+
+## [0.3.0](https://github.com/pix-l-crafters/pocket-draw/compare/v0.2.0..v0.3.0) - 2026-10-08
+
+### Bug Fixes
+
+- **(duel)** check motion access before the pre-round tilt gate - ([55916d1](https://github.com/pix-l-crafters/pocket-draw/commit/55916d187f077a5daabea44e36ffb0ca59197e7e)) - Mobark Bacran
+- **(duel)** recover guest and map permissions - ([7b7c6b0](https://github.com/pix-l-crafters/pocket-draw/commit/7b7c6b08bf85e440240aa4b7cf05f106f3f39e42)) - Mobark Bacran
+- **(firebase)** preserve matches collection for result uploads - ([5fdfb4b](https://github.com/pix-l-crafters/pocket-draw/commit/5fdfb4b703062fbb69043490277c002d353bdfd1)) - hbeat
+- **(firebase)** remove roundCount from persisted duel data - ([fedd1e6](https://github.com/pix-l-crafters/pocket-draw/commit/fedd1e6673c396e5c98d5b1c3aa3364def4ddbbe)) - hbeat
+
+### Documentation
+
+- **(firebase)** record production receipt rules deployment - ([b81b756](https://github.com/pix-l-crafters/pocket-draw/commit/b81b756da382e5a3d73b14c2e5081d85bab7b7ae)) - hbeat
+- record the dev merges and Bluetooth removal - ([1556f34](https://github.com/pix-l-crafters/pocket-draw/commit/1556f3443bfe94f6f26fdf8152985add22415926)) - Mobark Bacran
 
 ### Features
 
-- **(duel)** add iOS volume-change fire input alongside tap; volume adjustment remains active.
+- **(app)** check and request missing permissions per flow - ([34444fa](https://github.com/pix-l-crafters/pocket-draw/commit/34444faf9be44eeebce9d4d5d39512c64e5abc9a)) - Mobark Bacran
+- **(duel)** cut over to WebRTC sessions and delete the BLE transport - ([cb0cb9c](https://github.com/pix-l-crafters/pocket-draw/commit/cb0cb9c6f01cbe4346603561cce1f5c3f9506095)) - tingyueh
+- **(duel)** synchronize completed match results - ([5e30c45](https://github.com/pix-l-crafters/pocket-draw/commit/5e30c45b3758355ec349661948e8ee376db360bd)) - hbeat
+- **(duel)** fire with Android volume buttons - ([cf4cdf4](https://github.com/pix-l-crafters/pocket-draw/commit/cf4cdf4f27ce8692c48eb5382395e04b4d7ec5e5)) - wutianze3
+- **(duel)** add iOS volume-change fire input - ([ae41c16](https://github.com/pix-l-crafters/pocket-draw/commit/ae41c166391d1630187de89883d6f56d40bd57e2)) - MRDGH2821
+- **(profile)** add read-only permission status page - ([540974c](https://github.com/pix-l-crafters/pocket-draw/commit/540974c2aec0be70076c8a6e8737cd4a6b64b148)) - Mobark Bacran
+
+### Miscellaneous Chores
+
+- merge branch 'dev' into tingyueh/cut-over-to-webrtc-and-delete-ble-transport - ([c7d2e20](https://github.com/pix-l-crafters/pocket-draw/commit/c7d2e2070efd3a92e2503dae4354deea2b7f8bd7)) - tingyueh
+- merge pull request #102 from pix-l-crafters/tingyueh/cut-over-to-webrtc-and-delete-ble-transport - ([5b66038](https://github.com/pix-l-crafters/pocket-draw/commit/5b660382c71d262dc458ce67a6bf5a516f178226)) - Mihir Rabade
+- merge dev and drop Bluetooth permission handling - ([c91b897](https://github.com/pix-l-crafters/pocket-draw/commit/c91b89758e20b9b3fc68626b55d99cd7e506d494)) - Mobark Bacran
+- merge pull request #107 from pix-l-crafters/hbeat/hbeat-feat-persist-completed-live-duels-and-synchronize-the - ([7c9a703](https://github.com/pix-l-crafters/pocket-draw/commit/7c9a703993d5fd3364f0e0e3d7a158613b210504)) - Mihir Rabade
+- merge dev result synchronization into the permissions branch - ([80c10d4](https://github.com/pix-l-crafters/pocket-draw/commit/80c10d43445353a1ec303e21a130ec0e1187ebdf)) - Mobark Bacran
+- merge origin/dev into volume-fire branch - ([136b072](https://github.com/pix-l-crafters/pocket-draw/commit/136b072bab6fc09b3c33cd86a958a68e65ff4ecd)) - MRDGH2821
+- merge pull request #104 from pix-l-crafters/wutianze3/feat/android-volume-fire - ([84efafa](https://github.com/pix-l-crafters/pocket-draw/commit/84efafa106de494402f33d4b184dfbcfa2af676b)) - Mihir Rabade
+- merge pull request #108 from pix-l-crafters/hbeat/hbeat-feat-persist-completed-live-duels-and-synchronize-the - ([31b60d0](https://github.com/pix-l-crafters/pocket-draw/commit/31b60d0275dab8e98fb1ebb10efecbd21a0b5b8e)) - Mihir Rabade
+- merge dev volume-button fire into the permissions branch - ([ce5f26f](https://github.com/pix-l-crafters/pocket-draw/commit/ce5f26f8cf68dd64ded3be8bbf5d52a806decaef)) - Mobark Bacran
+- merge pull request #106 from pix-l-crafters/mobark/feat/check-and-request-missing-app-permissions - ([f0b51e7](https://github.com/pix-l-crafters/pocket-draw/commit/f0b51e78ffd28760484182052d8a31a047101abd)) - Mihir Rabade
 
 ---
 
