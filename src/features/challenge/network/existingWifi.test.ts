@@ -1,4 +1,4 @@
-import { getExistingWifiHostIp } from "./existingWifi";
+import { assertConnectedToWifi, getExistingWifiHostIp } from "./existingWifi";
 
 describe("existing Wi-Fi discovery", () => {
   it("returns the device IPv4 address when Wi-Fi is connected", async () => {
@@ -40,4 +40,20 @@ describe("existing Wi-Fi discovery", () => {
       ).rejects.toThrow(message);
     }
   );
+
+  it("lets a guest on Wi-Fi through and stops a guest on mobile data", async () => {
+    await expect(
+      assertConnectedToWifi({
+        getNetworkStateAsync: async () => ({ type: "WIFI", isConnected: true })
+      })
+    ).resolves.toBeUndefined();
+    await expect(
+      assertConnectedToWifi({
+        getNetworkStateAsync: async () => ({
+          type: "CELLULAR",
+          isConnected: true
+        })
+      })
+    ).rejects.toThrow("Join the same Wi-Fi as your opponent");
+  });
 });

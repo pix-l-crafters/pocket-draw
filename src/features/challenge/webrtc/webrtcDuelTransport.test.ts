@@ -4,7 +4,9 @@ import type {
   WebRtcSessionDependencies
 } from "./webrtcDuelTransport";
 import {
+  acceptOnly,
   connectWebRtcDuelGuest,
+  DEFAULT_NEGOTIATION_TIMEOUT_MS,
   hostWebRtcDuelSession
 } from "./webrtcDuelTransport";
 
@@ -178,6 +180,10 @@ class FakePeer implements PeerConnectionLike {
   }
 
   async addIceCandidate(candidate: unknown) {
+    // Mirrors native WebRTC, which rejects candidates without a remote description.
+    if (!this.remoteDescription) {
+      throw new Error("The remote description was null.");
+    }
     this.addedCandidates.push(candidate);
   }
 
@@ -209,7 +215,7 @@ describe("WebRTC duel session signaling", () => {
     const [hostConnection, guestConnection] = await Promise.all([
       hostWebRtcDuelSession(
         hostSocket,
-        auth,
+        acceptOnly(auth),
         new AbortController().signal,
         hostDeps
       ),
@@ -242,9 +248,14 @@ describe("WebRTC duel session signaling", () => {
     guestPeer.delayDataChannelEvent = true;
 
     const [hostConnection, guestConnection] = await Promise.all([
-      hostWebRtcDuelSession(hostSocket, auth, new AbortController().signal, {
-        createPeerConnection: () => hostPeer
-      }),
+      hostWebRtcDuelSession(
+        hostSocket,
+        acceptOnly(auth),
+        new AbortController().signal,
+        {
+          createPeerConnection: () => hostPeer
+        }
+      ),
       connectWebRtcDuelGuest(guestSocket, auth, new AbortController().signal, {
         createPeerConnection: () => guestPeer
       })
@@ -270,7 +281,7 @@ describe("WebRTC duel session signaling", () => {
 
     const hostResult = hostWebRtcDuelSession(
       hostSocket,
-      auth,
+      acceptOnly(auth),
       new AbortController().signal,
       { createPeerConnection: () => hostPeer }
     );
@@ -290,9 +301,12 @@ describe("WebRTC duel session signaling", () => {
     const [hostSocket] = socketPair();
     const [hostPeer] = peerPair();
     const controller = new AbortController();
-    const result = hostWebRtcDuelSession(hostSocket, auth, controller.signal, {
-      createPeerConnection: () => hostPeer
-    });
+    const result = hostWebRtcDuelSession(
+      hostSocket,
+      acceptOnly(auth),
+      controller.signal,
+      { createPeerConnection: () => hostPeer }
+    );
 
     controller.abort();
 
@@ -301,13 +315,43 @@ describe("WebRTC duel session signaling", () => {
     expect(hostPeer.closed).toBe(true);
   });
 
+  it("times out a stalled handshake and frees its signaling socket", async () => {
+    const [hostSocket] = socketPair();
+    const [hostPeer] = peerPair();
+    jest.useFakeTimers();
+    try {
+      const result = hostWebRtcDuelSession(
+        hostSocket,
+        acceptOnly(auth),
+        new AbortController().signal,
+        { createPeerConnection: () => hostPeer }
+      );
+      const rejection = expect(result).rejects.toThrow(
+        "The duel connection timed out."
+      );
+
+      jest.advanceTimersByTime(DEFAULT_NEGOTIATION_TIMEOUT_MS);
+
+      await rejection;
+      expect(hostSocket.closed).toBe(true);
+      expect(hostPeer.closed).toBe(true);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   it("rides out a brief ICE disconnect but reports one that lasts, and closes the peer", async () => {
     const [hostSocket, guestSocket] = socketPair();
     const [hostPeer, guestPeer] = peerPair();
     const [hostConnection] = await Promise.all([
-      hostWebRtcDuelSession(hostSocket, auth, new AbortController().signal, {
-        createPeerConnection: () => hostPeer
-      }),
+      hostWebRtcDuelSession(
+        hostSocket,
+        acceptOnly(auth),
+        new AbortController().signal,
+        {
+          createPeerConnection: () => hostPeer
+        }
+      ),
       connectWebRtcDuelGuest(guestSocket, auth, new AbortController().signal, {
         createPeerConnection: () => guestPeer
       })

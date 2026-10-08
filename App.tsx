@@ -25,6 +25,7 @@ import {
   IncomingChallengeScreen,
   type Challenger
 } from "./src/features/challenge/IncomingChallengeScreen";
+import { releaseHotspotNetworks } from "./src/features/challenge/network/hotspot";
 import { challengeRequestRepository } from "./src/features/challenge/services/challengeRequestRepository";
 import { DuelScreen, type DuelPlayer } from "./src/features/duel/DuelScreen";
 import type { DuelRole } from "./src/features/duel/fireSignalCoordinator";
@@ -258,7 +259,10 @@ export default function App() {
                       currentUser={{ displayName, uid: user.uid }}
                       handoff={pendingHandoff}
                       onConnected={onGuestConnected}
-                      onExit={() => setPendingHandoff(null)}
+                      onExit={() => {
+                        void releaseHotspotNetworks();
+                        setPendingHandoff(null);
+                      }}
                     />
                   ) : (
                     <ChallengeScreen

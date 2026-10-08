@@ -12,6 +12,7 @@ import { useForegroundRecheck } from "../../lib/useForegroundRecheck";
 import { colors } from "../../theme/tokens";
 import { useDuelSession } from "./hooks/useDuelSession";
 import {
+  releaseHotspotNetworks,
   withNetworkPreparation,
   withReconnectPreparation
 } from "./network/hotspot";
@@ -114,7 +115,10 @@ export function ConnectingScreen({
       onConnected(
         createDuelLink({
           connection: state.connection,
-          reconnect: (signal) => reconnectTransport.connect(params, signal)
+          reconnect: (signal) => reconnectTransport.connect(params, signal),
+          release: () => {
+            void releaseHotspotNetworks();
+          }
         }),
         handoff
       );
