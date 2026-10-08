@@ -1,4 +1,4 @@
-import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { doc, runTransaction, serverTimestamp } from "firebase/firestore";
 
 import type { MatchResult } from "../../contracts/matchResult";
 import { db } from "../../lib/firebase";
@@ -66,22 +66,22 @@ export const matchResultsRepository: MatchResultsRepository = {
     validateMatchResult(result, uploadedBy);
 
     const matchRef = doc(db, "matches", result.matchId);
-    const existing = await getDoc(matchRef);
+    await runTransaction(db, async (transaction) => {
+      const existing = await transaction.get(matchRef);
 
-    // Idempotent: either phone may upload; rules deny updates so skip if present.
-    if (existing.exists()) {
-      return;
-    }
+      // Both phones may upload at once. Retry the read on contention so the
+      // second uploader skips the existing document instead of updating it.
+      if (existing.exists()) return;
 
-    await setDoc(matchRef, {
-      matchId: result.matchId,
-      participantIds: result.participantIds,
-      results: result.results,
-      rounds: result.rounds,
-      // elo: ,
-      completedAt: result.completedAt,
-      uploadedBy,
-      createdAt: serverTimestamp()
+      transaction.set(matchRef, {
+        matchId: result.matchId,
+        participantIds: result.participantIds,
+        results: result.results,
+        rounds: result.rounds,
+        completedAt: result.completedAt,
+        uploadedBy,
+        createdAt: serverTimestamp()
+      });
     });
   }
 };
