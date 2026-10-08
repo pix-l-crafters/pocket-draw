@@ -1,6 +1,7 @@
 import { renderHook, waitFor } from "@testing-library/react-native";
 
 import type { DuelChannel } from "../../../contracts/duelChannel";
+import { PermissionDeniedError } from "../../../lib/appPermissions";
 import type {
   DuelSessionTransport,
   DuelTransportConnection
@@ -59,5 +60,35 @@ describe("useDuelSession", () => {
     await view.unmount();
 
     expect(disconnect).toHaveBeenCalledTimes(1);
+  });
+
+  test("does not re-prompt a refused permission on every retry", async () => {
+    const connect = jest
+      .fn()
+      .mockRejectedValue(new PermissionDeniedError("Nearby Wi-Fi", false));
+    const transport = { connect };
+    const view = await renderHook(() => useDuelSession(params, transport));
+
+    await waitFor(() =>
+      expect(view.result.current?.state.status).toBe("failed")
+    );
+
+    // Each auto-retry would re-run joinHotspot and raise the OS dialog again.
+    expect(connect).toHaveBeenCalledTimes(1);
+    expect(view.result.current?.state).toMatchObject({
+      status: "failed",
+      message: expect.stringContaining("Settings")
+    });
+  });
+
+  test("still auto-retries ordinary connection failures", async () => {
+    const connect = jest.fn().mockRejectedValue(new Error("signaling failed"));
+    const transport = { connect };
+    const view = await renderHook(() => useDuelSession(params, transport));
+
+    await waitFor(() =>
+      expect(view.result.current?.state.status).toBe("retrying")
+    );
+    expect(connect).toHaveBeenCalledTimes(1);
   });
 });

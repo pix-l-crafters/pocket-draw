@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { PermissionDeniedError } from "../../../lib/appPermissions";
 import {
   DUEL_CONNECT_MAX_AUTO_RETRIES,
   DUEL_CONNECT_RETRY_DELAY_MS
@@ -112,6 +113,16 @@ export function useDuelSession(
 
           const message =
             error instanceof Error ? error.message : "Connection failed.";
+
+          // Auto-retrying a refused permission just re-prompts — once per
+          // attempt, 1.5s apart — and Android promotes the second denial to
+          // never-ask-again, so the remaining attempts can't succeed either.
+          // The message already says how to grant it; stop and let the player
+          // retry deliberately.
+          if (error instanceof PermissionDeniedError) {
+            setState({ status: "failed", message });
+            return;
+          }
 
           if (attempt < maxAttempts) {
             setState({ status: "retrying", attempt, message });

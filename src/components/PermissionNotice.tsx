@@ -1,5 +1,6 @@
 import { Linking, StyleSheet, Text, View } from "react-native";
 
+import type { Capability } from "../lib/appPermissions";
 import { colors, fonts } from "../theme/tokens";
 import { CutCornerButton } from "./CutCornerButton";
 import { CutCornerSurface } from "./CutCornerSurface";
@@ -8,8 +9,8 @@ import { StatusTag } from "./StatusTag";
 type PermissionNoticeProps = {
   /** False once the OS will not prompt again — Settings is the only way back. */
   canAskAgain: boolean;
-  /** What is blocked, as the player would say it: "Camera", "Motion". */
-  capability: string;
+  /** What is blocked, as the player would say it. */
+  capability: Capability;
   /** Which part of the app is unavailable, and any alternative. */
   message: string;
   /** Re-run the check, prompting again when the OS still allows it. */

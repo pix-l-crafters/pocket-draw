@@ -7,7 +7,7 @@ import {
   nearbyWifiPermissions,
   PermissionDeniedError,
   type PermissionOutcome
-} from "../../permissions/appPermissions";
+} from "../../../lib/appPermissions";
 import {
   isUsableIpv4Address,
   isValidHotspotPassword,

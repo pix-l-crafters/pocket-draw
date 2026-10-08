@@ -18,9 +18,9 @@ import { ScreenHeader } from "../../components/ScreenHeader";
 import { StatusTag } from "../../components/StatusTag";
 import type { DuelChannel } from "../../contracts/duelChannel";
 import type { DuelConnectionInfo } from "../../contracts/duelConnection";
+import { PermissionDeniedError } from "../../lib/appPermissions";
+import { useForegroundRecheck } from "../../lib/useForegroundRecheck";
 import { colors, fonts } from "../../theme/tokens";
-import { PermissionDeniedError } from "../permissions/appPermissions";
-import { useForegroundRecheck } from "../permissions/useForegroundRecheck";
 import type { QrInvitePayload } from "../qr/types/qr.types";
 import {
   isValidHotspotPassword,

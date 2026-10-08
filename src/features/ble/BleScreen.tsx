@@ -4,13 +4,13 @@ import BleManager, { type Peripheral } from "react-native-ble-manager";
 import { Button, Card, Text } from "react-native-paper";
 
 import { PermissionNotice } from "../../components/PermissionNotice";
-import { colors } from "../../theme/tokens";
 import {
   bluetoothPermissions,
   ensureAndroidPermissions,
   type PermissionOutcome
-} from "../permissions/appPermissions";
-import { useForegroundRecheck } from "../permissions/useForegroundRecheck";
+} from "../../lib/appPermissions";
+import { useForegroundRecheck } from "../../lib/useForegroundRecheck";
+import { colors } from "../../theme/tokens";
 
 export function BleScreen() {
   const [status, setStatus] = useState("Initializing Bluetooth...");
