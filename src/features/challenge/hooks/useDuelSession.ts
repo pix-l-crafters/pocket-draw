@@ -120,7 +120,7 @@ export function useDuelSession(
           // The message already says how to grant it; stop and let the player
           // retry deliberately.
           if (error instanceof PermissionDeniedError) {
-            setState({ status: "failed", message });
+            setState({ status: "failed", message, permissionError: error });
             return;
           }
 

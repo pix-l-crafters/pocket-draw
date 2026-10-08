@@ -77,7 +77,11 @@ describe("useDuelSession", () => {
     expect(connect).toHaveBeenCalledTimes(1);
     expect(view.result.current?.state).toMatchObject({
       status: "failed",
-      message: expect.stringContaining("Settings")
+      message: expect.stringContaining("Settings"),
+      permissionError: expect.objectContaining({
+        capability: "Nearby Wi-Fi",
+        canAskAgain: false
+      })
     });
   });
 

@@ -1,4 +1,5 @@
 import type { DuelChannel } from "../../../contracts/duelChannel";
+import type { PermissionDeniedError } from "../../../lib/appPermissions";
 
 export type DuelRole = "host" | "guest";
 
@@ -26,5 +27,9 @@ export type DuelSessionState =
   | { status: "connecting"; attempt: number }
   | { status: "retrying"; attempt: number; message: string }
   | { status: "connected"; channel: DuelChannel }
-  | { status: "failed"; message: string }
+  | {
+      status: "failed";
+      message: string;
+      permissionError?: PermissionDeniedError;
+    }
   | { status: "disconnected"; message: string };

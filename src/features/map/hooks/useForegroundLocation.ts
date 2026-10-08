@@ -9,6 +9,7 @@ import {
 } from "expo-location";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { useForegroundRecheck } from "../../../lib/useForegroundRecheck";
 import { LOCATION_WATCH_DISTANCE_M } from "../constants/map.constants";
 import type { Coordinates } from "../types/map.types";
 
@@ -33,6 +34,8 @@ export function useForegroundLocation() {
   const isMountedRef = useRef(false);
   const requestSequenceRef = useRef(0);
   const watchSubscriptionRef = useRef<LocationSubscription | null>(null);
+  const locationStatusRef = useRef(locationState.status);
+  locationStatusRef.current = locationState.status;
 
   const stopWatching = useCallback(() => {
     watchSubscriptionRef.current?.remove();
@@ -163,6 +166,16 @@ export function useForegroundLocation() {
   const retry = useCallback(() => {
     void loadLocation(true);
   }, [loadLocation]);
+
+  const recheckAfterSettings = useCallback(() => {
+    if (
+      locationStatusRef.current === "denied" ||
+      locationStatusRef.current === "error"
+    ) {
+      void loadLocation(false);
+    }
+  }, [loadLocation]);
+  useForegroundRecheck(recheckAfterSettings);
 
   return { locationState, retry };
 }
