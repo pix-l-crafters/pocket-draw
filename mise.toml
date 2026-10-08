@@ -52,6 +52,9 @@ run = "npx eas-cli@latest build --platform ios --profile production --local"
 alias = "fmt"
 run = [{ task = "treefmt" }, "hk fix --all"]
 
+[tasks.local-prepare]
+run = ["npm ci", "gh auth login", { task = "ai-setup" }]
+
 [tasks.treefmt]
 run = "treefmt"
 run_windows = "echo 'Treefmt not supported on Windows'"
@@ -67,7 +70,7 @@ cocogitto = "latest"
 cspell = "latest"
 editorconfig-checker = "latest"
 fnox = "latest"
-gh = { postinstall = "gh auth login", version = "latest" }
+gh = "latest"
 git-cliff = "latest"
 "github:MRDGH2821/Sort-Markdown-Tables" = "latest"
 "github:infragate/capa" = { postinstall = "capa install --yes", version = "2.2.4" }
