@@ -39,11 +39,16 @@ jest.mock("expo-haptics", () => ({
 
 async function renderPreRound(
   role: DuelRole,
+  options: {
+    clockOffsetMs?: number;
+    clockCalibrationStatus?: "calibrating" | "ready" | "failed";
+  } = {},
   platform: MobilePlatform = "android"
 ) {
   Platform.OS = platform;
   const sent: DuelMessage[] = [];
   const shots: RoundShots[] = [];
+  const retries = jest.fn();
   const handlers = new Set<(message: DuelMessage) => void>();
 
   const channel: DuelChannel = {
@@ -59,6 +64,9 @@ async function renderPreRound(
     <PaperProvider theme={appTheme}>
       <PreRound
         channel={channel}
+        clockCalibrationStatus={options.clockCalibrationStatus ?? "ready"}
+        clockOffsetMs={options.clockOffsetMs ?? 0}
+        onRetryClockCalibration={retries}
         onCountdownStart={() => undefined}
         onRoundShots={(round) => shots.push(round)}
         peerReady
@@ -90,7 +98,16 @@ async function renderPreRound(
     await fireEvent.press(view.getByText("CONFIRM"));
   };
 
-  return { completeRitual, deliver, sent, setReading, shots, view, wait };
+  return {
+    completeRitual,
+    deliver,
+    retries,
+    sent,
+    setReading,
+    shots,
+    view,
+    wait
+  };
 }
 
 describe("PreRound countdown and draw", () => {
@@ -111,6 +128,7 @@ describe("PreRound countdown and draw", () => {
     async (platform, topEdgeDown, topEdgeUp) => {
       const { completeRitual, sent, setReading, view } = await renderPreRound(
         "host",
+        {},
         platform
       );
       await completeRitual(topEdgeUp);
@@ -136,7 +154,6 @@ describe("PreRound countdown and draw", () => {
     await wait(1000);
     expect(view.getByText("1")).toBeTruthy();
 
-    // One millisecond short of the countdown: still no draw.
     await wait(COUNTDOWN_DURATION_MS - 2000 - 1);
     expect(view.queryByText("FIRE!")).toBeNull();
 
@@ -148,6 +165,33 @@ describe("PreRound countdown and draw", () => {
       { type: "countdown", value: 1 },
       { type: "fire", atMs: expect.any(Number) }
     ]);
+  });
+
+  it("times a guest reaction from the host FIRE timestamp in the local clock", async () => {
+    const { completeRitual, deliver, view, wait } = await renderPreRound(
+      "guest",
+      { clockOffsetMs: 400 }
+    );
+    await completeRitual();
+    const localNow = Date.now();
+
+    // Host's clock is 400ms ahead; FIRE arrived 200ms after it was sent.
+    await deliver({ type: "fire", atMs: localNow + 200 });
+    await wait(400);
+    await fireEvent.press(view.getByLabelText("Fire"));
+
+    expect(view.getByText("600ms — waiting for your opponent")).toBeTruthy();
+  });
+
+  it("blocks timed play and offers a retry when clock calibration fails", async () => {
+    const { retries, view } = await renderPreRound("guest", {
+      clockCalibrationStatus: "failed"
+    });
+
+    expect(view.getByText("CLOCK CALIBRATION FAILED")).toBeTruthy();
+    expect(view.queryByText("CONFIRM")).toBeNull();
+    await fireEvent.press(view.getByText("RETRY CALIBRATION"));
+    expect(retries).toHaveBeenCalledTimes(1);
   });
 
   it("reports both reaction times once each player has fired", async () => {

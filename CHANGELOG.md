@@ -10,6 +10,14 @@ All notable changes to this project will be documented in this file. See [conven
 
 ---
 
+## [Unreleased]
+
+### Bug Fixes
+
+- **(duel)** calibrate peer clocks before scoring reaction times
+
+---
+
 ## [0.1.1](https://github.com/pix-l-crafters/pocket-draw/compare/v0.1.0..v0.1.1) - 2026-10-05
 
 ### Bug Fixes
