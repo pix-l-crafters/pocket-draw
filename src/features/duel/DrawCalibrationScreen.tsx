@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 import { CutCornerButton } from "../../components/CutCornerButton";
@@ -6,22 +6,17 @@ import { CutCornerSurface } from "../../components/CutCornerSurface";
 import { PermissionNotice } from "../../components/PermissionNotice";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { StatusTag } from "../../components/StatusTag";
+import { useForegroundRecheck } from "../../lib/useForegroundRecheck";
 import { colors, fonts } from "../../theme/tokens";
-import {
-  AccelerometerRaiseMonitor,
-  type RaiseMonitorStartResult
-} from "./accelerometerRaiseMonitor";
-import { RAISE_GESTURE_SPEC } from "./gestureSpec";
 import { PitchMonitor, type PitchCalibration } from "./pitchMonitor";
 
-// ponytail: fixed settle delay before sampling theta_ready, so the
-// 20ms-interval DeviceMotion listener has at least one reading in. Replace
-// with a first-sample promise if this proves flaky on real devices.
-const PITCH_SETTLE_DELAY_MS = 100;
+const MIN_CALIBRATION_ARC_RAD = 0.05;
 
 type CalibrationStatus =
   | "idle"
-  | "listening"
+  | "starting"
+  | "ready"
+  | "shoulder"
   | "passed"
   | "permissionDenied"
   | "unavailable"
@@ -32,83 +27,106 @@ type DrawCalibrationScreenProps = {
 };
 
 const statusCopy: Record<CalibrationStatus, string> = {
-  idle: "Hold your phone down at your side, then start the test.",
-  listening: "Draw now — raise your phone smoothly into the duel pose.",
-  passed: "Draw detected. Your phone is ready for a duel.",
-  permissionDenied: "Motion access is disabled, so the draw can't be timed.",
-  unavailable: "This device does not report an available accelerometer.",
+  idle: "Start calibration, then hold and capture each pose.",
+  starting: "Checking motion access before capturing your poses.",
+  ready: "Hold your phone down at your side, then capture your ready pose.",
+  shoulder:
+    "Hold your phone in a shoulder-height firing pose, then capture it.",
+  passed: "Both poses captured. Your phone is ready for a duel.",
+  permissionDenied:
+    "Motion access is disabled, so your aim can't be calibrated.",
+  unavailable: "This device does not report available device motion.",
   error: "Motion detection could not start. Check device settings and retry."
+};
+
+const statusLabels: Record<CalibrationStatus, string> = {
+  idle: "Not started",
+  starting: "Starting motion",
+  ready: "Ready pose",
+  shoulder: "Shoulder pose",
+  passed: "Calibration passed",
+  permissionDenied: "Motion denied",
+  unavailable: "Motion unavailable",
+  error: "Motion error"
 };
 
 export function DrawCalibrationScreen({
   onComplete
 }: DrawCalibrationScreenProps) {
   const [status, setStatus] = useState<CalibrationStatus>("idle");
-  const monitorRef = useRef<AccelerometerRaiseMonitor | null>(null);
+  const [captureError, setCaptureError] = useState<string | null>(null);
   const pitchMonitorRef = useRef<PitchMonitor | null>(null);
+  const thetaReadyRef = useRef<number | null>(null);
   const calibrationRef = useRef<PitchCalibration | null>(null);
 
   useEffect(
     () => () => {
-      monitorRef.current?.stop();
       pitchMonitorRef.current?.stop();
+      pitchMonitorRef.current = null;
     },
     []
   );
 
-  const startCalibration = async () => {
-    monitorRef.current?.stop();
+  const startCalibration = useCallback(async () => {
     pitchMonitorRef.current?.stop();
-    setStatus("listening");
+    thetaReadyRef.current = null;
+    calibrationRef.current = null;
+    setCaptureError(null);
+    setStatus("starting");
 
     const pitchMonitor = new PitchMonitor();
     pitchMonitorRef.current = pitchMonitor;
-    let thetaReady: number | null = null;
-
-    const monitor = new AccelerometerRaiseMonitor(() => {
-      monitor.stop();
-      const thetaShoulder = pitchMonitor.currentTheta();
-      pitchMonitor.stop();
-      if (thetaReady === null || thetaShoulder === null) {
-        setStatus("error");
-        return;
-      }
-      calibrationRef.current = { thetaReady, thetaShoulder };
-      setStatus("passed");
-    });
-    monitorRef.current = monitor;
-
-    try {
-      const pitchResult = await pitchMonitor.start();
-      if (pitchResult !== "started") {
-        setStatus(pitchResult);
-        return;
-      }
-
-      await new Promise((resolve) =>
-        setTimeout(resolve, PITCH_SETTLE_DELAY_MS)
-      );
-      thetaReady = pitchMonitor.currentTheta();
-      if (thetaReady === null) {
-        pitchMonitor.stop();
-        setStatus("error");
-        return;
-      }
-
-      const result: RaiseMonitorStartResult = await monitor.start();
-      if (result !== "started") {
-        pitchMonitor.stop();
-        setStatus(result);
-      }
-    } catch {
-      monitor.stop();
-      pitchMonitor.stop();
-      setStatus("error");
+    const result = await pitchMonitor.start();
+    if (pitchMonitorRef.current !== pitchMonitor || result === "cancelled") {
+      return;
     }
+    setStatus(result === "started" ? "ready" : result);
+  }, []);
+
+  const recheckMotion = useCallback(() => {
+    if (status === "permissionDenied") void startCalibration();
+  }, [startCalibration, status]);
+  useForegroundRecheck(recheckMotion);
+
+  const capturePose = () => {
+    const theta = pitchMonitorRef.current?.currentTheta();
+    if (typeof theta !== "number" || !Number.isFinite(theta)) {
+      setCaptureError(
+        "No fresh pitch reading. Hold the pose steady and try capturing again."
+      );
+      return;
+    }
+
+    if (status === "ready") {
+      thetaReadyRef.current = theta;
+      setCaptureError(null);
+      setStatus("shoulder");
+      return;
+    }
+
+    const thetaReady = thetaReadyRef.current;
+    if (
+      status !== "shoulder" ||
+      thetaReady === null ||
+      !Number.isFinite(thetaReady)
+    ) {
+      return;
+    }
+    if (Math.abs(theta - thetaReady) < MIN_CALIBRATION_ARC_RAD) {
+      setCaptureError(
+        "The poses are too similar. Move to a distinct shoulder pose and capture again."
+      );
+      return;
+    }
+
+    calibrationRef.current = { thetaReady, thetaShoulder: theta };
+    pitchMonitorRef.current?.stop();
+    setCaptureError(null);
+    setStatus("passed");
   };
 
   const handleContinue = () => {
-    if (calibrationRef.current) {
+    if (status === "passed" && calibrationRef.current) {
       onComplete(calibrationRef.current);
     }
   };
@@ -116,30 +134,37 @@ export function DrawCalibrationScreen({
   const buttonLabel =
     status === "passed"
       ? "Continue"
-      : status === "listening"
-        ? "Listening"
-        : status === "idle"
-          ? "Start test"
-          : "Retry";
+      : status === "starting"
+        ? "Starting motion"
+        : status === "ready"
+          ? "Capture ready pose"
+          : status === "shoulder"
+            ? "Capture shoulder pose"
+            : status === "idle"
+              ? "Start calibration"
+              : "Retry";
 
   return (
     <View style={styles.screen}>
       <ScreenHeader
         kicker="Draw calibration"
-        subtitle="Complete one clean raise so Pocket Draw can verify motion detection before the match."
-        title="Test your draw"
+        subtitle="Capture a ready pose and a shoulder-height firing pose so Pocket Draw can judge your aim."
+        title="Calibrate your draw"
       />
 
       <CutCornerSurface style={styles.instructionCard}>
         <View style={styles.stepRow}>
           <Text style={styles.stepNumber}>01</Text>
-          <Text style={styles.stepText}>Hold the phone down at your side.</Text>
+          <Text style={styles.stepText}>
+            Hold the phone down at your side and capture your ready pose.
+          </Text>
         </View>
         <View style={styles.divider} />
         <View style={styles.stepRow}>
           <Text style={styles.stepNumber}>02</Text>
           <Text style={styles.stepText}>
-            Raise it firmly in front of you when listening starts.
+            Raise and tilt it into your shoulder-height firing pose, hold still,
+            then capture your shoulder pose.
           </Text>
         </View>
       </CutCornerSurface>
@@ -152,31 +177,32 @@ export function DrawCalibrationScreen({
         ]}
       >
         <StatusTag tone={status === "passed" ? "success" : "muted"}>
-          {status === "passed" ? "Calibration passed" : status}
+          {statusLabels[status]}
         </StatusTag>
-        <Text style={styles.statusText}>{statusCopy[status]}</Text>
-        <Text style={styles.thresholdText}>
-          {RAISE_GESTURE_SPEC.accelerationThresholdG.toFixed(1)}g /{" "}
-          {RAISE_GESTURE_SPEC.minimumDurationMs}ms
+        <Text style={styles.statusText}>
+          {captureError ?? statusCopy[status]}
         </Text>
       </View>
 
       <View style={styles.actions}>
         {status === "permissionDenied" ? (
-          // iOS never re-prompts for motion once it has been refused, and
-          // Android grants it without a prompt — so Settings is the only path
-          // back, and `onRetry` re-checks it on return.
           <PermissionNotice
             canAskAgain={false}
             capability="Motion"
-            message="Pocket Draw times your draw from the phone's motion sensors. Without them a duel can't be judged."
+            message="Pocket Draw uses motion sensors to capture your poses and judge your aim. Motion access is required for a duel."
             onRetry={() => void startCalibration()}
           />
         ) : (
           <CutCornerButton
-            disabled={status === "listening"}
+            disabled={status === "starting"}
             label={buttonLabel}
-            onPress={status === "passed" ? handleContinue : startCalibration}
+            onPress={
+              status === "passed"
+                ? handleContinue
+                : status === "ready" || status === "shoulder"
+                  ? capturePose
+                  : startCalibration
+            }
           />
         )}
       </View>
@@ -233,14 +259,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 21,
     marginTop: 8
-  },
-  thresholdText: {
-    color: colors.textMuted30,
-    fontFamily: fonts.mono,
-    fontSize: 10,
-    letterSpacing: 1,
-    marginTop: 12,
-    textTransform: "uppercase"
   },
   actions: {
     marginTop: "auto",
