@@ -260,6 +260,10 @@ Version bumps use cocogitto (`cog bump`); pre-bump hooks update `package.json` a
 
 GitHub Issues for `pix-l-crafters/pocket-draw`; use `gh`. See `docs/agents/issue-tracker.md`.
 
+### Triage labels
+
+Use the canonical triage labels configured for GitHub Issues. See `docs/agents/triage-labels.md`.
+
 ### Domain docs
 
 Single-context `CONTEXT.md` and `docs/adr/` at the repository root. See `docs/agents/domain.md`.
