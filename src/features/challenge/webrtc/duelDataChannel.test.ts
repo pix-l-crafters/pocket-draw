@@ -43,14 +43,22 @@ class FakeDataChannel implements RtcDataChannelLike {
 }
 
 describe("WebRTC DuelChannel adapter", () => {
-  it("serializes outgoing duel messages and reports the live connection state", () => {
+  it("rejects incoming raised messages without a valid zone", () => {
     const rtcChannel = new FakeDataChannel();
     const connection = createDuelDataChannelConnection(rtcChannel);
+    const received: DuelMessage[] = [];
+    connection.channel.onMessage((message) => received.push(message));
 
-    connection.channel.send({ type: "raised", atMs: 1234, reactionMs: 420 });
+    rtcChannel.receive('{"type":"raised","atMs":1234,"reactionMs":420}');
+    rtcChannel.receive(
+      '{"type":"raised","atMs":1234,"reactionMs":420,"zone":"invalid"}'
+    );
+    rtcChannel.receive(
+      '{"type":"raised","atMs":1234,"reactionMs":420,"zone":"miss"}'
+    );
 
-    expect(rtcChannel.sent).toEqual([
-      '{"type":"raised","atMs":1234,"reactionMs":420}'
+    expect(received).toEqual([
+      { type: "raised", atMs: 1234, reactionMs: 420, zone: "miss" }
     ]);
     expect(connection.channel.isConnected()).toBe(true);
   });
@@ -119,6 +127,103 @@ describe("WebRTC DuelChannel adapter", () => {
 
     expect(messages).toEqual(["The local duel connection was lost."]);
   });
+
+  it.each(["miss", "bodyshot", "headshot"])(
+    "accepts the raised zone %s",
+    (zone) => {
+      expect(
+        isDuelMessage({ type: "raised", atMs: 0, reactionMs: 0, zone })
+      ).toBe(true);
+    }
+  );
+
+  it.each([
+    { latitude: -90, longitude: -180, accuracy: 0, sampleAtMs: 0 },
+    { latitude: 90, longitude: 180, accuracy: 12, sampleAtMs: 300 }
+  ])(
+    "delivers valid aim positions at geographic boundaries: %o",
+    (position) => {
+      const rtcChannel = new FakeDataChannel();
+      const connection = createDuelDataChannelConnection(rtcChannel);
+      const received: DuelMessage[] = [];
+      connection.channel.onMessage((message) => received.push(message));
+
+      rtcChannel.receive(JSON.stringify({ type: "aimPosition", ...position }));
+
+      expect(received).toEqual([{ type: "aimPosition", ...position }]);
+    }
+  );
+
+  it.each([
+    ["latitude", -90.01],
+    ["latitude", 90.01],
+    ["longitude", -180.01],
+    ["longitude", 180.01],
+    ["accuracy", -1],
+    ["sampleAtMs", -1],
+    ["latitude", "0"],
+    ["longitude", null],
+    ["accuracy", undefined],
+    ["sampleAtMs", null],
+    ["sampleAtMs", undefined],
+    ["sampleAtMs", "0"],
+    ["sampleAtMs", false]
+  ])("drops incoming aim positions with invalid %s: %s", (field, value) => {
+    const rtcChannel = new FakeDataChannel();
+    const connection = createDuelDataChannelConnection(rtcChannel);
+    const received: DuelMessage[] = [];
+    connection.channel.onMessage((message) => received.push(message));
+
+    rtcChannel.receive(
+      JSON.stringify({
+        type: "aimPosition",
+        latitude: 0,
+        longitude: 0,
+        accuracy: 0,
+        sampleAtMs: 0,
+        [field as string]: value
+      })
+    );
+
+    expect(received).toEqual([]);
+  });
+
+  it("drops legacy aim positions that contain ageMs instead of sampleAtMs", () => {
+    const rtcChannel = new FakeDataChannel();
+    const connection = createDuelDataChannelConnection(rtcChannel);
+    const received: DuelMessage[] = [];
+    connection.channel.onMessage((message) => received.push(message));
+
+    rtcChannel.receive(
+      JSON.stringify({
+        type: "aimPosition",
+        latitude: 0,
+        longitude: 0,
+        accuracy: 0,
+        ageMs: 0
+      })
+    );
+
+    expect(received).toEqual([]);
+  });
+
+  it.each(["latitude", "longitude", "accuracy", "sampleAtMs"])(
+    "rejects nonfinite %s in aim positions",
+    (field) => {
+      for (const value of [NaN, Infinity, -Infinity]) {
+        expect(
+          isDuelMessage({
+            type: "aimPosition",
+            latitude: 0,
+            longitude: 0,
+            accuracy: 0,
+            sampleAtMs: 0,
+            [field]: value
+          })
+        ).toBe(false);
+      }
+    }
+  );
 
   it("accepts session messages and rejects malformed ones", () => {
     const keys = ['{"kind":"tie"}'];

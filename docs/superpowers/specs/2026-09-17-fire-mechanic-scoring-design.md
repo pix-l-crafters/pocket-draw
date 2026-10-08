@@ -4,29 +4,20 @@ Covers roadmap items 3–6 (`docs/product-design/Roadmap.md`, Phase 1): the fire
 
 ## Why this exists
 
-The current implementation matches Gameplay v1, not v2:
+The original implementation matched Gameplay v1: automatic raise firing and reaction-only scoring. The current #81 implementation supplies manual fire, both players' calibrated pitch zones, actual reaction timing over `DuelChannel`, and enriched false-start outcomes. #50 adds a real compass-versus-live-GPS aim gate to that same fire path.
 
-- `raiseGestureDetector.ts` auto-fires purely from accelerometer magnitude crossing a threshold (v1: "auto shoots when phone reaches shoulder position").
-- `roundJudge.ts`/`RoundOutcome` only supports `"win" | "tie" | "falseStart"` — reaction time decides everything, no headshot/bodyshot scoring exists.
-
-v2 requires a manual fire trigger and height-zone-based scoring: bodyshot (1pt), headshot (2pt), miss (0pt), with reaction time still gating who's eligible to score.
+Bodyshot scores 1 point, headshot 2, and miss 0; reaction timing determines whose shot is eligible, as described below. Implementation supplied is not final-phone validation.
 
 ## Round scoring logic
 
 Order both players' shots by reaction time.
 
 - **Outside the tie window:** classify the **faster** shot's landing zone. If it's a hit (bodyshot or headshot), that player scores those points and the other scores 0 — round over. If the faster shot is a miss, classify the **slower** player's shot the same way; if valid, they score instead. If both are misses, the round is 0-0.
-- **Within `TIE_WINDOW_MS`** (a near-simultaneous fire): classify **both** shots independently — each player gets their own zone score (0/1/2) regardless of the other's timing. Whoever scores higher wins the round. If both score the same (including a double-miss), the round is a tie and both players get their (equal) points.
+- **Within `TIE_WINDOW_MS` (100 ms)** (a near-simultaneous fire): classify **both** shots independently — each player gets their own zone score (0/1/2) regardless of the other's timing. Whoever scores higher wins the round. If both score the same (including a double-miss), the round is a tie and both players get their (equal) points.
 
 This resolves the earlier open question about how the tie window interacts with the fallthrough rule: outside the window, only the faster shot's accuracy is ever eligible to decide the round on its own; inside it, both shots' accuracy is compared directly.
 
-`falseStart` is untouched by the classification logic above — it's a timing violation (firing before the buzz), orthogonal to where a shot lands, and stays its own `RoundOutcome` kind rather than being folded into the zone system.
-
-**False-start point value — decided, other options kept for a teammate to discuss with their team before treating as final.** `roundLoop.ts` currently hardcodes the penalty as a flat `+= 1` for the non-offending player, which only worked because every round win was worth exactly 1 under v1. Three ways to carry this into the point-sum model:
-
-1. **Selected:** the non-offending player still fires and is scored normally (0/1/2 by their own zone accuracy) — a false start just removes the offender from being eligible to score that round, it doesn't hand them a bonus. Closest mapping of the existing fallthrough philosophy ("the other shot didn't happen/doesn't count") to this new case.
-2. Flat 2 points, treating a false start as equivalent to conceding a headshot — a harsher, deterrent-style penalty, but an arbitrary constant nothing in `Gameplay-v2.md` asks for.
-3. Flat 1 point, matching the old hardcoded value — smallest diff, but "matches the old code" isn't itself a design reason under the new scoring model.
+`falseStart` remains a timing violation and its own enriched `RoundOutcome` kind. Early countdown tap, volume input, or movement disqualifies the offender. The countdown still reaches the normal FIRE cue; the non-offender can fire and receives their actual calibrated, aim-gated zone score (0/1/2), with shot timing retained. There is no flat bonus. Inputs outside countdown/FIRE are ignored.
 
 Reaction time is still captured for every shot regardless of outcome — it gates who's evaluated first above, and separately feeds the leaderboard's average-reaction-time stat (Phase 4, item 26).
 
@@ -35,9 +26,7 @@ Reaction time is still captured for every shot regardless of outcome — it gate
 `Gameplay-v2.md` carries forward v1's "the winner is determined by the highest score" — under v1 every round win was worth exactly 1 point, so that phrase was equivalent to "most rounds won."
 v2's differentiated zone scoring (1 or 2 points) breaks that equivalence, so this had to be decided explicitly: **the match winner (and whether the tiebreaker round triggers) is the sum of each player's round points across the match, not a count of rounds won.**
 
-This changes `roundLoop.ts`'s `tallyOutcome`: today it accumulates a flat `+= 1` on a win and `+= pointsEach` on a tie, which happened to be the same number under v1's scoring.
-Under v2, the accumulator needs to add each round's actual zone point value (0/1/2) for whichever player(s) scored, including on the new independent-both-score tie case above.
-`matchWinnerId`/`isMatchDecided` then compare summed points, not round-win counts.
+`roundLoop.ts` accumulates each round's actual zone points (0/1/2), including independent tie-window scores and the non-offender's false-start shot. `matchWinnerId`/`isMatchDecided` compare summed points, not round-win counts.
 
 ## Zone classification — the feasibility question
 
@@ -49,12 +38,17 @@ Gyroscope-only integration drifts, but the accelerometer/magnetometer continuous
 
 ### Calibration (extends `DrawCalibrationScreen.tsx`)
 
-The existing calibration step already captures two poses. Add one pitch-angle reading at each:
+Both players explicitly capture two fresh pitch poses before entering PreRound:
 
-- At the "ready" pose (arm down): record `θ_ready` from `DeviceMotion.rotation`.
-- At the "shoulder" pose (arm raised): record `θ_shoulder`.
+- Start calibration, then **Capture ready pose** with the arm down (`θ_ready`).
+- Raise to shoulder height, then **Capture shoulder pose** (`θ_shoulder`).
+- Continue after a valid calibrated arc is captured. Denied/unavailable motion exposes recovery, including retry and Settings/foreground recheck.
 
-This produces a per-player calibrated arc, the same personalization principle the existing raise-gesture threshold already uses.
+Calibration is retained for the accepted duel and reused by its rematches. Peer readiness is emitted only after the calibrated local ready ritual. Instructions disclose sensor use and peer-only precise location before “I'm Ready” mounts calibration/tracking.
+Instructions are scrollable so all disclosures and “I'm Ready” remain reachable.
+Calibration retains an Exit action through the existing duel leave path, including
+when motion is denied or unavailable. The unused accelerometer calibration
+producer is removed as part of the clean pitch cutover.
 
 ### At fire time
 
@@ -68,20 +62,20 @@ f = (θ_fire − θ_ready) / (θ_shoulder − θ_ready)
 - `f` near 1 → at the calibrated shoulder pose → bodyshot territory
 - `f > 1` → raised beyond the calibrated shoulder angle → headshot territory
 
-Zone boundaries are fractional thresholds against `f`, tuned by playtesting — e.g. bodyshot for `f ∈ [0.8, 1.0]`, headshot for `f ∈ (1.0, 1.0+δ]`, miss outside that range.
+Current fixed thresholds are bodyshot for `f ∈ [0.8, 1.0]`, headshot for `f ∈ (1.0, 1.2]`, and miss otherwise. At fire time, sample the calibrated pitch zone first, then apply the aim gate below: failed aim overrides even a pitch hit to miss. Unavailable/stale pitch does not default to a bodyshot.
 
 ### Known approximation — disclose this, don't hide it
 
 `Gameplay-v2.md` defines the headshot zone in centimeters ("+15cm above shoulder height"), but arm rotation means the same 15cm maps to a _different_ angle depending on arm length (arc length = radius × angle — a shorter arm needs a larger angle for the same linear distance).
 Without measuring arm length, using one fixed `δ` for every player is a deliberate simplification: fair in that both players get identical treatment, but not a literal centimeter match to the doc's wording.
 
-**Stretch refinement, not required for v1:** a one-time arm-length estimate during calibration. A _short_ (~0.3s) double integration over just the raise motion accumulates far less drift than continuous tracking would, so it's plausibly feasible where continuous position tracking is not — untested, flag as a follow-up if the fixed-`δ` approximation proves unsatisfying in playtesting.
+Threshold tuning remains a hardware-playtesting task; the fixed angular band is not a measured centimeter boundary.
 
 ## Fire trigger (per platform)
 
-- **Android:** volume-button key interception (`KEYCODE_VOLUME_UP/DOWN`) in a small native module. Intercept only during FIRE; both volume buttons route to the shared shot handler.
-- **iOS, selected compromise:** while FIRE and the app are active, observe `AVAudioSession.outputVolume` via KVO and infer direction from value changes. Apple documents the volume value, not button events.
-  Volume changes, other adjustments may fire, and endpoint presses produce no change. This is approximate, not Android interception.
+- **Android:** volume-button key interception (`KEYCODE_VOLUME_UP/DOWN`) in a small native module. During countdown both buttons detect false starts; during FIRE they route to the shared shot handler.
+- **iOS, selected compromise:** during countdown/FIRE while the app is active, observe `AVAudioSession.outputVolume` via KVO and infer direction from value changes. Apple documents the volume value, not button events.
+  Volume changes and other adjustments may trigger input, and endpoint presses produce no change. This is approximate, not Android interception.
   App Review acceptance for using it as game input is not guaranteed; guideline 2.5.1 requires intended API use. [Apple `outputVolume`](https://developer.apple.com/documentation/avfaudio/avaudiosession/outputvolume), [App Review Guidelines](https://developer.apple.com/app-store/review/guidelines/#software-requirements).
 - **Both platforms:** retain the full-screen tap-to-fire control as an independent, reliable fallback.
 - Do not use `AVCaptureEventInteraction` for this non-camera duel: Apple limits it to active camera-capture use cases. The hardware-button API is not a general game-input mechanism. [Apple `AVCaptureEventInteraction`](https://developer.apple.com/documentation/avkit/avcaptureeventinteraction).
@@ -90,26 +84,49 @@ Without measuring arm length, using one fixed `δ` for every player is a deliber
 
 ## Files touched
 
-- `src/features/duel/gestureSpec.ts` — add pitch-angle calibration constants alongside the existing acceleration-threshold spec
-- `src/features/duel/raiseGestureDetector.ts` / new module for pitch-angle tracking and `f` calculation
+- `src/features/duel/pitchMonitor.ts` — fused pitch tracking and calibrated `f` calculation replace the unused accelerometer calibration producer
 - `src/features/duel/DrawCalibrationScreen.tsx` — capture `θ_ready`/`θ_shoulder`
-- `src/contracts/roundOutcome.ts` — extend `RoundOutcome`'s `"win"` case (or add a new shape) to carry zone/points per player; `falseStart` stays unchanged
+- `src/contracts/roundOutcome.ts` — carries zone/points per player, including enriched `falseStart` with the non-offender's actual shot
 - `src/features/duel/roundJudge.ts` — implement the fallthrough/independent-scoring logic above
 - `src/features/duel/roundLoop.ts` — `tallyOutcome`/`matchWinnerId`/`isMatchDecided` switch from counting round wins to summing round points (see "Match-level tally" above); this is also where item 7's strict 3+1-tiebreaker rewrite lands
 - `src/features/duel/DuelScreen.tsx` — wire in the platform-specific fire trigger
-- New: Android native module or library integration for volume-key interception; iOS on-screen fire button component
+- Native volume input, live pitch/aim tracking, and `DuelChannel` shot/location contracts
 
 ## Testing
 
 - Unit-testable without a device: the `f`-to-zone classification function, and `roundJudge.ts`'s fallthrough logic (pure functions, same pattern as the existing `roundJudge.test`-style coverage).
 - Needs real hardware: pitch-angle stability/noise over an actual raise motion, and fire-trigger latency on both platforms — not mockable, add to the existing prod-readiness device QA pass (Phase 4, item 28).
 
-## Open questions
+## Live aim gate (#50 integrated with #81)
 
-- Exact fractional thresholds for bodyshot/headshot zones and the `δ` headshot band — pick via playtesting, not fixed here.
-- Whether the fixed-`δ` approximation is good enough, or whether the arm-length-estimate refinement becomes necessary.
-- **"Pointing at the opponent" is never sensor-verified — decided as a disclosed simplification, given the mid-October deadline.** `Gameplay-v2.md`'s Sensors section describes calibrating with "the phone's upper edge... point[ing] towards the opponent," implying horizontal aim/bearing matters.
-  Neither the existing implementation nor this spec's zone classification checks bearing/yaw — only vertical pitch angle (ready→shoulder) is tracked. Two ways to handle it, kept here for a teammate to discuss with their team before treating as final:
-  1. **Selected: disclosed simplification.** Only raise height is measured, not aim direction — the same pattern already used for the fixed-`δ` headshot-zone approximation above. No new work; this is v1 for shipping.
-  2. **Stretch goal (Phase 4, item 29): build a real bearing check.** Compare the phone's compass heading against the opponent's live GPS bearing (already available from the map feature's presence data) and require them to be roughly aligned at fire time.
-     Real work with a real payoff — it would make "aim" mean something a player can actually fail at, not just "raise fast enough" — but it's never existed in this codebase (not even in the original v1 implementation) and is a meaningfully bigger scope addition than anything else in this spec. Pick up only after the core roadmap ships.
+Compare a fresh true-north compass heading (accuracy level 3) with the geographic
+bearing to the accepted opponent's precise foreground GPS. The inclusive aim cone
+is adjustable in `AIM_TOLERANCE_DEGREES`, currently ±30°. Heading expires after
+2 seconds; GPS expires after 5 seconds. Unavailable, inaccurate, or stale readings
+fail closed to miss, as do positions whose separation does not exceed their
+combined GPS uncertainty radius. Facing away therefore misses regardless of pitch.
+
+Public map presence is rounded to about 110 m and removed on map exit: it does
+**not** supply a usable close-range opponent bearing. Precise
+latitude/longitude/accuracy is intentionally exchanged only with the accepted
+peer over `DuelChannel` (`aimPosition`), never written as precise GPS to Firestore.
+Public-location privacy is unchanged. `sampleAtMs` carries the actual sender GPS
+fix timestamp and stays unchanged when the same fix is sent again. The existing
+`ClockOffsetCalibrator` supplies peer clock minus local clock, so the receiver uses
+`localFixTime = sampleAtMs - clockOffsetMs`. Store the peer timestamp unchanged
+and apply the latest offset at capture, even if calibration completed after receipt.
+GPS freshness includes network flight delay: a fix aged 4,500 ms at send and
+delivered 750 ms later is 5,250 ms old and must miss under the unchanged 5-second
+limit. Repeated sends do not renew the fix; the 2-second heading limit is unchanged.
+
+`raised.zone` is required and carries the final calibrated, aim-gated zone with actual reaction timing. There is no missing-zone/bodyshot fallback. Both clients feed those actual shots into the existing judge, 100 ms tie window, faster-miss fallthrough, false-start handling, and 3-round-plus-one-tiebreak point tally.
+
+## Final Android+iOS QA — issue #54
+
+This checklist has **not been executed on the final phones here**. Record both device models, OS/build, test method, and measured results; source/tests are not hardware evidence.
+
+- Check precise GPS uncertainty and freshness, true-north heading accuracy/stability, and the ±30° cone at known facing directions. Face away and verify a miss on both phones; stale/unavailable heading/GPS and overlapping uncertainty must not become hits.
+- Capture ready then shoulder on both phones; tune the fixed pitch thresholds against measured body/head/miss poses. Exercise motion/location denial, unavailable sensors, retry, Settings, and foreground permission recovery.
+- On both phones, exercise tap and volume input, bodyshot/headshot/miss, faster-miss fallthrough, early tap/volume/movement, and the non-offender's scored FIRE shot.
+- Exercise the 100 ms tie window and full three-round matches, including the single tiebreaker and draw. Confirm both clients agree on zones, timing, points, false-start offender, and final result; rematches reuse calibration.
+- Measure two-phone cue/fire timing and sensor/input latency; record observations rather than assuming the suggested 20 ms cue target is met.

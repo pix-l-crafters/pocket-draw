@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { CutCornerButton } from "../../components/CutCornerButton";
 import { CutCornerSurface } from "../../components/CutCornerSurface";
@@ -12,18 +12,22 @@ type GameInstructionsScreenProps = {
 // Condensed from docs/product-design/Gameplay-v2.md for a full-screen,
 // pre-match read rather than the full rules document.
 const STEPS = [
-  "Calibrate: raise your phone to shoulder height, then lower it straight down to your side.",
-  "Stand a few paces apart and point the top edge of your phone toward the ground. The host starts a 3-second countdown; a buzz signals when to draw.",
-  "Draw and fire: a bodyshot scores 1 point, a headshot scores 2, a miss scores 0.",
-  "Best of 3 rounds, decided by total points. A tie triggers one tiebreaker round.",
-  "Firing before the buzz is a false start, not a scored shot."
+  "After I'm Ready, start calibration: capture your ready pose with arm down, then your shoulder pose with arm raised. Continue when accepted. Rematches reuse calibration; denied/unavailable motion has retry and Settings recovery.",
+  "Motion, compass, and precise foreground GPS power the duel. Precise GPS goes only to your accepted peer, not Firestore or the public map; public locations stay rounded.",
+  "Aim toward your opponent within about 30 degrees. Facing away, stale/unavailable readings, or overlapping GPS uncertainty means miss. Pitch approximates height, not exact centimeters.",
+  "Hold ready through the 3-second countdown. At the buzz, draw and tap or use a supported volume control: bodyshot 1, headshot 2, miss 0.",
+  "Three rounds use total points; tied totals get one tiebreaker. Shots within 100 ms both score; otherwise a faster miss lets the slower shot score.",
+  "Early tap, volume input, or movement is a false start: offender scores 0; the other player fires after the buzz for actual shot points."
 ] as const;
 
 export function GameInstructionsScreen({
   onContinue
 }: GameInstructionsScreenProps) {
   return (
-    <View style={styles.screen}>
+    <ScrollView
+      contentContainerStyle={styles.content}
+      style={styles.screen}
+    >
       <ScreenHeader
         kicker="Before you draw"
         subtitle="One read-through, then straight into calibration."
@@ -50,14 +54,17 @@ export function GameInstructionsScreen({
           onPress={onContinue}
         />
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
     backgroundColor: colors.background,
-    flex: 1,
+    flex: 1
+  },
+  content: {
+    flexGrow: 1,
     padding: 24
   },
   card: {

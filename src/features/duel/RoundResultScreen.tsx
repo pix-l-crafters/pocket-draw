@@ -64,26 +64,18 @@ export function RoundResultScreen({
         <StatusTag tone="warning">Round loss</StatusTag>
       )}
 
-      {outcome.kind === "win" ? (
+      {outcome.kind !== "falseStart" ? (
         <View style={styles.statsRow}>
           <StatTile
-            label={nameFor(playerNames, outcome.winnerId)}
+            label="First shot"
             tint={colors.accent}
             unit="ms"
             value={String(outcome.reactionMs)}
           />
           <StatTile
-            label="Opponent"
+            label="Second shot"
             unit="ms"
             value={String(outcome.opponentReactionMs)}
-          />
-        </View>
-      ) : outcome.kind === "tie" ? (
-        <View style={styles.statsRow}>
-          <StatTile
-            label="Reaction time"
-            unit="ms"
-            value={String(outcome.reactionMs)}
           />
         </View>
       ) : (

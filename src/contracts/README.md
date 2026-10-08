@@ -24,3 +24,34 @@ These types (plus a mock implementation of each) let downstream tasks be built i
 
 Don't wait until every piece is finished to test them together. Per the plan's own Section 9 ("all members integrate weekly on the path: map → QR → BLE → duel → stats"; the BLE step is now the WebRTC link), merge each piece into `dev` as soon as it's ready and test that pairing — e.g. Tingyue's QR work and Siheng's challenge flow can be tested together well before Duel exists.
 A single big-bang merge at the end is when mock-vs-real mismatches surface all at once, with no time left to fix them.
+
+## Live gameplay messages (#50 and #81)
+
+`DuelMessage.raised` requires `atMs`, actual `reactionMs`, and `zone: Zone`.
+At FIRE the sender samples its ready-to-shoulder calibrated pitch zone, then
+overrides it to `miss` if compass/GPS aim is not valid. Missing or unavailable
+zones never fall back to `bodyshot`. Clock-offset calibration makes reaction
+timing comparable; both clients judge the exchanged actual shots.
+
+`aimPosition` carries `latitude`, `longitude`, GPS `accuracy` in meters, and
+`sampleAtMs`, the actual sender GPS fix timestamp (not send or receipt time).
+The existing calibrated offset is peer clock minus local clock, giving
+`localFixTime = sampleAtMs - clockOffsetMs`. Keep the raw peer timestamp and
+convert at capture with the latest offset, including after calibration completes.
+Freshness includes network flight delay; repeating the same fix retains its
+timestamp and cannot renew it. A fix aged 4,500 ms at send plus 750 ms in flight
+is 5,250 ms old and exceeds the unchanged 5-second GPS limit. This is intentional
+precise foreground GPS sharing only over the accepted peer's `DuelChannel`,
+not precise GPS writes to Firestore. Public map presence remains rounded to
+about 110 m and is removed on map exit, so it cannot provide close-range bearing.
+
+Aim uses true-north heading accuracy level 3, a tunable inclusive ±30° cone,
+2-second heading freshness, and 5-second GPS freshness. Missing/stale readings
+or separation within the combined GPS uncertainty radius reject the shot to miss.
+
+The judge retains the 100 ms independent-scoring tie window and faster-miss
+fallthrough outside it. Early countdown tap/volume/movement disqualifies the
+offender, but normal FIRE still lets the non-offender shoot. Enriched
+`falseStart` outcomes retain that actual shot's timing, zone, and 0/1/2 points;
+there is no flat bonus. Both clients sum points for three rounds and at most one
+tiebreaker, including a valid final draw.

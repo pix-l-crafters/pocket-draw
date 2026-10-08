@@ -10,6 +10,8 @@ import {
 import type { SubmitMatchResultOutcome } from "../backend/types";
 import { createDuelLink } from "../challenge/session/duelLink";
 import { DuelScreen } from "./DuelScreen";
+import type { PitchCalibration } from "./pitchMonitor";
+import type { RoundShots } from "./roundShots";
 
 const REMATCH_ID = "22222222-2222-4222-8222-222222222222";
 
@@ -29,9 +31,30 @@ jest.mock("./clockOffsetCalibrator", () => ({
   }))
 }));
 
-// Drive completed shots at the hardware boundary; keep scoring and screens real.
+// Completion tests isolate saving; gameplay calibration is exercised separately.
+jest.mock("./DrawCalibrationScreen", () => ({
+  DrawCalibrationScreen: ({
+    onComplete
+  }: {
+    onComplete: (calibration: PitchCalibration) => void;
+  }) => {
+    const { Button } = require("react-native");
+    return (
+      <Button
+        title="Complete calibration"
+        onPress={() => onComplete({ thetaReady: 0, thetaShoulder: 1 })}
+      />
+    );
+  }
+}));
+
+// Saving tests drive completed shots at the round boundary, keeping scoring real.
 jest.mock("./PreRound", () => ({
-  PreRound: ({ onRoundShots }: { onRoundShots: (shots: unknown) => void }) => {
+  PreRound: ({
+    onRoundShots
+  }: {
+    onRoundShots: (shots: RoundShots) => void;
+  }) => {
     const { Button } = require("react-native");
     return (
       <Button
@@ -39,7 +62,10 @@ jest.mock("./PreRound", () => ({
         onPress={() =>
           onRoundShots({
             selfReactionMs: 100,
-            opponentReactionMs: 200
+            opponentReactionMs: 300,
+            selfZone: "bodyshot",
+            opponentZone: "bodyshot",
+            falseStartPlayer: null
           })
         }
       />
@@ -76,6 +102,7 @@ async function renderDuel() {
     </PaperProvider>
   );
   await fireEvent.press(view.getByText("I'm Ready"));
+  await fireEvent.press(view.getByText("Complete calibration"));
   return view;
 }
 
