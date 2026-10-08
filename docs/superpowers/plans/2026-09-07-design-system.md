@@ -676,18 +676,18 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 **Current content of `App.tsx`:**
 
 ```tsx
-import { useEffect, useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { onAuthStateChanged, User } from "firebase/auth";
+import { useEffect, useState } from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { PaperProvider, SegmentedButtons } from "react-native-paper";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
-import { auth } from "./src/lib/firebase";
-import { logoutUser } from "./src/lib/auth";
 import { BleScreen } from "./src/features/ble/BleScreen";
 import { MapScreen } from "./src/features/map/MapScreen";
 import type { CurrentUser } from "./src/features/map/types/map.types";
+import { logoutUser } from "./src/lib/auth";
+import { auth } from "./src/lib/firebase";
 import LoginScreen from "./src/screens/LoginScreen";
 import RegisterScreen from "./src/screens/RegisterScreen";
 import { appTheme } from "./src/theme/appTheme";
@@ -876,10 +876,6 @@ const styles = StyleSheet.create({
 - [x] **Step 1: Replace the whole file**
 
 ```tsx
-import { useEffect, useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { StatusBar } from "expo-status-bar";
-import { onAuthStateChanged, User } from "firebase/auth";
 import {
   Barlow_400Regular,
   useFonts as useBarlowFonts
@@ -892,14 +888,18 @@ import {
   IBMPlexMono_400Regular,
   useFonts as useIBMPlexMonoFonts
 } from "@expo-google-fonts/ibm-plex-mono";
+import { StatusBar } from "expo-status-bar";
+import { onAuthStateChanged, User } from "firebase/auth";
+import { useEffect, useState } from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { PaperProvider, SegmentedButtons } from "react-native-paper";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
-import { auth } from "./src/lib/firebase";
-import { logoutUser } from "./src/lib/auth";
 import { BleScreen } from "./src/features/ble/BleScreen";
 import { MapScreen } from "./src/features/map/MapScreen";
 import type { CurrentUser } from "./src/features/map/types/map.types";
+import { logoutUser } from "./src/lib/auth";
+import { auth } from "./src/lib/firebase";
 import LoginScreen from "./src/screens/LoginScreen";
 import RegisterScreen from "./src/screens/RegisterScreen";
 import { appTheme } from "./src/theme/appTheme";
@@ -1119,9 +1119,9 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 import { useState } from "react";
 import { Alert, StyleSheet, TextInput, View } from "react-native";
 
-import { loginUser } from "../lib/auth";
 import { CutCornerButton } from "../components/CutCornerButton";
 import { ScreenHeader } from "../components/ScreenHeader";
+import { loginUser } from "../lib/auth";
 import { colors, fonts } from "../theme/tokens";
 
 export default function LoginScreen() {
@@ -1236,9 +1236,9 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 import { useState } from "react";
 import { Alert, StyleSheet, TextInput, View } from "react-native";
 
-import { registerUser } from "../lib/auth";
 import { CutCornerButton } from "../components/CutCornerButton";
 import { ScreenHeader } from "../components/ScreenHeader";
+import { registerUser } from "../lib/auth";
 import { colors, fonts } from "../theme/tokens";
 
 export default function RegisterScreen() {

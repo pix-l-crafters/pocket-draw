@@ -17,7 +17,7 @@ step can move into CI.
 
 - iOS **and** Android builds, triggered on every merge into `dev`.
 - Uses the existing `preview` profile in `eas.json` (`distribution:
-"internal"`) — a standalone build, not a dev-client shell, so it installs
+  "internal"`) — a standalone build, not a dev-client shell, so it installs
   and runs on its own with no Metro/laptop dependency.
 - Does **not** touch the existing manual `production` + `eas submit`
   TestFlight flow — that stays a separate, manually-run pipeline.
@@ -30,8 +30,8 @@ step can move into CI.
 ```yaml
 on:
   pull_request:
-    types: [closed]
     branches: [dev]
+    types: [closed]
 ```
 
 The build job only runs `if: github.event.pull_request.merged == true` —
