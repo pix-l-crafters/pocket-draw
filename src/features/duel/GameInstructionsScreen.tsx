@@ -13,7 +13,7 @@ type GameInstructionsScreenProps = {
 // pre-match read rather than the full rules document.
 const STEPS = [
   "Calibrate: raise your phone to shoulder height, then lower it straight down to your side.",
-  "Both phones face-down starts a 3-second countdown, then a buzz — that's the signal to draw.",
+  "Both players point the top edge of their phone toward the ground. The host starts a 3-second countdown; a buzz signals when to draw.",
   "Draw and fire: a bodyshot scores 1 point, a headshot scores 2, a miss scores 0.",
   "Best of 3 rounds, decided by total points. A tie triggers one tiebreaker round.",
   "Firing before the buzz is a false start, not a scored shot."
