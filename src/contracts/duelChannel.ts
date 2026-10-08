@@ -12,7 +12,7 @@ export type DuelMessage =
   | { type: "challengeDeclined" }
   // "My pre-round ritual is done." The host gates the countdown on it.
   | { type: "ready" }
-  | { type: "countdown"; value: 3 | 2 | 1 }
+  | { type: "countdown"; value: 3 | 2 | 1; attempt?: number }
   | { type: "fire"; atMs: number }
   // `atMs` is the raiser's local timestamp; calibration translates received
   // FIRE timestamps before reaction timing, so `reactionMs` is comparable.
@@ -26,7 +26,7 @@ export type DuelMessage =
       accuracy: number;
       sampleAtMs: number;
     }
-  | { type: "falseStart"; atMs: number }
+  | { type: "falseStart"; atMs: number; attempt?: number; count?: 1 | 2 }
   | { type: "clockPing"; t0: number }
   | { type: "clockPong"; t0: number; t1: number; t2: number }
   // This player is leaving the session (back to map, declined rematch), so
@@ -34,7 +34,13 @@ export type DuelMessage =
   | { type: "leave" }
   // After a reconnect each phone sends the rounds it judged so both resume
   // from the rounds they agree on. A `reply` is never answered.
-  | { type: "matchSync"; matchId: string; roundKeys: string[]; reply: boolean }
+  | {
+      type: "matchSync";
+      matchId: string;
+      roundKeys: string[];
+      reply: boolean;
+      warningCounts?: Record<string, number>;
+    }
   // Rematch: whoever asks first proposes the next match's id and the other
   // accepts it. Offers that cross on the wire settle on the smaller id.
   | { type: "rematchOffer"; matchId: string }

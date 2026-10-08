@@ -26,6 +26,7 @@ import type { PitchCalibration } from "./pitchMonitor";
 import { PreRound } from "./PreRound";
 import {
   applyRoundOutcome,
+  applyFalseStartWarning,
   createRoundLoop,
   isMatchDecided,
   reconcileRounds,
@@ -306,6 +307,7 @@ export function DuelScreen({
                 type: "matchSync",
                 matchId: matchIdRef.current,
                 roundKeys: roundKeys(loopRef.current),
+                warningCounts: loopRef.current.warningCounts,
                 reply: true
               });
             }
@@ -317,13 +319,25 @@ export function DuelScreen({
             type: "matchSync",
             matchId: matchIdRef.current,
             roundKeys: roundKeys(loopRef.current),
+            warningCounts: loopRef.current.warningCounts,
             reply: true
           });
         }
         if (!syncingRef.current) return;
 
         syncingRef.current = false;
-        const resumed = reconcileRounds(loopRef.current, message.roundKeys);
+        const reconciled = reconcileRounds(loopRef.current, message.roundKeys);
+        const peerCount = message.warningCounts?.[opponent.id];
+        const resumed =
+          peerCount === 0 || peerCount === 1
+            ? {
+                ...reconciled,
+                warningCounts: {
+                  ...reconciled.warningCounts,
+                  [opponent.id]: peerCount
+                }
+              }
+            : reconciled;
         if (resumed !== loopRef.current) {
           loopRef.current = resumed;
           setLoop(resumed);
@@ -336,7 +350,14 @@ export function DuelScreen({
           runClockCalibration();
         }
       }),
-    [channel, runClockCalibration, safeSend, setRematch, startMatch]
+    [
+      channel,
+      opponent.id,
+      runClockCalibration,
+      safeSend,
+      setRematch,
+      startMatch
+    ]
   );
 
   // Messages sent in the instant the new DataChannel opens can be lost, so
@@ -348,6 +369,7 @@ export function DuelScreen({
         type: "matchSync",
         matchId: matchIdRef.current,
         roundKeys: roundKeys(loopRef.current),
+        warningCounts: loopRef.current.warningCounts,
         reply: false
       });
     ask();
@@ -377,6 +399,10 @@ export function DuelScreen({
     },
     [opponent, self]
   );
+
+  const handleWarning = useCallback((playerId: string) => {
+    setLoop((state) => applyFalseStartWarning(state, playerId));
+  }, []);
 
   const consumePeerReady = useCallback(() => setPeerReady(false), []);
 
@@ -528,6 +554,10 @@ export function DuelScreen({
         calibration={calibration}
         selfPlayerId={self.id}
         opponentPlayerId={opponent.id}
+        opponentName={opponent.name}
+        selfName={self.name}
+        warningCounts={loop.warningCounts}
+        onWarning={handleWarning}
         clockCalibrationStatus={clockCalibrationStatus}
         clockOffsetMs={clockOffsetMs}
         onCountdownStart={consumePeerReady}

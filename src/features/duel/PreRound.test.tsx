@@ -1,6 +1,7 @@
 // Guards cross-platform phone positioning and the fixed countdown-to-FIRE flow.
 
 import { act, fireEvent, render } from "@testing-library/react-native";
+import * as Haptics from "expo-haptics";
 import { Platform } from "react-native";
 import { PaperProvider } from "react-native-paper";
 
@@ -100,9 +101,9 @@ jest.mock("expo-audio", () => ({
 
 jest.mock("expo-haptics", () => ({
   impactAsync: async () => undefined,
-  notificationAsync: async () => undefined,
+  notificationAsync: jest.fn(async () => undefined),
   ImpactFeedbackStyle: { Medium: "medium", Heavy: "heavy" },
-  NotificationFeedbackType: { Success: "success" }
+  NotificationFeedbackType: { Success: "success", Warning: "warning" }
 }));
 
 async function renderPreRound(
@@ -205,6 +206,7 @@ async function renderPreRound(
 
 describe("PreRound countdown and draw", () => {
   beforeEach(() => {
+    jest.mocked(Haptics.notificationAsync).mockClear();
     accelerometerListeners.length = 0;
     motionPermission.granted = true;
     motionPermission.canAskAgain = true;
@@ -478,7 +480,7 @@ describe("PreRound countdown and draw", () => {
   );
 
   it.each(["tap", "volume", "movement"] as const)(
-    "disqualifies an early %s but still scores the opponent's headshot",
+    "warns on the first early %s, then disqualifies the second",
     async (input) => {
       const {
         completeRitual,
@@ -494,7 +496,15 @@ describe("PreRound countdown and draw", () => {
       if (input === "tap") await fireEvent.press(view.getByLabelText("Fire"));
       else if (input === "volume") await pressVolume("up");
       else await setReading({ x: 1, y: -1, z: 0 });
-      await wait(COUNTDOWN_DURATION_MS - 500);
+      expect(
+        view.getByText(/moved early. Warning 1 of 1. Restarting round/)
+      ).toBeTruthy();
+      expect(Haptics.notificationAsync).toHaveBeenCalledWith("warning");
+      expect(shots).toHaveLength(0);
+      await wait(1200);
+      expect(view.getByText("3")).toBeTruthy();
+      await fireEvent.press(view.getByLabelText("Fire"));
+      await wait(COUNTDOWN_DURATION_MS);
       await wait(200);
       await fireEvent.press(view.getByLabelText("Fire"));
       await deliver({
@@ -519,6 +529,45 @@ describe("PreRound countdown and draw", () => {
       expect(shots[0].selfReactionMs).toBeNull();
     }
   );
+
+  it("shows a peer warning, follows the restarted countdown, and does not record a round", async () => {
+    const { completeRitual, deliver, shots, view } =
+      await renderPreRound("guest");
+    await completeRitual();
+    await deliver({ type: "countdown", value: 3 });
+    await deliver({
+      type: "falseStart",
+      atMs: Date.now(),
+      attempt: 0,
+      count: 1
+    });
+    expect(
+      view.getByText(/Opponent moved early. Warning 1 of 1. Restarting round/)
+    ).toBeTruthy();
+    expect(Haptics.notificationAsync).not.toHaveBeenCalledWith("warning");
+    await deliver({ type: "countdown", value: 2 });
+    expect(view.getByText("WARNING")).toBeTruthy();
+    await deliver({ type: "countdown", value: 3, attempt: 1 });
+    expect(view.getByText("3")).toBeTruthy();
+    expect(shots).toHaveLength(0);
+  });
+
+  it("does not fire the abandoned countdown after a last-second warning", async () => {
+    const { completeRitual, sent, shots, view, wait } =
+      await renderPreRound("host");
+    await completeRitual();
+    await wait(COUNTDOWN_DURATION_MS - 100);
+    await fireEvent.press(view.getByLabelText("Fire"));
+    await wait(100);
+    expect(view.getByText("WARNING")).toBeTruthy();
+    expect(sent.filter((message) => message.type === "fire")).toHaveLength(0);
+    expect(shots).toHaveLength(0);
+    await wait(1100);
+    expect(view.getByText("3")).toBeTruthy();
+    await wait(COUNTDOWN_DURATION_MS);
+    expect(view.getByText("FIRE!")).toBeTruthy();
+    expect(sent.filter((message) => message.type === "fire")).toHaveLength(1);
+  });
 
   it("scores a local headshot after the peer false-starts", async () => {
     const { completeRitual, deliver, shots, view, wait } =

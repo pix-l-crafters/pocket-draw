@@ -48,6 +48,7 @@ type Phase =
   | "separate"
   | "position"
   | "waiting"
+  | "warning"
   | "countdown"
   | "fire"
   | "done";
@@ -57,6 +58,10 @@ type PreRoundProps = {
   calibration: PitchCalibration;
   selfPlayerId: string;
   opponentPlayerId: string;
+  opponentName?: string;
+  selfName?: string;
+  warningCounts?: Record<string, number>;
+  onWarning?: (playerId: string) => void;
   /** The host owns the countdown and the FIRE signal; the guest follows. */
   role: DuelRole;
   /** True once the opponent has finished their own pre-round ritual. */
@@ -73,6 +78,10 @@ export function PreRound({
   calibration,
   selfPlayerId,
   opponentPlayerId,
+  opponentName = "Opponent",
+  selfName = "You",
+  warningCounts = {},
+  onWarning = () => undefined,
   role,
   peerReady,
   clockCalibrationStatus,
@@ -92,12 +101,21 @@ export function PreRound({
   >("starting");
   const [pitchRetry, setPitchRetry] = useState(0);
   const falseStarts = useMemo(
-    () => new FalseStartCoordinator(channel, selfPlayerId, opponentPlayerId),
+    () =>
+      new FalseStartCoordinator(
+        channel,
+        selfPlayerId,
+        opponentPlayerId,
+        undefined,
+        warningCounts
+      ),
     [channel, selfPlayerId, opponentPlayerId]
   );
   const [falseStartPlayer, setFalseStartPlayer] = useState<
     "self" | "opponent" | null
   >(null);
+  const [warnedPlayers, setWarnedPlayers] = useState<string[]>([]);
+  const attemptRef = useRef(0);
   const [selfZone, setSelfZone] = useState<Zone>("miss");
   const [opponentZone, setOpponentZone] = useState<Zone>("miss");
   const opponentShotReceivedRef = useRef(false);
@@ -120,11 +138,31 @@ export function PreRound({
   }, [pitchMonitor, pitchRetry]);
 
   useEffect(() => {
-    const unsubscribe = falseStarts.onOutcome((outcome) =>
-      setFalseStartPlayer(
-        outcome.playerId === selfPlayerId ? "self" : "opponent"
-      )
-    );
+    const unsubscribe = falseStarts.onOutcome((outcome) => {
+      if (outcome.kind === "warning") {
+        onWarning(outcome.playerId);
+        setWarnedPlayers((players) =>
+          players.includes(outcome.playerId)
+            ? players
+            : [...players, outcome.playerId]
+        );
+        if (falseStarts.getOutcome()?.kind !== "falseStart")
+          setPhase("warning");
+        if (outcome.playerId === selfPlayerId) {
+          void Haptics.notificationAsync(
+            Haptics.NotificationFeedbackType.Warning
+          );
+        }
+      } else {
+        const canonical = falseStarts.getOutcome();
+        const playerId =
+          canonical?.kind === "falseStart"
+            ? canonical.playerId
+            : outcome.playerId;
+        setFalseStartPlayer(playerId === selfPlayerId ? "self" : "opponent");
+        if (phaseRef.current === "warning") setPhase("countdown");
+      }
+    });
     return () => {
       unsubscribe();
       falseStarts.dispose();
@@ -199,6 +237,19 @@ export function PreRound({
   );
   useEffect(() => () => fireCoordinator.dispose(), [fireCoordinator]);
 
+  useEffect(() => {
+    if (phase !== "warning" || role !== "host") return undefined;
+    const timer = setTimeout(() => {
+      if (falseStarts.getOutcome()?.kind === "falseStart") return;
+      timersRef.current.forEach(clearTimeout);
+      timersRef.current = [];
+      attemptRef.current += 1;
+      setWarnedPlayers([]);
+      startCountdown();
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [phase, role, falseStarts]);
+
   // Both roles receive a FIRE timestamp in their own clock domain.
   useEffect(
     () =>
@@ -238,7 +289,10 @@ export function PreRound({
       subscription = Accelerometer.addListener(({ x, y, z }) => {
         if (!mounted) return;
         setTopEdgeDown(isTopEdgeDown(x, y, z));
-        if (phaseRef.current === "countdown") {
+        if (
+          phaseRef.current === "countdown" ||
+          phaseRef.current === "warning"
+        ) {
           try {
             falseStarts.processLocalSample({ x, y, z, atMs: Date.now() });
           } catch {
@@ -265,7 +319,13 @@ export function PreRound({
   useEffect(() => {
     return channel.onMessage((message: DuelMessage) => {
       if (message.type === "countdown") {
-        if (message.value === 3) falseStarts.arm();
+        if (phaseRef.current === "warning" && message.value !== 3) return;
+        if (message.value === 3) {
+          if ((message.attempt ?? 0) < attemptRef.current) return;
+          attemptRef.current = message.attempt ?? 0;
+          falseStarts.arm(attemptRef.current);
+          setWarnedPlayers([]);
+        }
         setPhase((current) => (current === "fire" ? current : "countdown"));
         showTick(message.value);
       }
@@ -318,7 +378,7 @@ export function PreRound({
 
   const handleFire = () => {
     if (phase !== "fire") {
-      if (phase === "countdown") {
+      if (phase === "countdown" || phase === "warning") {
         try {
           falseStarts.processLocalFire(Date.now());
         } catch {
@@ -360,7 +420,7 @@ export function PreRound({
 
   useEffect(() => {
     if (
-      (phase !== "fire" && phase !== "countdown") ||
+      (phase !== "fire" && phase !== "countdown" && phase !== "warning") ||
       (Platform.OS !== "android" && Platform.OS !== "ios")
     ) {
       return undefined;
@@ -369,8 +429,15 @@ export function PreRound({
   }, [phase]);
 
   const startCountdown = () => {
-    falseStarts.arm();
-    if (!safeSend({ type: "countdown", value: COUNTDOWN_VALUES[0] })) return;
+    falseStarts.arm(attemptRef.current);
+    if (
+      !safeSend({
+        type: "countdown",
+        value: COUNTDOWN_VALUES[0],
+        ...(attemptRef.current ? { attempt: attemptRef.current } : {})
+      })
+    )
+      return;
     onCountdownStart();
     setPhase("countdown");
     showTick(COUNTDOWN_VALUES[0]);
@@ -378,7 +445,15 @@ export function PreRound({
     COUNTDOWN_VALUES.slice(1).forEach((value, index) => {
       later(
         () => {
-          if (!safeSend({ type: "countdown", value })) return;
+          if (phaseRef.current === "warning") return;
+          if (
+            !safeSend({
+              type: "countdown",
+              value,
+              ...(attemptRef.current ? { attempt: attemptRef.current } : {})
+            })
+          )
+            return;
           showTick(value);
         },
         (index + 1) * COUNTDOWN_TICK_MS
@@ -387,6 +462,7 @@ export function PreRound({
 
     later(() => {
       try {
+        if (phaseRef.current === "warning") return;
         fireCoordinator.markCountdownComplete();
         fireCoordinator.triggerFire();
       } catch {
@@ -426,6 +502,7 @@ export function PreRound({
     }
     if (phase === "waiting") return "WAITING FOR THE DRAW";
     if (phase === "countdown") return "GET READY";
+    if (phase === "warning") return "FALSE START WARNING";
     return "DRAW!";
   }, [isHost, peerReady, phase, topEdgeDown]);
 
@@ -526,7 +603,7 @@ export function PreRound({
 
       {/* Android intercepts volume keys; iOS observes volume changes while
           preserving the normal volume adjustment. Tap remains available. */}
-      {(phase === "fire" || phase === "countdown") && (
+      {(phase === "fire" || phase === "countdown" || phase === "warning") && (
         <Pressable
           accessibilityLabel="Fire"
           accessibilityRole="button"
@@ -534,24 +611,35 @@ export function PreRound({
           style={styles.fireOverlay}
         >
           <Text style={styles.fireHeading}>
-            {phase === "fire" ? "FIRE!" : countdown}
+            {phase === "fire"
+              ? "FIRE!"
+              : phase === "warning"
+                ? "WARNING"
+                : countdown}
           </Text>
           <Text style={styles.fireDetail}>
-            {phase === "countdown"
-              ? "WAIT FOR THE BUZZ — EARLY FIRE IS A FALSE START"
-              : falseStarts.hasFalseStarted(selfPlayerId)
-                ? "FALSE START — YOUR SHOT IS DISQUALIFIED"
-                : selfReactionMs === null
-                  ? Platform.OS === "android"
-                    ? "PRESS VOLUME OR TAP ANYWHERE"
-                    : Platform.OS === "ios"
-                      ? "VOLUME BUTTONS FIRE AND CHANGE VOLUME — OR TAP"
-                      : "TAP ANYWHERE"
-                  : `${selfReactionMs}ms — ${
-                      opponentReactionMs === null
-                        ? "waiting for your opponent"
-                        : `they fired in ${opponentReactionMs}ms`
-                    }`}
+            {phase === "warning"
+              ? `${[...warnedPlayers]
+                  .sort()
+                  .map((id) => (id === selfPlayerId ? selfName : opponentName))
+                  .join(
+                    " and "
+                  )} moved early. Warning 1 of 1. Restarting round.`
+              : phase === "countdown"
+                ? "WAIT FOR THE BUZZ — EARLY FIRE IS A FALSE START"
+                : falseStarts.hasFalseStarted(selfPlayerId)
+                  ? "FALSE START — YOUR SHOT IS DISQUALIFIED"
+                  : selfReactionMs === null
+                    ? Platform.OS === "android"
+                      ? "PRESS VOLUME OR TAP ANYWHERE"
+                      : Platform.OS === "ios"
+                        ? "VOLUME BUTTONS FIRE AND CHANGE VOLUME — OR TAP"
+                        : "TAP ANYWHERE"
+                    : `${selfReactionMs}ms — ${
+                        opponentReactionMs === null
+                          ? "waiting for your opponent"
+                          : `they fired in ${opponentReactionMs}ms`
+                      }`}
           </Text>
         </Pressable>
       )}

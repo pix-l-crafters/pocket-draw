@@ -397,29 +397,43 @@ describe("DuelScreen real two-phone gameplay", () => {
 
       await nextRound();
       await startRound();
-      await advance(100);
-      if (earlyInput === "tap") {
-        await fireEvent.press(
-          phones.guest.getByRole("button", { name: "Fire" })
-        );
-      } else if (earlyInput === "volume") {
-        // Native volume subscriptions mount in tree order: host then guest.
-        expect(mockVolumeListeners.size).toBe(2);
-        await act(() => [...mockVolumeListeners][1]());
-      } else {
-        await act(() => {
-          mockPhones.guest.tilt.forEach((listener) =>
-            listener({ x: 0, y: -2, z: 0 })
+      const offend = async () => {
+        if (earlyInput === "tap") {
+          await fireEvent.press(
+            phones.guest.getByRole("button", { name: "Fire" })
           );
-        });
+        } else if (earlyInput === "volume") {
+          expect(mockVolumeListeners.size).toBe(2);
+          await act(() => [...mockVolumeListeners][1]());
+        } else {
+          await act(() => {
+            mockPhones.guest.tilt.forEach((listener) =>
+              listener({ x: 0, y: -2, z: 0 })
+            );
+          });
+        }
+      };
+      await advance(100);
+      await offend();
+      for (const phone of [phones.host, phones.guest]) {
+        expect(
+          phone.getByText(/Gil moved early. Warning 1 of 1. Restarting round/)
+        ).toBeTruthy();
+        expect(phone.queryByText("Round 4")).toBeNull();
       }
+      await advance(1200);
+      for (const phone of [phones.host, phones.guest]) {
+        expect(phone.getByText("3")).toBeTruthy();
+        expect(phone.queryByText("Round 4")).toBeNull();
+      }
+      await advance(100);
+      await offend();
       for (const phone of [phones.host, phones.guest]) {
         expect(
           phone.getByText(
             "FALSE START — the non-offending player can still shoot at FIRE."
           )
         ).toBeTruthy();
-        expect(phone.queryByText("Round 4")).toBeNull();
       }
       await advance(2900);
       await advance(300);
