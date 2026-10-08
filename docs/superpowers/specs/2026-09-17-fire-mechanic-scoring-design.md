@@ -79,13 +79,14 @@ Without measuring arm length, using one fixed `δ` for every player is a deliber
 
 ## Fire trigger (per platform)
 
-- **Android:** volume-button key interception (`KEYCODE_VOLUME_UP/DOWN`), e.g. via `react-native-volume-manager` or a small custom native module. This project already runs `expo-dev-client`, so a native module is nothing new. Reliable, no caveats.
-- **iOS, default:** on-screen tap-to-fire button. No API-misuse risk, no camera overhead, works on every device.
-- **iOS, documented alternatives** (pick one only if you want a different tradeoff than the default):
-  - `AVCaptureEventInteraction` for a native volume-button feel — Apple's only sanctioned API for this, but scoped to apps actively using the camera; a non-camera app risks its capture session being terminated, and would need an active (if hidden) camera session just to unlock the events.
-  - The unofficial `AVAudioSession.outputVolume`-observation hack — works without a camera session, but is fragile: volume needs resetting between rounds, detection can be missed at min/max volume, and the system volume HUD flashes unless suppressed.
-  - Action Button (iPhone 15 Pro and later only) via a user-assigned Shortcut — hardware-limited, requires manual per-player Settings setup, and whether it delivers a fast in-scene event to an already-foregrounded duel screen (vs. behaving like an app relaunch) isn't confirmed without device testing.
-  - Ruled out entirely: the side/power button has no public API on iOS for any app to intercept.
+- **Android:** volume-button key interception (`KEYCODE_VOLUME_UP/DOWN`) in a small native module. Intercept only during FIRE; both volume buttons route to the shared shot handler.
+- **iOS, selected compromise:** while FIRE and the app are active, observe `AVAudioSession.outputVolume` via KVO and infer direction from value changes. Apple documents the volume value, not button events.
+  Volume changes, other adjustments may fire, and endpoint presses produce no change. This is approximate, not Android interception.
+  App Review acceptance for using it as game input is not guaranteed; guideline 2.5.1 requires intended API use. [Apple `outputVolume`](https://developer.apple.com/documentation/avfaudio/avaudiosession/outputvolume), [App Review Guidelines](https://developer.apple.com/app-store/review/guidelines/#software-requirements).
+- **Both platforms:** retain the full-screen tap-to-fire control as an independent, reliable fallback.
+- Do not use `AVCaptureEventInteraction` for this non-camera duel: Apple limits it to active camera-capture use cases. The hardware-button API is not a general game-input mechanism. [Apple `AVCaptureEventInteraction`](https://developer.apple.com/documentation/avkit/avcaptureeventinteraction).
+- Action Button via a user-assigned Shortcut remains hardware-limited and would need device testing to confirm fast in-scene delivery.
+- The side/power button has no public iOS interception API.
 
 ## Files touched
 
