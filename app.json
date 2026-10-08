@@ -7,10 +7,6 @@
       },
       "package": "com.pixlcrafters.pocketdraw",
       "permissions": [
-        "android.permission.BLUETOOTH",
-        "android.permission.BLUETOOTH_ADMIN",
-        "android.permission.BLUETOOTH_CONNECT",
-        "android.permission.BLUETOOTH_SCAN",
         "android.permission.ACCESS_WIFI_STATE",
         "android.permission.CHANGE_WIFI_STATE",
         "android.permission.NEARBY_WIFI_DEVICES",
@@ -40,14 +36,6 @@
     "owner": "pix-l-crafters",
     "plugins": [
       "./plugins/with-ios-min-deployment-target",
-      [
-        "react-native-ble-manager",
-        {
-          "bluetoothAlwaysPermission": "This app requires Bluetooth access.",
-          "isBleRequired": true,
-          "neverForLocation": true
-        }
-      ],
       [
         "expo-location",
         {

@@ -70,7 +70,6 @@ async function renderPreRound(
         onCountdownStart={() => undefined}
         onRoundShots={(round) => shots.push(round)}
         peerReady
-        readRssi={async () => -80}
         role={role}
       />
     </PaperProvider>
@@ -90,8 +89,6 @@ async function renderPreRound(
 
   /** Walks the ritual to the point the countdown can start. */
   const completeRitual = async (reading: Reading = { x: 0, y: -1, z: 0 }) => {
-    // The separation reading resolves on a microtask.
-    await act(async () => undefined);
     await fireEvent.press(view.getByText("CONFIRM"));
 
     await setReading(reading);
@@ -140,6 +137,15 @@ describe("PreRound countdown and draw", () => {
       expect(sent).toEqual([{ type: "countdown", value: 3 }]);
     }
   );
+
+  it("asks players to stand apart without claiming to have measured it", async () => {
+    const { view } = await renderPreRound("guest");
+
+    expect(view.getByText("STAND APART")).toBeTruthy();
+    expect(view.queryByText(/dBm|signal|confirmed/i)).toBeNull();
+    await fireEvent.press(view.getByText("CONFIRM"));
+    expect(view.getByText("POINT THE TOP EDGE TOWARD THE GROUND")).toBeTruthy();
+  });
 
   it("ticks 3-2-1 one second apart and fires exactly on zero", async () => {
     const { completeRitual, sent, view, wait } = await renderPreRound("host");

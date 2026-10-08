@@ -9,7 +9,7 @@ import { ActivityIndicator } from "react-native-paper";
 import { CutCornerButton } from "../../components/CutCornerButton";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { StatusTag } from "../../components/StatusTag";
-import type { DuelChannel } from "../../contracts/duelChannel";
+import type { DuelLink } from "../../contracts/duelLink";
 import { colors } from "../../theme/tokens";
 import { OpponentPopup } from "./components/OpponentPopup";
 
@@ -19,17 +19,33 @@ export type Challenger = {
 };
 
 type IncomingChallengeScreenProps = {
-  channel: DuelChannel;
+  link: DuelLink;
   onAccept: (challenger: Challenger) => void;
+  /** Declined, or the challenger is gone; the caller releases the link. */
   onDecline: () => void;
 };
 
 export function IncomingChallengeScreen({
-  channel,
+  link,
   onAccept,
   onDecline
 }: IncomingChallengeScreenProps) {
+  const { channel } = link;
   const [challenger, setChallenger] = useState<Challenger | null>(null);
+  // Nothing reconnects before the duel starts, so a drop here is final.
+  const [challengerGone, setChallengerGone] = useState(
+    () => link.status() !== "live"
+  );
+
+  useEffect(() => {
+    const gone = () => setChallengerGone(true);
+    const stopWatchingDrops = link.onDrop(gone);
+    const stopWatchingPeer = link.onPeerLeft(gone);
+    return () => {
+      stopWatchingDrops();
+      stopWatchingPeer();
+    };
+  }, [link]);
 
   useEffect(
     () =>
@@ -71,7 +87,11 @@ export function IncomingChallengeScreen({
       />
 
       <View style={styles.body}>
-        {challenger ? (
+        {challengerGone ? (
+          <StatusTag tone="warning">
+            The challenger disconnected before you answered.
+          </StatusTag>
+        ) : challenger ? (
           <StatusTag tone="success">{`${challenger.playerName} is waiting on your answer.`}</StatusTag>
         ) : (
           <>
@@ -83,12 +103,12 @@ export function IncomingChallengeScreen({
 
       <View style={styles.actions}>
         <CutCornerButton
-          label="Decline"
-          onPress={() => respond(false)}
+          label={challengerGone ? "Back" : "Decline"}
+          onPress={() => (challengerGone ? onDecline() : respond(false))}
         />
       </View>
 
-      {challenger ? (
+      {challenger && !challengerGone ? (
         <OpponentPopup
           cancelLabel="Decline"
           confirmLabel="Accept"

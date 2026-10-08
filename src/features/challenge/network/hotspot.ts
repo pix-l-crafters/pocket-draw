@@ -139,3 +139,25 @@ export function withNetworkPreparation(
     }
   };
 }
+
+/**
+ * Reconnects an established duel. On a hotspot a drop usually means this phone
+ * left it (Android falls back to a network with internet), so each recovery
+ * joins it again once; attempts within a recovery share that join.
+ */
+export function withReconnectPreparation(
+  connection: DuelConnectionInfo,
+  transport: DuelSessionTransport,
+  connector: WifiConnector = getWifiConnector()
+): DuelSessionTransport {
+  let recovery: DuelSessionTransport | null = null;
+
+  return {
+    async connect(params, signal) {
+      recovery ??= withNetworkPreparation(connection, transport, connector);
+      const established = await recovery.connect(params, signal);
+      recovery = null;
+      return established;
+    }
+  };
+}

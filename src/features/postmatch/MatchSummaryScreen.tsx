@@ -9,6 +9,7 @@ import { CutCornerButton } from "../../components/CutCornerButton";
 import { KickerLabel } from "../../components/KickerLabel";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { StatTile } from "../../components/StatTile";
+import { StatusTag } from "../../components/StatusTag";
 import type { MatchResult } from "../../contracts/matchResult";
 import type { PlayerStats } from "../../contracts/playerStats";
 import { colors, fonts } from "../../theme/tokens";
@@ -20,6 +21,10 @@ type MatchSummaryScreenProps = {
   onReturnToMap: () => void;
   playerNames: Record<string, string>;
   playerStats?: Record<string, PlayerStats>;
+  /** A rematch needs both players, so the offer can be pending or gone. */
+  rematchDisabled?: boolean;
+  rematchLabel?: string;
+  rematchNote?: string;
 };
 
 function reactionSummary(
@@ -41,7 +46,10 @@ export function MatchSummaryScreen({
   onRematch,
   onReturnToMap,
   playerNames,
-  playerStats
+  playerStats,
+  rematchDisabled = false,
+  rematchLabel = "Rematch",
+  rematchNote
 }: MatchSummaryScreenProps) {
   const score = scoreFromRounds(matchResult.participantIds, matchResult.rounds);
   const winnerId = matchResult.participantIds.find(
@@ -57,6 +65,11 @@ export function MatchSummaryScreen({
         kicker="Match complete"
         title={title}
       />
+      {/* Both phones show the same id, which is how testers confirm a
+          rematch was agreed under one fresh match. */}
+      <Text style={styles.matchId}>
+        {`Match ${matchResult.matchId.slice(0, 8)}`}
+      </Text>
 
       <View style={styles.statsRow}>
         {matchResult.participantIds.map((id) => (
@@ -96,8 +109,10 @@ export function MatchSummaryScreen({
       </View>
 
       <View style={styles.actions}>
+        {rematchNote ? <StatusTag>{rematchNote}</StatusTag> : null}
         <CutCornerButton
-          label="Rematch"
+          disabled={rematchDisabled}
+          label={rematchLabel}
           onPress={onRematch}
         />
         <TouchableOpacity
@@ -125,6 +140,12 @@ const styles = StyleSheet.create({
   },
   rounds: {
     gap: 6
+  },
+  matchId: {
+    color: colors.textMuted60,
+    fontFamily: fonts.mono,
+    fontSize: 11,
+    letterSpacing: 1.5
   },
   roundLine: {
     color: colors.textMuted60,

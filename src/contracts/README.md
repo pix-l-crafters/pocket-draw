@@ -13,13 +13,14 @@ These types (plus a mock implementation of each) let downstream tasks be built i
 
 | File                  | Producer                            | Consumer(s)                               |
 | --------------------- | ----------------------------------- | ----------------------------------------- |
-| `duelChannel.ts`      | Siheng (3.8, BLE session)           | Tanachat, Tianze, Mobark (duel messaging) |
+| `duelChannel.ts`      | Siheng (3.8, WebRTC session)        | Tanachat, Tianze, Mobark (duel messaging) |
 | `roundOutcome.ts`     | Tianze (4.10-4.13), Tanachat (4.15) | Mobark (4.16-4.17)                        |
 | `matchResult.ts`      | Mobark (4.17)                       | Mihir (5.1-5.4)                           |
 | `playerStats.ts`      | Mihir (5.1, 5.4, 5.5)               | Siheng (2.2), Tingyue (3.3), Mobark (6.1) |
 | `challengeHandoff.ts` | Tingyue (3.2)                       | Siheng (3.4-3.6, 3.8)                     |
+| `duelLink.ts`         | Tingyue (#51, WebRTC session)       | Duel screens (recovery, rematch)          |
 
 ## Integration cadence
 
-Don't wait until every piece is finished to test them together. Per the plan's own Section 9 ("all members integrate weekly on the path: map → QR → BLE → duel → stats"), merge each piece into `dev` as soon as it's ready and test that pairing — e.g. Tingyue's QR work and Siheng's challenge flow can be tested together well before Duel exists.
+Don't wait until every piece is finished to test them together. Per the plan's own Section 9 ("all members integrate weekly on the path: map → QR → BLE → duel → stats"; the BLE step is now the WebRTC link), merge each piece into `dev` as soon as it's ready and test that pairing — e.g. Tingyue's QR work and Siheng's challenge flow can be tested together well before Duel exists.
 A single big-bang merge at the end is when mock-vs-real mismatches surface all at once, with no time left to fix them.

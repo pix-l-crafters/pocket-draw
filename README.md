@@ -29,7 +29,7 @@ This starts the Metro bundler and prints a QR code in your terminal.
 
 ### 4. View it on your iPhone
 
-This project targets **Expo SDK 54** and uses `react-native-ble-manager`, so it must run in an Expo development build. Expo Go does not include the native Bluetooth module.
+This project targets **Expo SDK 54** and duels over a local WebRTC connection (`react-native-webrtc`, `react-native-tcp-socket`), so it must run in an Expo development build. Expo Go does not include these native modules.
 
 1. Build and install the development client on your iPhone with `npx expo run:ios --device`.
 2. Start Metro with `npm run start:dev-client`.
@@ -41,7 +41,7 @@ This project targets **Expo SDK 54** and uses `react-native-ble-manager`, so it 
 > supports SDK 54, so this project is pinned there deliberately — do **not** bump `expo`
 > past what the current App Store Expo Go supports without checking first — running
 > `npx expo start` will say "project is incompatible with this version of Expo Go" if
-> you do. The native Bluetooth module requires the development build described above.
+> you do. The native WebRTC and socket modules require the development build described above.
 >
 > Note: your iPhone and your computer need to be on the same Wi-Fi network for the QR
 > code to connect. On restrictive networks (e.g. university wifi with client isolation),

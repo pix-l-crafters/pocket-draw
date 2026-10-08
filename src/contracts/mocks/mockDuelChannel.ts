@@ -3,8 +3,8 @@ import type { DuelChannel, DuelMessage } from "../duelChannel";
 /**
  * In-memory loopback pair for local dev: messages sent on one channel are
  * delivered to the other's listeners, so Duel logic can be built and tested
- * without a real BLE session. Delete once src/contracts/duelChannel.ts has a
- * real implementation (see ticket 3.8).
+ * without a second phone. Production duels use the WebRTC DataChannel in
+ * src/features/challenge/webrtc/duelDataChannel.ts.
  */
 export function createMockDuelChannelPair(): [DuelChannel, DuelChannel] {
   const handlersA: Array<(m: DuelMessage) => void> = [];

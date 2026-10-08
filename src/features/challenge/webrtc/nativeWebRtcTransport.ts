@@ -218,16 +218,23 @@ export async function startNativeWebRtcDuelHost(
     };
     server.once("error", onError);
     controller.signal.addEventListener("abort", onAbort, { once: true });
-    server.listen({ port: options.port ?? 0, host: "0.0.0.0" }, () => {
-      server.off("error", onError);
-      controller.signal.removeEventListener("abort", onAbort);
-      const address = server.address();
-      if (!address) {
-        reject(new Error("Local signaling server did not expose a port."));
-        return;
+    server.listen(
+      // A reconnect listens on the port the guest already has from the QR,
+      // which can still hold the closed signaling socket in TIME_WAIT. Server
+      // sockets enable SO_REUSEADDR by default on Android and iOS; this flag
+      // states the intent, but Android applies it only after binding.
+      { port: options.port ?? 0, host: "0.0.0.0", reuseAddress: true },
+      () => {
+        server.off("error", onError);
+        controller.signal.removeEventListener("abort", onAbort);
+        const address = server.address();
+        if (!address) {
+          reject(new Error("Local signaling server did not expose a port."));
+          return;
+        }
+        resolve(address.port);
       }
-      resolve(address.port);
-    });
+    );
   });
 
   const stop = () => {
@@ -252,6 +259,20 @@ export async function startNativeWebRtcDuelHost(
   }
 
   return { port, connection, stop };
+}
+
+/**
+ * One host-side reconnect attempt: listen on the invite's port again until the
+ * guest re-runs the handshake with the same QR credentials, or `signal` ends
+ * the attempt.
+ */
+export async function reconnectNativeWebRtcDuelHost(
+  auth: WebRtcSessionAuth,
+  port: number,
+  signal: AbortSignal
+): Promise<DuelTransportConnection> {
+  const host = await startNativeWebRtcDuelHost(auth, { port, signal });
+  return host.connection;
 }
 
 export function connectNativeWebRtcDuelGuest(
