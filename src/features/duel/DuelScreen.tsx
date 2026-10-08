@@ -394,7 +394,8 @@ export function DuelScreen({
     try {
       const outcome = await submitMatchResult(completedResult, self.id);
       setSaveState({ result: completedResult, status: outcome.status });
-    } catch {
+    } catch (error) {
+      console.warn("Could not save the match result:", error);
       setSaveState({ result: completedResult, status: "error" });
     } finally {
       if (savingResultRef.current === completedResult)

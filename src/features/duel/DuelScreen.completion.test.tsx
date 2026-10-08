@@ -130,9 +130,13 @@ describe("DuelScreen result saving", () => {
   );
 
   test("keeps the final round visible on failure and retries the same result", async () => {
+    const saveError = new Error("Permission denied");
+    const warn = jest
+      .spyOn(console, "warn")
+      .mockImplementation(() => undefined);
     jest
       .mocked(submitMatchResult)
-      .mockRejectedValueOnce(new Error("Permission denied"))
+      .mockRejectedValueOnce(saveError)
       .mockResolvedValueOnce({ status: "written", matchId: "match-1" });
     const view = await renderDuel();
     await finishMatch(view);
@@ -140,12 +144,17 @@ describe("DuelScreen result saving", () => {
     expect(
       view.getByText("Could not save the match result. Please retry.")
     ).toBeTruthy();
+    expect(warn).toHaveBeenCalledWith(
+      "Could not save the match result:",
+      saveError
+    );
     const firstResult = jest.mocked(submitMatchResult).mock.calls[0][0];
     await fireEvent.press(view.getByText("Retry saving result"));
     expect(jest.mocked(submitMatchResult).mock.calls[1][0]).toBe(firstResult);
     await fireEvent.press(view.getByText("See match result"));
     expect(view.getByText("Match complete")).toBeTruthy();
     await view.unmount();
+    warn.mockRestore();
   });
 
   test("saves a rematch under a distinct match ID", async () => {
