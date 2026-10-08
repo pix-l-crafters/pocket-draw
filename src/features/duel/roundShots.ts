@@ -1,8 +1,10 @@
-// Turns the pair of reaction times a round produces into a RoundOutcome.
-// Kept free of React so the rule "first to fire takes the round" is testable
-// without mounting the duel screens.
+// Turns captured shot zones, reaction times and false starts into a RoundOutcome.
 
-import type { RoundOutcome } from "../../contracts/roundOutcome";
+import {
+  ZONE_POINTS,
+  type RoundOutcome,
+  type Zone
+} from "../../contracts/roundOutcome";
 import { resolveRoundOutcome, type PlayerShot } from "./roundJudge";
 
 /** A shot has to land inside this window after FIRE, or it counts as a miss. */
@@ -12,6 +14,9 @@ export type RoundShots = {
   /** `null` means the player never fired inside the window. */
   selfReactionMs: number | null;
   opponentReactionMs: number | null;
+  selfZone: Zone;
+  opponentZone: Zone;
+  falseStartPlayer: "self" | "opponent" | null;
 };
 
 export type RoundPlayer = {
@@ -22,35 +27,44 @@ export type RoundPlayer = {
 /**
  * No shot becomes a miss at the window's edge, so the judge always has two
  * comparable shots to rank.
- *
- * Ponytail: every landed shot is a flat bodyshot — the pitch-zone classifier
- * isn't wired into this flow, so any zone here would be invented.
  */
 export function toPlayerShot(
   playerId: string,
-  reactionMs: number | null
+  reactionMs: number | null,
+  zone: Zone
 ): PlayerShot {
   return reactionMs === null
     ? { playerId, reactionMs: FIRE_WINDOW_MS, zone: "miss" }
-    : { playerId, reactionMs, zone: "bodyshot" };
+    : { playerId, reactionMs, zone };
 }
 
 /**
- * Whoever fired first takes the round. The tie window is zero, so only an
- * exactly equal pair of reaction times ties.
- *
- * Both devices run this over the same two numbers — each sends its own reaction
- * time across the channel — so they reach the same outcome without either side
- * acting as the scorer.
+ * Both devices judge the same captured zones and reaction times with the
+ * configured tie window, without either side acting as the scorer.
  */
 export function judgeRoundShots(
   self: RoundPlayer,
   opponent: RoundPlayer,
   shots: RoundShots
 ): RoundOutcome {
+  if (shots.falseStartPlayer !== null) {
+    const selfOffended = shots.falseStartPlayer === "self";
+    const reactionMs = selfOffended
+      ? shots.opponentReactionMs
+      : shots.selfReactionMs;
+    const zone = selfOffended ? shots.opponentZone : shots.selfZone;
+    return {
+      kind: "falseStart",
+      playerId: selfOffended ? self.id : opponent.id,
+      nonOffenderId: selfOffended ? opponent.id : self.id,
+      nonOffenderShot:
+        reactionMs === null
+          ? null
+          : { reactionMs, zone, points: ZONE_POINTS[zone] }
+    };
+  }
   return resolveRoundOutcome(
-    toPlayerShot(self.id, shots.selfReactionMs),
-    toPlayerShot(opponent.id, shots.opponentReactionMs),
-    0
+    toPlayerShot(self.id, shots.selfReactionMs, shots.selfZone),
+    toPlayerShot(opponent.id, shots.opponentReactionMs, shots.opponentZone)
   );
 }

@@ -2,19 +2,20 @@
 
 This roadmap maps the current checked worktree and GitHub issue state to the Assignment 2 rubric and the team's 9 Oct 2026 internal freeze. It preserves the product design decisions and points to GitHub issues for executable work.
 
-## Current state (checked 2026-10-04)
+## Current state (baseline checked 2026-10-04; #50/#81 implementation update 2026-10-08)
 
 Implemented in the checked worktree:
 
 - Firebase auth, live player map, QR invite generation, profile/settings screen, and Android map configuration.
 - Gameplay-v2 zone scoring, fixed 3-round + tiebreak structure, clock-offset calibration, iOS tap-to-fire, instructions, match-result writes, and offline queue.
 - Native WebRTC signaling/DataChannel and Wi-Fi/hotspot connection flows are present; issues #45–#49 are closed.
+- #50 + #81 implementation supplied on 2026-10-08: both players' explicit pitch calibration, live calibrated/aim-gated shots over `DuelChannel`, and enriched early-input/movement false starts. Final Android+iOS hardware evidence remains pending under #54.
 
 Still incomplete or unverified:
 
 - QR confirmation still attempts the unsupported `challengeRequests` write and does not reliably enter the duel. Open PR [#72](https://github.com/pix-l-crafters/pocket-draw/pull/72) addresses both; its GitHub checks were failing when reviewed.
 - BLE is a stub; issue #51 remains open for WebRTC cutover and BLE-stack removal. WebRTC is not counted as demo-ready until exercised between real Android and iPhone devices.
-- Android volume-button fire (#37), draw stats (#40), false-start shot persistence (#64), four-tab navigation (#44), real leaderboard rankings (#42), onboarding/demo script (#53), and full device QA (#54) remain open.
+- Draw stats (#40), four-tab navigation (#44), real leaderboard rankings (#42), onboarding/demo script (#53), and full device QA (#54) remain baseline open items. Android volume fire and non-offender false-start scoring are supplied in the #50/#81 implementation update, not claimed hardware-verified.
 - The code contains Profile and Leaderboard screens, but `App.tsx` currently exposes only Map / Challenge / Profile. A screen existing in source is not proof that the shipped flow reaches it.
 
 Closed implementation issues include Android map/audio fixes (#34–#35), zone scoring (#36), iOS fire (#38), match tally (#39), instructions (#41), Profile (#43), and WebRTC/network/clock/recovery work (#45–#49). Device verification is still outstanding under #54.
@@ -54,8 +55,8 @@ These cut across multiple issues below, decided up front so individual issues do
 5. **WebRTC becomes the sole transport; BLE is removed entirely.** Not additive — a full replacement. The QR code becomes the WebRTC pairing point, carrying WiFi/hotspot connection info instead of (or alongside) the existing BLE discovery token. See "Connectivity architecture" below and the full [connectivity rewrite spec](../superpowers/specs/2026-09-17-connectivity-rewrite-design.md).
 6. **Reaction-time fairness needs clock-offset calibration**, folded into the existing pre-round calibration step rather than shipped as a separate wait.
 7. **The Android map and the haptics-only fire cue are both fixed as part of this pass**, not left as separate untracked bugs — see the two subsections below.
-8. **The fire mechanic and round scoring are rebuilt to match Gameplay v2, not v1.** The current implementation auto-fires on a raise gesture and scores purely on reaction time (win/tie/falseStart, no headshot/bodyshot) — that's v1's model.
-   v2 requires a manual fire trigger and height-zone-based scoring. See "Fire mechanic & scoring" below and the full [fire mechanic & scoring spec](../superpowers/specs/2026-09-17-fire-mechanic-scoring-design.md).
+8. **The fire mechanic and round scoring match Gameplay v2, not v1.** Manual fire, calibrated pitch zones, actual compass/GPS aim gating, and enriched false starts replace automatic raise/reaction-only scoring.
+   See "Fire mechanic & scoring" below and the full [fire mechanic & scoring spec](../superpowers/specs/2026-09-17-fire-mechanic-scoring-design.md).
 
 ### Connectivity architecture
 
@@ -88,18 +89,36 @@ The countdown now pairs audio with haptics (#35). Confirm both cues are audible/
 
 Full spec: [`docs/superpowers/specs/2026-09-17-fire-mechanic-scoring-design.md`](../superpowers/specs/2026-09-17-fire-mechanic-scoring-design.md).
 
-The checked implementation uses manual fire and pitch-zone scoring, not v1's
-auto-fire/reaction-only model. The iOS tap trigger is implemented (#38); the Android
-volume-button trigger remains open (#37). Zone classification uses sensor-fused pitch
-through ready-to-shoulder calibration, not double-integrated position. The fixed
-angular headshot band approximates the product spec's centimeter measurement;
-disclose it and test sensor stability on-device (#54).
+The #50 + #81 implementation supplies manual fire and real calibrated pitch-zone
+scoring, followed by compass-versus-live-GPS aim gating. Both players capture ready
+then shoulder before PreRound; accepted-duel rematches reuse calibration. The fixed
+pitch bands (bodyshot 0.8–1.0, headshot >1.0–1.2 of the calibrated arc) approximate
+centimeter height and still require on-device tuning under #54.
+The pitch cutover removes the unused accelerometer calibration producer.
+Instructions remain scrollable so “I'm Ready” is reachable, and calibration
+retains an Exit action through the existing duel leave path.
+
+Aim requires true-north heading accuracy level 3 within a tunable ±30° cone, fresh
+heading (2 seconds) and GPS (5 seconds), and separation beyond combined GPS
+uncertainty. Unavailable/stale/overlapping readings miss, with no bodyshot fallback.
+Public map presence is ~110 m rounded and removed on map exit, so it cannot supply
+close-range bearing. Precise GPS is intentionally shared only with the accepted
+peer over `DuelChannel`, not written precisely to Firestore; public-location privacy
+is unchanged. `sampleAtMs` is the actual sender GPS fix timestamp, not send time.
+The existing calibrated peer-clock offset converts it to local fix time:
+`localFixTime = sampleAtMs - clockOffsetMs` (offset is peer clock minus local clock).
+Freshness therefore includes network flight delay; repeating a fix does not renew
+it. Capture uses the latest calibrated offset, including for fixes already received.
 
 **Round scoring:** order both players' shots by reaction time. Outside the tie window, classify the faster shot's landing height into miss/bodyshot/headshot — if valid, that player scores those points and the other scores 0; if the faster shot is a miss, fall through and classify the slower shot the same way; if both miss, the round is 0-0.
-Within the tie window (near-simultaneous fire), classify **both** shots independently — each player scores their own zone value regardless of the other's timing — and whoever scores higher wins; equal scores (including a double miss) tie, with both keeping their equal points.
-`falseStart` stays as its own outcome kind. Issue #64 remains open to persist the non-offending player's actual shot and score.
+Within the 100 ms tie window (near-simultaneous fire), classify **both** shots independently — each player scores their own zone value regardless of the other's timing — and whoever scores higher wins; equal scores (including a double miss) tie, with both keeping their equal points.
+`falseStart` stays as its own enriched outcome kind: early countdown tap, volume,
+or movement disqualifies the offender, while the non-offender can fire after normal
+FIRE for actual 0/1/2 shot points and timing. The #81 implementation supplies this
+live scoring path; final-device verification is not claimed.
 
-**Fire trigger:** Android volume-button interception is tracked in #37; iOS uses the implemented tap-to-fire trigger. Do not add the documented iOS volume-button alternatives under this deadline.
+**Fire trigger:** tap remains reliable on both platforms. Android intercepts volume
+keys; iOS output-volume observation is approximate (endpoint presses may not register).
 
 ## Submission sequence — 9 Oct internal freeze
 
@@ -114,10 +133,11 @@ Within the tie window (near-simultaneous fire), classify **both** shots independ
 
 ### 3. Finish gameplay result correctness
 
-- **Issue #37:** implement Android volume-button fire; iOS tap-to-fire (#38) is already closed.
-- **Issue #64:** preserve the non-offending player's shot and points on a false start.
+- **Issue #37:** Android volume fire implementation supplied; verify actual keys on final hardware.
+- **Issue #64:** non-offender shot/points are supplied in #81's live false-start path; verify both-client agreement and persistence.
+- **Issues #50 + #81:** combined implementation supplied; retain actual two-client zone/timing agreement and false-start scoring. Do not defer the bearing gate as a disclosed-only simplification; validate it under #54.
 - **Issue #40:** include draws in the player-stats surface.
-- Keep all three inside the Oct 9 freeze if the team is submitting Gameplay v2 as its current product.
+- Keep gameplay result correctness inside the Oct 9 freeze if the team is submitting Gameplay v2 as its current product.
 
 ### 4. Finish the user-facing flow
 
@@ -129,11 +149,21 @@ Within the tie window (near-simultaneous fire), classify **both** shots independ
 - **Issue #54:** run the full Android+iOS loop after #44 and #51. Cover map/presence, QR, connection, countdown/fire timing, scoring/tie/false-start, match persistence, offline queue flush, and permission-denial recovery. Include an uncoached user run. Record device/model, method, and measured timing; do not present mocks or source presence as hardware proof.
 - **Issue #80:** complete the report, <=10-minute demo video, Android Studio compile screenshot, source ZIP, commit-log ZIP, itemized individual contributions, and individual-viva preparation. The report must map every Assignment 2 rubric row (including UI and Material) to evidence.
 
+#### #54 final-phone gameplay checklist
+
+**Not executed on the final Android+iOS phones here.** Record device models,
+OS/build, method, and measured results for every case; tests/source are not device evidence.
+
+- Check precise GPS accuracy/freshness and true-north heading sanity at known directions; test the ±30° boundary and facing-away misses on both phones. Unavailable/stale sensors and overlapping GPS uncertainty must miss.
+- Capture ready then shoulder on each phone; measure/tune pitch body/head/miss thresholds. Test denied/unavailable motion and location, retry, Settings, and foreground permission recovery.
+- Exercise tap/volume controls, bodyshot/headshot/miss, faster-miss fallthrough, early tap/volume/movement, and the non-offender's actual post-buzz score on both devices.
+- Run full three-round matches, 100 ms ties, one tiebreaker and final draw; verify both clients agree on zones, timing, offender, round points, and match result. Check rematches reuse calibration.
+- Measure cue/fire timing and input/sensor latency on both devices; report measured results, not an assumed 20 ms target.
+
 ### Defer until the submission path and materials are ready
 
 - **Issue #42:** full real leaderboard rankings; the submitted Assignment 1 plan treated a leaderboard as an extra, not an MVP pass condition.
 - **Issue #52:** average-reaction-time ranking.
-- **Issue #50:** real aim/bearing check.
 
 The team's internal freeze is 9 Oct 2026. The Assignment 2 portal date shown in the rubric is 12 Oct 2026, 23:59; reserve the gap for packaging and final validation, not new features.
 
