@@ -287,6 +287,7 @@ async function renderPhones() {
   return {
     view,
     phones,
+    hostChannel,
     press,
     calibrate,
     position,
@@ -326,6 +327,7 @@ describe("DuelScreen real two-phone gameplay", () => {
       const {
         view,
         phones,
+        hostChannel,
         press,
         calibrate,
         position,
@@ -354,7 +356,19 @@ describe("DuelScreen real two-phone gameplay", () => {
 
       // Round 1: independently calibrated bodyshots inside the 100ms window.
       await advance(200);
-      await shoot("host", 0.9);
+      const hostSend = jest.spyOn(hostChannel, "send");
+      mockPhones.host.pitch = 0.9;
+      await act(() => publishSensors("host"));
+      expect(mockVolumeListeners.size).toBe(2);
+      await act(() => {
+        const pressVolume = [...mockVolumeListeners][0];
+        pressVolume();
+        pressVolume();
+      });
+      await fireEvent.press(phones.host.getByRole("button", { name: "Fire" }));
+      expect(
+        hostSend.mock.calls.filter(([message]) => message.type === "raised")
+      ).toHaveLength(1);
       await advance(50);
       await shoot("guest", 0.9);
       for (const phone of [phones.host, phones.guest]) {
