@@ -215,33 +215,46 @@ describe("PreRound countdown and draw", () => {
     expect(retries).toHaveBeenCalledTimes(1);
   });
 
-  it("reports both reaction times once each player has fired", async () => {
-    const { completeRitual, deliver, sent, shots, view, wait } =
-      await renderPreRound("host");
-    await completeRitual();
-    await wait(COUNTDOWN_DURATION_MS);
+  it.each(["android", "ios"] as const)(
+    "keeps tap-to-fire working on %s",
+    async (platform) => {
+      const { completeRitual, deliver, sent, shots, view, wait } =
+        await renderPreRound("host", {}, platform);
+      await completeRitual(
+        platform === "ios" ? { x: 0, y: 1, z: 0 } : undefined
+      );
+      await wait(COUNTDOWN_DURATION_MS);
+      expect(view.getByText("FIRE!")).toBeTruthy();
+      await wait(400);
+      await fireEvent.press(view.getByLabelText("Fire"));
+      await deliver({ type: "raised", atMs: 1, reactionMs: 900 });
 
-    await wait(400);
-    await fireEvent.press(view.getByLabelText("Fire"));
-    await deliver({ type: "raised", atMs: 1, reactionMs: 900 });
+      expect(shots).toEqual([{ selfReactionMs: 400, opponentReactionMs: 900 }]);
+      expect(sent.at(-1)).toMatchObject({ type: "raised", reactionMs: 400 });
+    }
+  );
 
-    expect(shots).toEqual([{ selfReactionMs: 400, opponentReactionMs: 900 }]);
-    expect(sent.at(-1)).toMatchObject({ type: "raised", reactionMs: 400 });
-  });
-
-  it.each(["up", "down"] as const)(
-    "fires from Android volume %s only during the active fire window",
-    async (direction) => {
-      const { completeRitual, pressVolume, sent, shots, wait } =
-        await renderPreRound("host");
+  it.each([
+    ["android", "up"],
+    ["android", "down"],
+    ["ios", "up"],
+    ["ios", "down"]
+  ] as const)(
+    "fires from %s volume %s only during the active fire window",
+    async (platform, direction) => {
+      const { completeRitual, pressVolume, sent, shots, view, wait } =
+        await renderPreRound("host", {}, platform);
       await pressVolume(direction);
       expect(sent).toEqual([]);
 
-      await completeRitual();
+      await completeRitual(
+        platform === "ios" ? { x: 0, y: 1, z: 0 } : undefined
+      );
       await pressVolume(direction);
       expect(sent.filter((message) => message.type === "raised")).toEqual([]);
 
       await wait(COUNTDOWN_DURATION_MS);
+      expect(view.getByText("FIRE!")).toBeTruthy();
       await wait(400);
       await pressVolume(direction, 2);
       expect(sent.filter((message) => message.type === "raised")).toEqual([

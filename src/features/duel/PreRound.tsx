@@ -245,7 +245,12 @@ export function PreRound({
   };
 
   useEffect(() => {
-    if (Platform.OS !== "android" || phase !== "fire") return undefined;
+    if (
+      phase !== "fire" ||
+      (Platform.OS !== "android" && Platform.OS !== "ios")
+    ) {
+      return undefined;
+    }
     return subscribeVolumeFire(handleFire);
   }, [phase]);
 
@@ -373,8 +378,8 @@ export function PreRound({
           </Button>
         )}
 
-      {/* Keep the full-screen tap target for iOS and accessibility. Android's
-          volume buttons use the same handler while the fire window is active. */}
+      {/* Android intercepts volume keys; iOS observes volume changes while
+          preserving the normal volume adjustment. Tap remains available. */}
       {phase === "fire" && (
         <Pressable
           accessibilityLabel="Fire"
@@ -387,7 +392,9 @@ export function PreRound({
             {selfReactionMs === null
               ? Platform.OS === "android"
                 ? "PRESS VOLUME OR TAP ANYWHERE"
-                : "TAP ANYWHERE"
+                : Platform.OS === "ios"
+                  ? "VOLUME BUTTONS FIRE AND CHANGE VOLUME — OR TAP"
+                  : "TAP ANYWHERE"
               : `${selfReactionMs}ms — ${
                   opponentReactionMs === null
                     ? "waiting for your opponent"

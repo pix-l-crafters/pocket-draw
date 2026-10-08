@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file. See [conven
 ### Features
 
 - Include drawn matches in player stats and show live stats in player popups and profile.
+- **(duel)** add iOS volume-change fire input alongside tap; volume adjustment remains active.
 
 ---
 
