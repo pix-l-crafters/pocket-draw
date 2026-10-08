@@ -58,6 +58,7 @@ firebase-debug.log
 megalinter-reports/
 modules/local-only-hotspot/android/.gradle/
 modules/local-only-hotspot/android/build
+modules/volume-fire/android/build
 node_modules/
 report/
 target/
