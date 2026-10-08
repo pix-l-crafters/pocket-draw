@@ -35,7 +35,6 @@ export const challengeRequestRepository: ChallengeRequestRepository = {
       challengerId: handoff.challengerId,
       scannedPlayerId: handoff.scannedPlayerId,
       scannedPlayerName: handoff.scannedPlayerName,
-      roundCount: handoff.roundCount,
       matchId: handoff.matchId,
       status: "pending",
       createdAt: serverTimestamp(),

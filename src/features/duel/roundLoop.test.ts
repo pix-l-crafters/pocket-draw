@@ -48,7 +48,6 @@ describe("roundLoop", () => {
     expect(matchResults(state)).toEqual({ a: "win", b: "lose" });
     expect(toMatchResult(state, "match-1")).toMatchObject({
       matchId: "match-1",
-      roundCount: 3,
       results: { a: "win", b: "lose" }
     });
   });

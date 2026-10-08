@@ -49,7 +49,6 @@ service cloud.firestore {
         'participantIds',
         'rounds',
         'results',
-        'roundCount',
         'completedAt',
         'uploadedBy',
         'createdAt'
@@ -58,7 +57,6 @@ service cloud.firestore {
         'participantIds',
         'rounds',
         'results',
-        'roundCount',
         'completedAt',
         'uploadedBy',
         'createdAt'
@@ -76,7 +74,6 @@ service cloud.firestore {
         && data.participantIds[0].size() > 0
         && data.participantIds[1].size() > 0
         && data.participantIds[0] != data.participantIds[1]
-        && data.roundCount == 3
         && data.rounds is list
         && data.rounds.size() >= 3
         && data.rounds.size() <= 4
@@ -120,7 +117,6 @@ service cloud.firestore {
         'challengerId',
         'scannedPlayerId',
         'scannedPlayerName',
-        'roundCount',
         'matchId',
         'status',
         'createdAt',
@@ -129,7 +125,6 @@ service cloud.firestore {
         'challengerId',
         'scannedPlayerId',
         'scannedPlayerName',
-        'roundCount',
         'matchId',
         'status',
         'createdAt',
@@ -145,8 +140,6 @@ service cloud.firestore {
         && data.challengerId != data.scannedPlayerId
         && data.scannedPlayerName is string
         && data.scannedPlayerName.size() > 0
-        && data.roundCount is int
-        && data.roundCount == 3
         && data.matchId is string
         && data.matchId.size() > 0
         && data.status == 'pending'

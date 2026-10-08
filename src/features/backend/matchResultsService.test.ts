@@ -32,7 +32,6 @@ jest.mock("./playerStatsRepository", () => ({
 const result: MatchResult = {
   matchId: "match-1",
   participantIds: ["player-a", "player-b"],
-  roundCount: 3,
   rounds: [
     {
       kind: "falseStart",

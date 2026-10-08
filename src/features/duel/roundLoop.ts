@@ -14,7 +14,6 @@ export const MAX_ROUND_COUNT = 4;
 
 export interface RoundLoopState {
   participantIds: [string, string];
-  roundCount: 3;
   rounds: RoundOutcome[];
   scores: Record<string, number>;
 }
@@ -25,7 +24,6 @@ export function createRoundLoop(
   const [a, b] = participantIds;
   return {
     participantIds,
-    roundCount: REGULAR_ROUND_COUNT,
     rounds: [],
     scores: { [a]: 0, [b]: 0 }
   };
@@ -129,7 +127,6 @@ export function toMatchResult(
   return {
     matchId,
     participantIds: state.participantIds,
-    roundCount: state.roundCount,
     rounds: state.rounds,
     results,
     completedAt

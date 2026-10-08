@@ -8,7 +8,6 @@ export type PlayerMatchResult = "win" | "lose" | "draw";
 export interface MatchResult {
   matchId: string;
   participantIds: [string, string];
-  roundCount: 3;
   rounds: RoundOutcome[];
   results: Record<string, PlayerMatchResult>;
   completedAt: string; // ISO timestamp

@@ -41,7 +41,6 @@ export function mockMatchResult(
   return {
     matchId: `mock-${Date.now()}`,
     participantIds: [playerAId, playerBId],
-    roundCount: 3,
     rounds,
     results: { [playerAId]: "win", [playerBId]: "lose" },
     completedAt: new Date().toISOString()
