@@ -1,19 +1,14 @@
 import { useEffect, useState } from "react";
 
-import { mockPlayerStats } from "../contracts/mocks/mockPlayerStats";
 import type { PlayerStats } from "../contracts/playerStats";
+import { playerStatsRepository } from "../features/backend/playerStatsRepository";
 
 type PlayerIdentity = {
   uid: string;
   displayName: string;
 };
 
-/**
- * Wins / losses / ELO for a player, shared by the map's opponent card and the
- * profile screen. Currently backed by `mockPlayerStats`; swap for the real
- * backend lookup once Mihir's stats work (5.1/5.4/5.5) lands and delete the
- * mock import.
- */
+/** Loads match outcomes and ELO for a player. */
 export function usePlayerStats(
   player: PlayerIdentity | null
 ): PlayerStats | null {
@@ -30,11 +25,18 @@ export function usePlayerStats(
 
     let active = true;
 
-    void Promise.resolve(mockPlayerStats(uid, displayName)).then((result) => {
-      if (active) {
-        setStats(result);
-      }
-    });
+    void playerStatsRepository
+      .getPlayerStats(uid, displayName)
+      .then((result) => {
+        if (active) {
+          setStats(result);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setStats(null);
+        }
+      });
 
     return () => {
       active = false;

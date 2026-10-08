@@ -50,6 +50,30 @@ describe("playerStatsRepository", () => {
     jest.mocked(setDoc).mockResolvedValue(undefined as never);
   });
 
+  test("counts draws from the player's match results", async () => {
+    jest.mocked(getDocs).mockResolvedValue({
+      docs: [
+        {
+          data: () => ({
+            matchId: "drawn-match",
+            participantIds: ["player-a", "player-b"],
+            results: { "player-a": "draw", "player-b": "draw" },
+            completedAt: "2026-10-07T12:00:00.000Z"
+          })
+        }
+      ]
+    } as never);
+    jest.mocked(getDoc).mockResolvedValue(snapshot({ eloRating: 1510 }));
+
+    await expect(
+      playerStatsRepository.getPlayerStats("player-a", "Quick Draw")
+    ).resolves.toMatchObject({
+      wins: 0,
+      losses: 0,
+      draws: 1,
+      eloRating: 1510
+    });
+  });
   test("loads the stored ELO rating instead of replaying match history", async () => {
     jest.mocked(getDoc).mockResolvedValue(snapshot({ eloRating: 1624 }));
 

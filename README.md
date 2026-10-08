@@ -63,3 +63,39 @@ The key is read by [app.config.ts](./app.config.ts) at build time and written in
 `AndroidManifest.xml`, so you must rebuild the development client after changing it.
 Metro reloads alone are not enough. EAS builds get the same variable from the project's
 EAS environment variables instead of `.env`.
+
+### Build Android locally with mise
+
+Install [mise](https://mise.jdx.dev/getting-started.html), then run:
+
+```sh
+mise trust
+mise install
+mise run prepare
+mise run build-android       # AAB
+mise run build-android-apk   # APK
+```
+
+Both build tasks install the required Android SDK packages, generate the native
+Android project with Expo, and run its Gradle wrapper. Android Studio, an emulator,
+and an Expo account are not needed to compile. SDK packages live in a stable
+machine-local directory selected by `ANDROID_HOME` in `mise.toml`.
+
+Outputs are `android/app/build/outputs/bundle/release/app-release.aab` and
+`android/app/build/outputs/apk/release/app-release.apk`. The generated project uses
+a debug signing key by default; configure release signing before publishing.
+
+These tasks include commands for Linux, macOS, and native Windows. In WSL, install
+mise and the tools inside WSL and keep the checkout in its Linux filesystem. Use
+separate SDK installations for Windows and WSL. Linux requires x86-64 for the
+current Android CLI; macOS supports Intel and Apple Silicon.
+
+To refresh the managed tools, run `mise upgrade android-cli java node` and review
+`mise.lock`. Update the SDK package versions in `android-setup` when upgrading
+Expo/React Native. The project's Gradle wrapper supplies the compatible Gradle
+version; a standalone Gradle installation is unnecessary.
+
+If `android/` was generated with a different Expo version, save any custom native
+changes and run `mise exec -- npx expo prebuild --platform android --clean --no-install`
+once before building. `--clean` deletes and regenerates that native directory;
+the normal build tasks preserve it.

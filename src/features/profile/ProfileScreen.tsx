@@ -18,9 +18,6 @@ type ProfileScreenProps = {
   uid: string;
 };
 
-// Draws and average reaction time are in UI.md but not in the PlayerStats
-// contract yet (roadmap items 7/8 add match-level draws). Showing a real
-// three-tile row beats padding it with placeholders that never fill in.
 export function ProfileScreen({ displayName, email, uid }: ProfileScreenProps) {
   const [openDialog, setOpenDialog] = useState<"username" | "password" | null>(
     null
@@ -69,6 +66,10 @@ export function ProfileScreen({ displayName, email, uid }: ProfileScreenProps) {
           <StatTile
             label="Losses"
             value={format(stats?.losses)}
+          />
+          <StatTile
+            label="Draws"
+            value={format(stats?.draws)}
           />
           <StatTile
             label="ELO"
