@@ -17,11 +17,15 @@ const nativeDependencies: ExistingWifiDependencies = {
   getIpAddressAsync: Network.getIpAddressAsync
 };
 
+function isOnWifi(state: NetworkSnapshot): boolean {
+  return state.type === "WIFI" && state.isConnected === true;
+}
+
 export async function getExistingWifiHostIp(
   dependencies: ExistingWifiDependencies = nativeDependencies
 ): Promise<string> {
   const state = await dependencies.getNetworkStateAsync();
-  if (state.type !== "WIFI" || state.isConnected !== true) {
+  if (!isOnWifi(state)) {
     throw new Error("Connect this device to Wi-Fi before creating an invite.");
   }
 
@@ -32,6 +36,21 @@ export async function getExistingWifiHostIp(
     );
   }
   return hostIp;
+}
+
+/**
+ * The guest side of a shared-Wi-Fi invite. Without this, a guest on mobile data
+ * burns every retry on TCP timeouts before seeing a generic failure.
+ */
+export async function assertConnectedToWifi(
+  dependencies: Pick<
+    ExistingWifiDependencies,
+    "getNetworkStateAsync"
+  > = nativeDependencies
+): Promise<void> {
+  if (!isOnWifi(await dependencies.getNetworkStateAsync())) {
+    throw new Error("Join the same Wi-Fi as your opponent, then try again.");
+  }
 }
 
 export function subscribeToNetworkChanges(onChange: () => void): () => void {

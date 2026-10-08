@@ -1,3 +1,5 @@
+import { Platform } from "react-native";
+
 import type {
   DuelConnectionInfo,
   HotspotConnection
@@ -31,6 +33,12 @@ type WifiConnector = {
   }): Promise<void>;
 };
 
+type HotspotReleaseDependencies = {
+  platform: typeof Platform.OS;
+  stopHostedHotspot: () => void;
+  leaveNetwork: (ssid: string) => Promise<unknown>;
+};
+
 /** Joining a hotspot needs the same nearby-Wi-Fi grant as creating one. */
 type JoinHotspotDependencies = WifiConnector & {
   ensurePermission: () => Promise<PermissionOutcome>;
@@ -48,8 +56,20 @@ function abortError(): Error {
   return error;
 }
 
+// The hotspot this device joined as a guest. The OS keeps the device on it
+// after the duel unless the app leaves explicitly, and a local-only hotspot
+// has no internet, so match results could not reach Firestore.
+let joinedHotspotSsid: string | null = null;
+
 function getWifiConnector(): WifiConnector {
   return require("react-native-wifi-reborn").default as WifiConnector;
+}
+
+function getWifiReleaser(): {
+  disconnect: () => Promise<boolean>;
+  disconnectFromSSID: (ssid: string) => Promise<void>;
+} {
+  return require("react-native-wifi-reborn").default;
 }
 
 function nativeJoinDependencies(): JoinHotspotDependencies {
@@ -134,6 +154,44 @@ export async function joinHotspot(
     isHidden: false,
     timeout: 15
   });
+  joinedHotspotSsid = connection.ssid;
+}
+
+function nativeReleaseDependencies(): HotspotReleaseDependencies {
+  return {
+    platform: Platform.OS,
+    stopHostedHotspot: () => getLocalOnlyHotspotModule().stop(),
+    leaveNetwork: (ssid) =>
+      Platform.OS === "android"
+        ? getWifiReleaser().disconnect()
+        : getWifiReleaser().disconnectFromSSID(ssid)
+  };
+}
+
+/**
+ * Undoes whatever hotspot networking a duel set up: an Android host stops its
+ * local-only hotspot, and a guest leaves the hotspot it joined. Safe to call
+ * when neither applies. Failures are swallowed — the duel is over and the OS
+ * reclaims both when the app exits.
+ */
+export async function releaseHotspotNetworks(
+  dependencies: HotspotReleaseDependencies = nativeReleaseDependencies()
+): Promise<void> {
+  if (dependencies.platform === "android") {
+    try {
+      dependencies.stopHostedHotspot();
+    } catch {
+      // Nothing was hosted, or the module is already torn down.
+    }
+  }
+  const ssid = joinedHotspotSsid;
+  joinedHotspotSsid = null;
+  if (!ssid) return;
+  try {
+    await dependencies.leaveNetwork(ssid);
+  } catch {
+    // The device already left the hotspot.
+  }
 }
 
 export function withNetworkPreparation(

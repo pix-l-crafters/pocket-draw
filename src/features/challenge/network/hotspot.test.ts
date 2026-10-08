@@ -5,6 +5,7 @@ import type {
 } from "../session/duelSessionTransport";
 import {
   joinHotspot,
+  releaseHotspotNetworks,
   startAndroidLocalOnlyHotspot,
   withNetworkPreparation,
   withReconnectPreparation
@@ -178,5 +179,25 @@ describe("hotspot networking", () => {
     await reconnecting.connect(params, signal);
 
     expect(events).toEqual(["join", "connect", "connect", "join", "connect"]);
+  });
+
+  it("leaves a joined hotspot once when the duel ends", async () => {
+    await joinHotspot(connection, {
+      ensurePermission: async () => allowed,
+      connectToProtectedWifiSSID: async () => undefined
+    });
+    const events: string[] = [];
+    const dependencies = {
+      platform: "android" as const,
+      stopHostedHotspot: () => events.push("stop"),
+      leaveNetwork: async (ssid: string) => {
+        events.push(`leave:${ssid}`);
+      }
+    };
+
+    await releaseHotspotNetworks(dependencies);
+    await releaseHotspotNetworks(dependencies);
+
+    expect(events).toEqual(["stop", "leave:PocketDraw-A1B2", "stop"]);
   });
 });

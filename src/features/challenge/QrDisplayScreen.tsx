@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -45,8 +45,18 @@ import {
   reconnectNativeWebRtcDuelHost,
   startNativeWebRtcDuelHost
 } from "./webrtc/nativeWebRtcTransport";
+import {
+  isAuthorizedPeer,
+  type WebRtcSessionAuth
+} from "./webrtc/signalingProtocol";
 
 const INVITE_LIFETIME_MS = 60_000;
+/**
+ * How long a code is still honoured after the screen moves on to a newer one.
+ * Scanning is only the start: the guest confirms, picks rounds, and may join a
+ * hotspot before its first connection attempt reaches this device.
+ */
+const INVITE_GRACE_MS = 60_000;
 const IOS_PERSONAL_HOTSPOT_IP = "172.20.10.1";
 
 type QrDisplayScreenProps = {
@@ -57,6 +67,7 @@ type QrDisplayScreenProps = {
 
 type InviteIdentity = Omit<QrInvitePayload, "connection">;
 type ConnectionMode = DuelConnectionInfo["mode"];
+type RetiredInvite = { identity: InviteIdentity; acceptUntil: number };
 
 function toSetupError(error: unknown, fallback: string): Error {
   return error instanceof Error ? error : new Error(fallback);
@@ -81,6 +92,14 @@ function createInviteIdentity(
   };
 }
 
+function sessionAuthOf(identity: InviteIdentity): WebRtcSessionAuth {
+  return {
+    matchId: identity.matchId,
+    challengeToken: identity.challengeToken,
+    discoveryToken: identity.discoveryToken
+  };
+}
+
 export function QrDisplayScreen({
   currentUser,
   onHostConnected
@@ -92,13 +111,22 @@ export function QrDisplayScreen({
   const [identity, setIdentity] = useState<InviteIdentity>(() =>
     createInviteIdentity(currentUser.uid, currentUser.displayName)
   );
-  const [invite, setInvite] = useState<QrInvitePayload | null>(null);
+  // Where the signaling server listens. It outlives individual codes, so a
+  // refresh changes only the credentials and the port stays reachable.
+  const [endpoint, setEndpoint] = useState<DuelConnectionInfo | null>(null);
+  // Bumped to restart the server (and an Android hotspot) on the same settings.
+  const [restartKey, setRestartKey] = useState(0);
   const [androidHotspot, setAndroidHotspot] = useState<HotspotNetwork | null>(
     null
   );
   // Once a guest connects over the hotspot, the duel depends on it, so leaving
-  // this screen must not tear the hotspot down.
+  // this screen must not tear the hotspot down; the duel session releases it.
   const hotspotHandedOff = useRef(false);
+  const identityRef = useRef(identity);
+  identityRef.current = identity;
+  const endpointRef = useRef(endpoint);
+  endpointRef.current = endpoint;
+  const retiredInvites = useRef(new Map<string, RetiredInvite>());
   // An Error rather than a string, so a refused permission can be told apart
   // from an ordinary setup failure and offered the right recovery.
   const [setupError, setSetupError] = useState<Error | null>(null);
@@ -112,12 +140,23 @@ export function QrDisplayScreen({
   );
 
   const regenerate = useCallback(() => {
-    setInvite(null);
+    const now = Date.now();
+    for (const [matchId, retired] of retiredInvites.current) {
+      if (retired.acceptUntil <= now) retiredInvites.current.delete(matchId);
+    }
+    const previous = identityRef.current;
+    retiredInvites.current.set(previous.matchId, {
+      identity: previous,
+      acceptUntil: now + INVITE_GRACE_MS
+    });
     setIdentity(createInviteIdentity(currentUser.uid, currentUser.displayName));
   }, [currentUser.displayName, currentUser.uid]);
 
   const changeConnectionMode = useCallback(
     (value: string) => {
+      // The other mode's error does not apply, and the new mode may wait on
+      // a hotspot or typed details before its server effect clears it.
+      setSetupError(null);
       setConnectionMode(value as ConnectionMode);
       setJoinFailure(null);
       regenerate();
@@ -125,10 +164,32 @@ export function QrDisplayScreen({
     [regenerate]
   );
 
+  const generateNewCode = useCallback(() => {
+    regenerate();
+    // A fresh code cannot fix a server or hotspot that never started.
+    if (setupError) setRestartKey((key) => key + 1);
+  }, [regenerate, setupError]);
+
+  // Network events also fire for reachability changes that keep the same
+  // address; only a new address (or losing Wi-Fi) restarts the server.
   useEffect(() => {
     if (connectionMode !== "existingWifi") return undefined;
-    return subscribeToNetworkChanges(regenerate);
-  }, [connectionMode, regenerate]);
+    let active = true;
+    const unsubscribe = subscribeToNetworkChanges(() => {
+      void getExistingWifiHostIp()
+        .then(
+          (hostIp) => hostIp !== endpointRef.current?.hostIp,
+          () => true
+        )
+        .then((changed) => {
+          if (active && changed) setRestartKey((key) => key + 1);
+        });
+    });
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, [connectionMode]);
 
   // Regenerating alone only rotates the invite — the hotspot effect below is
   // keyed on the mode, so retrying a refused permission needs its own trigger.
@@ -176,20 +237,35 @@ export function QrDisplayScreen({
     let active = true;
     let stopHost: (() => void) | null = null;
 
+    setEndpoint(null);
     if (
       connectionMode === "hotspot" &&
       Platform.OS === "android" &&
       !androidHotspot
     ) {
-      setInvite(null);
       return undefined;
     }
-
+    if (
+      connectionMode === "hotspot" &&
+      Platform.OS === "ios" &&
+      (!isValidWifiSsid(manualSsid) || !isValidHotspotPassword(manualPassword))
+    ) {
+      return undefined;
+    }
     setSetupError(null);
-    setInvite(null);
-    setSecondsLeft(
-      Math.max(0, Math.ceil((identity.expiresAt - Date.now()) / 1000))
-    );
+
+    // The current code, or a recently replaced one still inside its grace.
+    const authorize = (received: WebRtcSessionAuth) => {
+      if (isAuthorizedPeer(sessionAuthOf(identityRef.current), received)) {
+        return true;
+      }
+      const retired = retiredInvites.current.get(received.matchId);
+      return (
+        retired !== undefined &&
+        retired.acceptUntil > Date.now() &&
+        isAuthorizedPeer(sessionAuthOf(retired.identity), received)
+      );
+    };
 
     const startHost = async () => {
       try {
@@ -207,12 +283,6 @@ export function QrDisplayScreen({
             signalPort: 0
           };
         } else if (Platform.OS === "ios") {
-          if (
-            !isValidWifiSsid(manualSsid) ||
-            !isValidHotspotPassword(manualPassword)
-          ) {
-            return;
-          }
           connection = {
             mode: "hotspot",
             ssid: manualSsid.trim(),
@@ -226,12 +296,7 @@ export function QrDisplayScreen({
           );
         }
 
-        const auth = {
-          matchId: identity.matchId,
-          challengeToken: identity.challengeToken,
-          discoveryToken: identity.discoveryToken
-        };
-        const host = await startNativeWebRtcDuelHost(auth, {
+        const host = await startNativeWebRtcDuelHost(authorize, {
           signal: controller.signal
         });
         stopHost = host.stop;
@@ -239,19 +304,30 @@ export function QrDisplayScreen({
           host.stop();
           return;
         }
-
-        const readyInvite: QrInvitePayload = {
-          ...identity,
-          connection: { ...connection, signalPort: host.port }
+        const listening: DuelConnectionInfo = {
+          ...connection,
+          signalPort: host.port
         };
-        setInvite(readyInvite);
+        setEndpoint(listening);
 
         void host.connection.then(
-          (duelConnection) => {
+          ({ connection: duelConnection, auth }) => {
             if (!active) {
               duelConnection.disconnect();
               return;
             }
+            const scanned =
+              auth.matchId === identityRef.current.matchId
+                ? identityRef.current
+                : retiredInvites.current.get(auth.matchId)?.identity;
+            if (!scanned) {
+              duelConnection.disconnect();
+              return;
+            }
+            const readyInvite: QrInvitePayload = {
+              ...scanned,
+              connection: listening
+            };
             const ownsAndroidHotspot =
               connection.mode === "hotspot" && Platform.OS === "android";
             if (ownsAndroidHotspot) hotspotHandedOff.current = true;
@@ -297,14 +373,17 @@ export function QrDisplayScreen({
   }, [
     androidHotspot,
     connectionMode,
-    identity,
     manualPassword,
     manualSsid,
     onHostConnected,
-    regenerate
+    regenerate,
+    restartKey
   ]);
 
   useEffect(() => {
+    setSecondsLeft(
+      Math.max(0, Math.ceil((identity.expiresAt - Date.now()) / 1000))
+    );
     const interval = setInterval(() => {
       const remainingMs = identity.expiresAt - Date.now();
       if (remainingMs <= 0) {
@@ -316,6 +395,11 @@ export function QrDisplayScreen({
 
     return () => clearInterval(interval);
   }, [identity.expiresAt, regenerate]);
+
+  const invite = useMemo<QrInvitePayload | null>(
+    () => (endpoint ? { ...identity, connection: endpoint } : null),
+    [endpoint, identity]
+  );
 
   const waitingForIosDetails =
     connectionMode === "hotspot" &&
@@ -354,29 +438,33 @@ export function QrDisplayScreen({
             corner="small"
             style={styles.instructionsCard}
           >
-            <Text style={styles.instructions}>
-              Enable Personal Hotspot in iOS Settings, then enter its Wi-Fi name
-              and password below.
-            </Text>
-            <TextInput
-              accessibilityLabel="Personal Hotspot Wi-Fi name"
-              autoCapitalize="none"
-              onChangeText={setManualSsid}
-              placeholder="Hotspot Wi-Fi name"
-              placeholderTextColor={colors.textMuted60}
-              style={styles.input}
-              value={manualSsid}
-            />
-            <TextInput
-              accessibilityLabel="Personal Hotspot password"
-              autoCapitalize="none"
-              onChangeText={setManualPassword}
-              placeholder="Password (8–63 characters)"
-              placeholderTextColor={colors.textMuted60}
-              secureTextEntry
-              style={styles.input}
-              value={manualPassword}
-            />
+            {/* CutCornerSurface wraps children in its own View, so the layout
+                styles have to live on an inner View to reach them. */}
+            <View style={styles.instructionsContent}>
+              <Text style={styles.instructions}>
+                Enable Personal Hotspot in iOS Settings, then enter its Wi-Fi
+                name and password below.
+              </Text>
+              <TextInput
+                accessibilityLabel="Personal Hotspot Wi-Fi name"
+                autoCapitalize="none"
+                onChangeText={setManualSsid}
+                placeholder="Hotspot Wi-Fi name"
+                placeholderTextColor={colors.textMuted60}
+                style={styles.input}
+                value={manualSsid}
+              />
+              <TextInput
+                accessibilityLabel="Personal Hotspot password"
+                autoCapitalize="none"
+                onChangeText={setManualPassword}
+                placeholder="Password (8–63 characters)"
+                placeholderTextColor={colors.textMuted60}
+                secureTextEntry
+                style={styles.input}
+                value={manualPassword}
+              />
+            </View>
           </CutCornerSurface>
         ) : null}
 
@@ -426,7 +514,7 @@ export function QrDisplayScreen({
           label="Generate New Code"
           onPress={() => {
             setJoinFailure(null);
-            regenerate();
+            generateNewCode();
           }}
         />
       </ScrollView>
@@ -460,8 +548,10 @@ const styles = StyleSheet.create({
     lineHeight: 20
   },
   instructionsCard: {
-    gap: 10,
     padding: 14
+  },
+  instructionsContent: {
+    gap: 10
   },
   qrCard: {
     alignItems: "center",
