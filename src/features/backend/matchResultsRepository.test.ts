@@ -61,7 +61,7 @@ test("both phones can save the same completed match under create-only rules", as
       matchResultsRepository.writeMatchResult(result, "player-b")
     ])
   ).resolves.toEqual([undefined, undefined]);
-  const saved = await getDoc(doc({} as never, "matchResults", result.matchId));
+  const saved = await getDoc(doc({} as never, "matches", result.matchId));
   expect(saved.data()).toMatchObject({
     roundCount: 3,
     results: result.results

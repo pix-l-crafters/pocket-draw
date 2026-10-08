@@ -53,7 +53,7 @@ export const playerStatsRepository: PlayerStatsRepository = {
 
     const trimmedName = displayName.trim() || "Player";
     const matchesQuery = query(
-      collection(db, "matchResults"),
+      collection(db, "matches"),
       where("participantIds", "array-contains", uid)
     );
     const [snapshot, userSnapshot] = await Promise.all([

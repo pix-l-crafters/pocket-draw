@@ -65,7 +65,7 @@ export const matchResultsRepository: MatchResultsRepository = {
   async writeMatchResult(result, uploadedBy) {
     validateMatchResult(result, uploadedBy);
 
-    const matchRef = doc(db, "matchResults", result.matchId);
+    const matchRef = doc(db, "matches", result.matchId);
     await runTransaction(db, async (transaction) => {
       const existing = await transaction.get(matchRef);
 

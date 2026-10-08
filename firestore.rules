@@ -41,7 +41,7 @@ service cloud.firestore {
         && data.lastSeen == request.time;
     }
 
-    // --- matchResults helpers ---
+    // --- matches helpers ---
 
     function hasValidMatchResultFields(data) {
       return data.keys().hasAll([
@@ -162,7 +162,7 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
-    match /matchResults/{matchId} {
+    match /matches/{matchId} {
       allow read: if isSignedIn();
       allow create: if isMatchResultUploader()
         && hasValidMatchResultFields(request.resource.data)
@@ -171,7 +171,7 @@ service cloud.firestore {
     }
 
     // Directory of uid -> displayName, used to resolve names on the
-    // leaderboard (matchResults only stores uids).
+    // leaderboard (matches only stores uids).
     match /users/{uid} {
       // A create-only receipt commits atomically with this player's rating.
       match /ratedMatches/{matchId} {
@@ -179,7 +179,7 @@ service cloud.firestore {
         allow create: if isPresenceOwner(uid)
           && request.resource.data.keys().hasOnly(['matchId'])
           && request.resource.data.matchId == matchId
-          && uid in get(/databases/$(database)/documents/matchResults/$(matchId)).data.participantIds;
+          && uid in get(/databases/$(database)/documents/matches/$(matchId)).data.participantIds;
         allow update, delete: if false;
       }
       allow read: if isSignedIn();
