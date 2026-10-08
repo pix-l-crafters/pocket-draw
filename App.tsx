@@ -266,8 +266,7 @@ export default function App() {
                       onHostConnected={onHostConnected}
                       onOpponentConfirmed={(opponent) => {
                         const handoff: ChallengeHandoff = {
-                          ...opponent,
-                          roundCount: 3
+                          ...opponent
                         };
                         setPendingHandoff(handoff);
                         void challengeRequestRepository

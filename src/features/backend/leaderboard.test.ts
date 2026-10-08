@@ -11,7 +11,6 @@ function match(
   return {
     matchId,
     participantIds: [a, b],
-    roundCount: 3,
     results: {
       [a]: winnerId === a ? "win" : "lose",
       [b]: winnerId === b ? "win" : "lose"
@@ -73,7 +72,6 @@ describe("computeLeaderboard", () => {
     const drawnMatch: MatchResult = {
       matchId: "m2",
       participantIds: ["alice", "bob"],
-      roundCount: 3,
       results: { alice: "draw", bob: "draw" },
       completedAt: "2026-01-02T00:00:00.000Z",
       rounds: Array.from({ length: 4 }, () => ({

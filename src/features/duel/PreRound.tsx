@@ -13,6 +13,7 @@ import { COUNTDOWN_AUDIO_SOURCE } from "./countdownAudio";
 import { FireSignalCoordinator, type DuelRole } from "./fireSignalCoordinator";
 import { ReactionTimer } from "./reactionTimer";
 import { FIRE_WINDOW_MS, type RoundShots } from "./roundShots";
+import { subscribeVolumeFire } from "./volumeFireTrigger";
 
 const COUNTDOWN_VALUES = [3, 2, 1] as const;
 const COUNTDOWN_TICK_MS = 1000;
@@ -228,7 +229,8 @@ export function PreRound({
   }, [onRoundShots, opponentReactionMs, phase, selfReactionMs]);
 
   const handleFire = () => {
-    if (selfReactionMs !== null) return;
+    if (selfReactionMs !== null || reactionTimerRef.current.getCapture())
+      return;
     if (Date.now() > firedAtRef.current + FIRE_WINDOW_MS) return;
 
     const capture = reactionTimerRef.current.captureRaise(Date.now());
@@ -242,6 +244,16 @@ export function PreRound({
       reactionMs: capture.reactionMs
     });
   };
+
+  useEffect(() => {
+    if (
+      phase !== "fire" ||
+      (Platform.OS !== "android" && Platform.OS !== "ios")
+    ) {
+      return undefined;
+    }
+    return subscribeVolumeFire(handleFire);
+  }, [phase]);
 
   const startCountdown = () => {
     if (!safeSend({ type: "countdown", value: COUNTDOWN_VALUES[0] })) return;
@@ -374,9 +386,8 @@ export function PreRound({
           </Button>
         ))}
 
-      {/* The draw itself: a full-screen target, so neither player loses the
-          round hunting for a small button. Tap anywhere on either platform —
-          the accelerometer raise gesture (ticket #37) is still unwired. */}
+      {/* Android intercepts volume keys; iOS observes volume changes while
+          preserving the normal volume adjustment. Tap remains available. */}
       {phase === "fire" && (
         <Pressable
           accessibilityLabel="Fire"
@@ -387,7 +398,11 @@ export function PreRound({
           <Text style={styles.fireHeading}>FIRE!</Text>
           <Text style={styles.fireDetail}>
             {selfReactionMs === null
-              ? "TAP ANYWHERE"
+              ? Platform.OS === "android"
+                ? "PRESS VOLUME OR TAP ANYWHERE"
+                : Platform.OS === "ios"
+                  ? "VOLUME BUTTONS FIRE AND CHANGE VOLUME — OR TAP"
+                  : "TAP ANYWHERE"
               : `${selfReactionMs}ms — ${
                   opponentReactionMs === null
                     ? "waiting for your opponent"

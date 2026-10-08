@@ -19,7 +19,6 @@ export function mockChallengeHandoff(
     },
     scannedPlayerId,
     scannedPlayerName: "Mock Opponent",
-    roundCount: 3,
     matchId: `mock-match-${scannedPlayerId}`,
     discoveryToken: `mock-token-${scannedPlayerId}`
   };

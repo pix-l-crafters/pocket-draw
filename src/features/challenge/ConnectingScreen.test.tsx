@@ -24,7 +24,6 @@ const handoff: ChallengeHandoff = {
   scannedPlayerId: "host-1",
   scannedPlayerName: "Host",
   challengeToken: "challenge-1",
-  roundCount: 3,
   connection: {
     mode: "hotspot",
     hostIp: "192.168.1.1",

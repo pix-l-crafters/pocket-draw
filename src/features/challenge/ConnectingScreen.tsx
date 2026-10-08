@@ -136,7 +136,7 @@ export function ConnectingScreen({
     <View style={styles.container}>
       <ScreenHeader
         kicker="Challenge"
-        subtitle={`${handoff.roundCount}-round duel with ${opponentName}`}
+        subtitle={`Duel with ${opponentName}`}
         title="Connecting"
       />
 

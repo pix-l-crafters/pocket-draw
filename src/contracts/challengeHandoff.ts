@@ -7,7 +7,6 @@ export interface ChallengeHandoff {
   challengerId: string;
   scannedPlayerId: string;
   scannedPlayerName: string;
-  roundCount: 3;
   // From the scanned QrInvitePayload — required to authenticate signaling and
   // open the duel session.
   matchId: string;

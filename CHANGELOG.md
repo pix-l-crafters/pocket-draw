@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
+## Unreleased
+
+### Features
+
+- **(duel)** add iOS volume-change fire input alongside tap; volume adjustment remains active.
+
 ---
 
 ## [0.2.0](https://github.com/pix-l-crafters/pocket-draw/compare/v0.1.0..v0.2.0) - 2026-10-08
