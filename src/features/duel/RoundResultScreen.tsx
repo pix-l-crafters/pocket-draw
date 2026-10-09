@@ -8,7 +8,7 @@ import { StatTile } from "../../components/StatTile";
 import { StatusTag } from "../../components/StatusTag";
 import type { RoundOutcome } from "../../contracts/roundOutcome";
 import { colors, fonts } from "../../theme/tokens";
-import { MissIllustration } from "./MissIllustration";
+import { RoundIllustration } from "./RoundIllustration";
 import { roundTieDescription } from "./roundTieDescription";
 
 type RoundResultScreenProps = {
@@ -99,8 +99,15 @@ export function RoundResultScreen({
         </View>
       )}
 
+      {outcome.kind === "falseStart" && (
+        <RoundIllustration
+          playerName={nameFor(playerNames, outcome.playerId)}
+          reason="falseStart"
+        />
+      )}
+
       {outcome.misses?.map(({ playerId, reason }) => (
-        <MissIllustration
+        <RoundIllustration
           key={playerId}
           playerName={nameFor(playerNames, playerId)}
           reason={reason}

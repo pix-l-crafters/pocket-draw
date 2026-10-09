@@ -91,8 +91,29 @@ it.each<{ reason: MissReason; explanation: RegExp }>([
       );
       expect(view.getByRole("image", { name: /Gil/ })).toBeTruthy();
       expect(view.getByText(explanation)).toBeTruthy();
-      expect(view.queryByRole("image", { name: /Hana/ })).toBeNull();
       await view.unmount();
     }
   }
 );
+
+it("illustrates the false-start offender without blaming the opponent", async () => {
+  const view = await render(
+    <RoundResultScreen
+      onContinue={() => undefined}
+      outcome={{
+        kind: "falseStart",
+        playerId: "hana",
+        nonOffenderId: "gil",
+        nonOffenderShot: { reactionMs: 420, zone: "headshot", points: 2 }
+      }}
+      playerNames={playerNames}
+      roundNumber={1}
+    />
+  );
+
+  expect(
+    view.getByRole("image", { name: /Hana.*false start.*before.*FIRE/i })
+  ).toBeTruthy();
+  expect(view.queryByRole("image", { name: /Gil.*false start/i })).toBeNull();
+  expect(view.getByText(/stay still.*countdown/i)).toBeTruthy();
+});

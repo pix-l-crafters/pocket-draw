@@ -64,6 +64,16 @@ the reduced-motion preference; enabling it cancels and settles the animation.
 The result screen scrolls to keep both miss cards and the continue action
 reachable with large text.
 
+### False-start illustration
+
+False-start round results show a dedicated, player-labeled countdown/phone
+activity diagram for the offender, alongside any recorded non-offender miss.
+The explanation covers early movement or fire input and reminds the offender
+to stay still through the countdown and fire only after FIRE; they score 0.
+It does not identify an exact input or countdown instant that was not retained.
+This timing-violation schematic is static, remains distinct from miss causes,
+and reuses the same `RoundIllustration` card and scrollable result layout.
+
 ## Zone classification — the feasibility question
 
 **Ruled out: literal position/height tracking.** Double-integrating accelerometer data to get a position in centimeters is a well-documented dead end — integration of both a constant bias and of noise makes it "highly sensitive to bias noise," and error grows unbounded over time. This is not usable for a multi-second duel round.

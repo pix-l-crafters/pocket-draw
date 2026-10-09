@@ -6,43 +6,58 @@ import {
   Text,
   View
 } from "react-native";
-import Svg, { Circle, Line, Path, Rect } from "react-native-svg";
+import Svg, {
+  Circle,
+  Line,
+  Path,
+  Rect,
+  Text as SvgText
+} from "react-native-svg";
 
 import type { MissReason } from "../../contracts/roundOutcome";
 import { colors, fonts } from "../../theme/tokens";
 
-const explanations: Record<MissReason, { explanation: string; hint: string }> =
-  {
-    tooLow: {
-      explanation:
-        "Raised too little: the phone was below the calibrated hit range.",
-      hint: "Raise further toward your calibrated shoulder pose before firing."
-    },
-    tooHigh: {
-      explanation:
-        "Raised too far: the phone was above the calibrated hit range.",
-      hint: "Lower your raise toward your calibrated shoulder pose before firing."
-    },
-    offTarget: {
-      explanation: "Aimed outside the opponent's cone at the moment of firing.",
-      hint: "Face your opponent and aim toward them before firing. The exact direction of the miss is not recorded."
-    },
-    trackingUnavailable: {
-      explanation:
-        "Tracking could not verify the shot; its physical direction is unknown.",
-      hint: "Check motion, compass, and precise location access, then hold steady with clear space between players."
-    },
-    noShot: {
-      explanation: "Did not fire before time ran out.",
-      hint: "After the FIRE cue, raise and tap FIRE or use a supported volume control before the timer ends."
-    }
-  };
+type IllustrationReason = MissReason | "falseStart";
 
-export function MissIllustration({
+const explanations: Record<
+  IllustrationReason,
+  { explanation: string; hint: string }
+> = {
+  tooLow: {
+    explanation:
+      "Raised too little: the phone was below the calibrated hit range.",
+    hint: "Raise further toward your calibrated shoulder pose before firing."
+  },
+  tooHigh: {
+    explanation:
+      "Raised too far: the phone was above the calibrated hit range.",
+    hint: "Lower your raise toward your calibrated shoulder pose before firing."
+  },
+  offTarget: {
+    explanation: "Aimed outside the opponent's cone at the moment of firing.",
+    hint: "Face your opponent and aim toward them before firing. The exact direction of the miss is not recorded."
+  },
+  trackingUnavailable: {
+    explanation:
+      "Tracking could not verify the shot; its physical direction is unknown.",
+    hint: "Check motion, compass, and precise location access, then hold steady with clear space between players."
+  },
+  noShot: {
+    explanation: "Did not fire before time ran out.",
+    hint: "After the FIRE cue, raise and tap FIRE or use a supported volume control before the timer ends."
+  },
+  falseStart: {
+    explanation:
+      "False start: movement or fire input was detected before the FIRE cue.",
+    hint: "Stay still during the countdown; tap or use volume controls only after FIRE. You score 0 for this round."
+  }
+};
+
+export function RoundIllustration({
   reason,
   playerName
 }: {
-  reason: MissReason;
+  reason: IllustrationReason;
   playerName: string;
 }) {
   const [progress] = useState(() => new Animated.Value(1));
@@ -51,7 +66,12 @@ export function MissIllustration({
 
   useEffect(() => {
     progress.setValue(1);
-    if (reason === "trackingUnavailable" || reason === "noShot") return;
+    if (
+      reason === "trackingUnavailable" ||
+      reason === "noShot" ||
+      reason === "falseStart"
+    )
+      return;
 
     let mounted = true;
     let preferenceResolved = false;
@@ -261,12 +281,25 @@ export function MissIllustration({
                 stroke={colors.warning}
                 strokeWidth={2}
               />
-              <Path
-                d="M65 33 L65 55 L80 63 M65 17 L65 23"
-                fill="none"
-                stroke={colors.warning}
-                strokeWidth={3}
-              />
+              {reason === "falseStart" ? (
+                <SvgText
+                  x={65}
+                  y={66}
+                  fill={colors.warning}
+                  fontFamily={fonts.mono}
+                  fontSize={32}
+                  textAnchor="middle"
+                >
+                  3
+                </SvgText>
+              ) : (
+                <Path
+                  d="M65 33 L65 55 L80 63 M65 17 L65 23"
+                  fill="none"
+                  stroke={colors.warning}
+                  strokeWidth={3}
+                />
+              )}
               <Rect
                 x={116}
                 y={31}
@@ -274,12 +307,20 @@ export function MissIllustration({
                 height={48}
                 rx={4}
                 fill="none"
-                stroke={colors.textMuted45}
+                stroke={
+                  reason === "falseStart" ? colors.warning : colors.textMuted45
+                }
                 strokeWidth={2}
               />
               <Path
-                d="M112 84 L146 26"
-                stroke={colors.textMuted60}
+                d={
+                  reason === "falseStart"
+                    ? "M113 24 L105 12 M128 22 L128 7 M143 24 L152 12"
+                    : "M112 84 L146 26"
+                }
+                stroke={
+                  reason === "falseStart" ? colors.warning : colors.textMuted60
+                }
                 strokeWidth={2}
               />
             </>
@@ -348,6 +389,11 @@ export function MissIllustration({
       {reason === "offTarget" && (
         <Text style={styles.reference}>
           Aim cone schematic; actual direction not recorded
+        </Text>
+      )}
+      {reason === "falseStart" && (
+        <Text style={styles.reference}>
+          Countdown schematic: activity before FIRE
         </Text>
       )}
       <Text style={styles.explanation}>{explanation}</Text>
