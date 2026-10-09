@@ -49,7 +49,9 @@ const mockPhones: Record<DuelRole, NativePhone> = {
 // Each phone mounts its native watchers in a separate awaited interaction.
 // Keep this owner selected until asynchronous permission checks have settled.
 let mockNativeOwner: DuelRole = "host";
-const mockVolumeListeners = new Set<() => void>();
+const mockVolumeListeners = new Set<
+  (event: { direction: "up" | "down" }) => void
+>();
 const mockPermission = {
   granted: true,
   status: "granted",
@@ -110,7 +112,10 @@ jest.mock("expo", () => {
     requireNativeModule: (name: string) =>
       name === "VolumeFire"
         ? {
-            addListener: (_event: string, listener: () => void) => {
+            addListener: (
+              _event: string,
+              listener: (event: { direction: "up" | "down" }) => void
+            ) => {
               mockVolumeListeners.add(listener);
               return { remove: () => mockVolumeListeners.delete(listener) };
             }
@@ -377,8 +382,8 @@ describe("DuelScreen real two-phone gameplay", () => {
       expect(mockVolumeListeners.size).toBe(2);
       await act(() => {
         const pressVolume = [...mockVolumeListeners][0];
-        pressVolume();
-        pressVolume();
+        pressVolume({ direction: "up" });
+        pressVolume({ direction: "up" });
       });
       await fireEvent.press(phones.host.getByRole("button", { name: "Fire" }));
       expect(
@@ -433,7 +438,7 @@ describe("DuelScreen real two-phone gameplay", () => {
           );
         } else if (earlyInput === "volume") {
           expect(mockVolumeListeners.size).toBe(2);
-          await act(() => [...mockVolumeListeners][1]());
+          await act(() => [...mockVolumeListeners][1]({ direction: "up" }));
         } else {
           await act(() => {
             mockPhones.guest.tilt.forEach((listener) =>

@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file. See [conven
 
 ---
 
+## [Unreleased]
+
+### Features
+
+- **(duel)** support volume-up confirmation during draw calibration and pre-round setup; extend pre-round actions to the bottom edge.
+
 ## [0.4.0](https://github.com/pix-l-crafters/pocket-draw/compare/v0.3.1..v0.4.0) - 2026-10-08
 
 ### Bug Fixes

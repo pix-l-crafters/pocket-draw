@@ -258,6 +258,28 @@ describe("PreRound countdown and draw", () => {
     expect(view.getByText("POINT THE TOP EDGE TOWARD THE GROUND")).toBeTruthy();
   });
 
+  it("uses volume-up to confirm each enabled pre-round step", async () => {
+    const { deliver, pressVolume, sent, setReading, view } =
+      await renderPreRound("host");
+
+    await pressVolume("up");
+    expect(view.getByText("POINT THE TOP EDGE TOWARD THE GROUND")).toBeTruthy();
+    await pressVolume("up");
+    expect(sent).toEqual([]);
+
+    await deliver({
+      type: "aimPosition",
+      latitude: 0.001,
+      longitude: 0,
+      accuracy: 1,
+      sampleAtMs: Date.now()
+    });
+    await setReading({ x: 0, y: -1, z: 0 });
+    await pressVolume("up");
+
+    expect(sent).toEqual([{ type: "countdown", value: 3 }]);
+  });
+
   it("ticks 3-2-1 one second apart and fires exactly on zero", async () => {
     const { completeRitual, sent, view, wait } = await renderPreRound("host");
     await completeRitual();
