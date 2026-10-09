@@ -551,12 +551,51 @@ describe("DuelScreen real two-phone gameplay", () => {
     }
   );
   it.each([
-    { hostPitch: 0.9, guestPitch: 1.1, winner: "Hana" },
-    { hostPitch: 0.4, guestPitch: 1.1, winner: "Gil" },
-    { hostPitch: 0.4, guestPitch: 0.4, winner: null }
+    {
+      hostPitch: 0.9,
+      hostHeading: 0,
+      guestPitch: 1.1,
+      winner: "Hana",
+      miss: null
+    },
+    {
+      hostPitch: 0.4,
+      hostHeading: 0,
+      guestPitch: 1.1,
+      winner: "Gil",
+      miss: /raised too little/i
+    },
+    {
+      hostPitch: 0.4,
+      hostHeading: 0,
+      guestPitch: 0.4,
+      winner: null,
+      miss: /raised too little/i
+    },
+    {
+      hostPitch: 1.3,
+      hostHeading: 0,
+      guestPitch: 1.1,
+      winner: "Gil",
+      miss: /raised too far|too high/i
+    },
+    {
+      hostPitch: 0.9,
+      hostHeading: 90,
+      guestPitch: 1.1,
+      winner: "Gil",
+      miss: /off.target|aimed outside/i
+    },
+    {
+      hostPitch: 0.9,
+      hostHeading: NaN,
+      guestPitch: 1.1,
+      winner: "Gil",
+      miss: /could not verify|unavailable|unverified/i
+    }
   ])(
     "explains the result on both phones with a 2500ms gap: %p",
-    async ({ hostPitch, guestPitch, winner }) => {
+    async ({ hostPitch, hostHeading, guestPitch, winner, miss }) => {
       const { view, phones, calibrate, startRound, shoot } =
         await renderPhones();
       await calibrate("host");
@@ -564,13 +603,22 @@ describe("DuelScreen real two-phone gameplay", () => {
       await startRound();
       await advance(3000);
       await advance(200);
-      await shoot("host", hostPitch);
+      await shoot("host", hostPitch, hostHeading);
       await advance(2500);
       await shoot("guest", guestPitch);
 
       for (const phone of [phones.host, phones.guest]) {
         expect(phone.getByText(/^200\s*ms$/)).toBeTruthy();
         expect(phone.getByText(/^2700\s*ms$/)).toBeTruthy();
+        if (miss) {
+          expect(
+            phone.getByRole("image", {
+              name: new RegExp(`Hana.*(?:${miss.source})`, "i")
+            })
+          ).toBeTruthy();
+        } else {
+          expect(phone.queryByRole("image", { name: /^Hana:/i })).toBeNull();
+        }
         if (winner) {
           expect(phone.getByText(`${winner} wins`)).toBeTruthy();
           expect(phone.queryByText("Tie")).toBeNull();
@@ -578,6 +626,13 @@ describe("DuelScreen real two-phone gameplay", () => {
           expect(phone.getByText("Tie")).toBeTruthy();
           expect(phone.getByText(/both.*miss.*0.*points each/i)).toBeTruthy();
           expect(phone.queryByText(/sudden death/i)).toBeNull();
+          for (const name of ["Hana", "Gil"]) {
+            expect(
+              phone.getByRole("image", {
+                name: new RegExp(`${name}.*raised too little`, "i")
+              })
+            ).toBeTruthy();
+          }
         }
       }
       await view.unmount();
@@ -626,6 +681,27 @@ describe("DuelScreen real two-phone gameplay", () => {
           within(phone.getByText(name).parent!).getByText("3")
         ).toBeTruthy();
       }
+    }
+    await view.unmount();
+  });
+  it("explains unfired timeouts without inventing a physical miss", async () => {
+    const { view, phones, calibrate, startRound } = await renderPhones();
+    await calibrate("host");
+    await calibrate("guest");
+    await startRound();
+    await advance(3000);
+    await advance(3250);
+    for (const phone of [phones.host, phones.guest]) {
+      for (const name of ["Hana", "Gil"]) {
+        expect(
+          phone.getByRole("image", {
+            name: new RegExp(`${name}.*(?:no shot|did not fire)`, "i")
+          })
+        ).toBeTruthy();
+      }
+      expect(
+        phone.queryByRole("image", { name: /too little|too far|off.target/i })
+      ).toBeNull();
     }
     await view.unmount();
   });

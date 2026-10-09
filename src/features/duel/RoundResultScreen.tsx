@@ -1,6 +1,6 @@
 // Per-round outcome and reaction times; match-level ties are shown separately.
 
-import { StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { CutCornerButton } from "../../components/CutCornerButton";
 import { ScreenHeader } from "../../components/ScreenHeader";
@@ -8,6 +8,7 @@ import { StatTile } from "../../components/StatTile";
 import { StatusTag } from "../../components/StatusTag";
 import type { RoundOutcome } from "../../contracts/roundOutcome";
 import { colors, fonts } from "../../theme/tokens";
+import { MissIllustration } from "./MissIllustration";
 import { roundTieDescription } from "./roundTieDescription";
 
 type RoundResultScreenProps = {
@@ -48,7 +49,10 @@ export function RoundResultScreen({
   roundNumber
 }: RoundResultScreenProps) {
   return (
-    <View style={styles.container}>
+    <ScrollView
+      contentContainerStyle={styles.content}
+      style={styles.container}
+    >
       <ScreenHeader
         kicker={`Round ${roundNumber}`}
         title={titleFor(outcome, playerNames)}
@@ -95,6 +99,14 @@ export function RoundResultScreen({
         </View>
       )}
 
+      {outcome.misses?.map(({ playerId, reason }) => (
+        <MissIllustration
+          key={playerId}
+          playerName={nameFor(playerNames, playerId)}
+          reason={reason}
+        />
+      ))}
+
       <View style={styles.continueButton}>
         {errorMessage && (
           <Text
@@ -110,17 +122,20 @@ export function RoundResultScreen({
           onPress={onContinue}
         />
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     backgroundColor: colors.background,
-    flex: 1,
+    flex: 1
+  },
+  content: {
+    flexGrow: 1,
     gap: 20,
     justifyContent: "center",
-    paddingHorizontal: 24
+    padding: 24
   },
   statsRow: {
     flexDirection: "row",
