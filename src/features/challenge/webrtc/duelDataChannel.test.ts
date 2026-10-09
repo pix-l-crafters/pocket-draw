@@ -63,6 +63,61 @@ describe("WebRTC DuelChannel adapter", () => {
     expect(connection.channel.isConnected()).toBe(true);
   });
 
+  it.each(["tooLow", "tooHigh", "offTarget", "trackingUnavailable"] as const)(
+    "transports a fired miss reason %s unchanged",
+    (missReason) => {
+      const rtcChannel = new FakeDataChannel();
+      const connection = createDuelDataChannelConnection(rtcChannel);
+      const received: DuelMessage[] = [];
+      connection.channel.onMessage((message) => received.push(message));
+      const message: DuelMessage = {
+        type: "raised",
+        atMs: 1234,
+        reactionMs: 420,
+        zone: "miss",
+        missReason
+      };
+      connection.channel.send(message);
+      rtcChannel.receive(rtcChannel.sent[0]);
+      expect(received).toEqual([message]);
+    }
+  );
+
+  it.each(["noShot", "invalid", "", null, 1, {}, []])(
+    "rejects an invalid fired miss reason %s at the wire boundary",
+    (missReason) => {
+      const rtcChannel = new FakeDataChannel();
+      const connection = createDuelDataChannelConnection(rtcChannel);
+      const received: DuelMessage[] = [];
+      connection.channel.onMessage((message) => received.push(message));
+      rtcChannel.receive(
+        JSON.stringify({
+          type: "raised",
+          atMs: 1234,
+          reactionMs: 420,
+          zone: "miss",
+          missReason
+        })
+      );
+      expect(received).toEqual([]);
+    }
+  );
+
+  it.each(["bodyshot", "headshot"])(
+    "rejects a miss reason attached to %s",
+    (zone) => {
+      expect(
+        isDuelMessage({
+          type: "raised",
+          atMs: 1234,
+          reactionMs: 420,
+          zone,
+          missReason: "tooLow"
+        })
+      ).toBe(false);
+    }
+  );
+
   it("delivers only valid duel messages and honors unsubscribe", () => {
     const rtcChannel = new FakeDataChannel();
     const connection = createDuelDataChannelConnection(rtcChannel);

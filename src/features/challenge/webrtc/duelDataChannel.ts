@@ -72,7 +72,13 @@ export function isDuelMessage(value: unknown): value is DuelMessage {
         message.reactionMs >= 0 &&
         (message.zone === "miss" ||
           message.zone === "bodyshot" ||
-          message.zone === "headshot")
+          message.zone === "headshot") &&
+        (message.missReason === undefined ||
+          (message.zone === "miss" &&
+            (message.missReason === "tooLow" ||
+              message.missReason === "tooHigh" ||
+              message.missReason === "offTarget" ||
+              message.missReason === "trackingUnavailable")))
       );
     case "aimPosition":
       return (

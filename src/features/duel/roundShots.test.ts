@@ -1,4 +1,10 @@
 import { scoreRoundOutcome } from "./roundJudge";
+import {
+  applyRoundOutcome,
+  createRoundLoop,
+  roundKeys,
+  toMatchResult
+} from "./roundLoop";
 import { FIRE_WINDOW_MS, judgeRoundShots, toPlayerShot } from "./roundShots";
 
 const host = { id: "host", name: "Host" };
@@ -224,7 +230,117 @@ describe("round shots", () => {
       kind: "falseStart",
       playerId: host.id,
       nonOffenderId: guest.id,
-      nonOffenderShot: null
+      nonOffenderShot: null,
+      misses: [{ playerId: guest.id, reason: "noShot" }]
     });
   });
+  it("records causes in player order on either phone without changing scoring or timings", () => {
+    const fromHost = judgeRoundShots(host, guest, {
+      selfReactionMs: 2700,
+      opponentReactionMs: 200,
+      selfZone: "miss",
+      opponentZone: "miss",
+      selfMissReason: "tooHigh",
+      opponentMissReason: "tooLow",
+      falseStartPlayer: null
+    });
+    const fromGuest = judgeRoundShots(guest, host, {
+      selfReactionMs: 200,
+      opponentReactionMs: 2700,
+      selfZone: "miss",
+      opponentZone: "miss",
+      selfMissReason: "tooLow",
+      opponentMissReason: "tooHigh",
+      falseStartPlayer: null
+    });
+    expect(fromHost).toEqual({
+      kind: "tie",
+      zone: "miss",
+      pointsEach: 0,
+      reactionMs: 200,
+      opponentReactionMs: 2700,
+      misses: [
+        { playerId: guest.id, reason: "tooLow" },
+        { playerId: host.id, reason: "tooHigh" }
+      ]
+    });
+    expect(fromGuest).toEqual(fromHost);
+    expect(JSON.stringify(fromGuest)).toBe(JSON.stringify(fromHost));
+    expect(scoreRoundOutcome(fromHost, host.id, guest.id)).toEqual([
+      { playerId: host.id, points: 0 },
+      { playerId: guest.id, points: 0 }
+    ]);
+    let hostHistory = createRoundLoop([host.id, guest.id]);
+    let guestHistory = createRoundLoop([host.id, guest.id]);
+    for (let round = 0; round < 4; round += 1) {
+      hostHistory = applyRoundOutcome(hostHistory, fromHost);
+      guestHistory = applyRoundOutcome(guestHistory, fromGuest);
+    }
+    expect(roundKeys(hostHistory)).toEqual(roundKeys(guestHistory));
+    const result = toMatchResult(
+      hostHistory,
+      "match",
+      "2026-10-09T00:00:00.000Z"
+    );
+    expect(result.results).toEqual({ host: "draw", guest: "draw" });
+    expect(result.rounds).toHaveLength(4);
+    for (const round of result.rounds) {
+      expect(round.misses).toEqual([
+        { playerId: guest.id, reason: "tooLow" },
+        { playerId: host.id, reason: "tooHigh" }
+      ]);
+    }
+  });
+
+  it("infers no shot only for unfired players and never calls a suppressed hit a miss", () => {
+    expect(
+      judgeRoundShots(host, guest, {
+        selfReactionMs: 200,
+        opponentReactionMs: 600,
+        selfZone: "bodyshot",
+        opponentZone: "headshot",
+        falseStartPlayer: null
+      })
+    ).not.toHaveProperty("misses");
+    expect(
+      judgeRoundShots(host, guest, {
+        selfReactionMs: 200,
+        opponentReactionMs: null,
+        selfZone: "miss",
+        opponentZone: "miss",
+        falseStartPlayer: null
+      }).misses
+    ).toEqual([{ playerId: guest.id, reason: "noShot" }]);
+  });
+
+  it.each([420, null])(
+    "filters the false-start offender, retaining nonoffender evidence at %s",
+    (reactionMs) => {
+      const fromHost = judgeRoundShots(host, guest, {
+        selfReactionMs: 100,
+        opponentReactionMs: reactionMs,
+        selfZone: "miss",
+        opponentZone: "miss",
+        selfMissReason: "tooLow",
+        opponentMissReason: "offTarget",
+        falseStartPlayer: "self"
+      });
+      const fromGuest = judgeRoundShots(guest, host, {
+        selfReactionMs: reactionMs,
+        opponentReactionMs: 100,
+        selfZone: "miss",
+        opponentZone: "miss",
+        selfMissReason: "offTarget",
+        opponentMissReason: "tooLow",
+        falseStartPlayer: "opponent"
+      });
+      expect(fromHost.misses).toEqual([
+        {
+          playerId: guest.id,
+          reason: reactionMs === null ? "noShot" : "offTarget"
+        }
+      ]);
+      expect(fromGuest).toEqual(fromHost);
+    }
+  );
 });
