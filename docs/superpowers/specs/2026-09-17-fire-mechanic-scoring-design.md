@@ -17,6 +17,14 @@ Order both players' shots by reaction time.
 
 This resolves the earlier open question about how the tie window interacts with the fallthrough rule: outside the window, only the faster shot's accuracy is ever eligible to decide the round on its own; inside it, both shots' accuracy is compared directly.
 
+Round results explain equal scoring: two misses mean 0 points each, even with
+a large reaction-time gap; equal bodyshots or headshots within 100 ms mean
+1 or 2 points each. A tied round does not itself trigger sudden death.
+The match summary preserves each tie's reason and both ordered reaction times,
+and distinguishes a final draw as equal total points after the tiebreaker.
+For two-phone reports, record both reaction times, both shot zones, and whether
+the tie appeared on the round result or the final match summary.
+
 `falseStart` remains a timing violation and its own enriched `RoundOutcome` kind. Early countdown tap, volume input, or movement disqualifies the offender. The countdown still reaches the normal FIRE cue; the non-offender can fire and receives their actual calibrated, aim-gated zone score (0/1/2), with shot timing retained. There is no flat bonus. Inputs outside countdown/FIRE are ignored.
 
 Reaction time is still captured for every shot regardless of outcome — it gates who's evaluated first above, and separately feeds the leaderboard's average-reaction-time stat (Phase 4, item 26).

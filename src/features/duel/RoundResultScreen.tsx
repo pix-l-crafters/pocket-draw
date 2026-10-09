@@ -1,7 +1,4 @@
-// 4.16 — per-round result screen: shows the round's outcome (winner/tie/
-// false-start) and reaction times to both players. Presentational only —
-// whoever assembles the full duel flow (countdown -> fire -> raise -> this)
-// wires it up once that flow exists.
+// Per-round outcome and reaction times; match-level ties are shown separately.
 
 import { StyleSheet, Text, View } from "react-native";
 
@@ -11,6 +8,7 @@ import { StatTile } from "../../components/StatTile";
 import { StatusTag } from "../../components/StatusTag";
 import type { RoundOutcome } from "../../contracts/roundOutcome";
 import { colors, fonts } from "../../theme/tokens";
+import { roundTieDescription } from "./roundTieDescription";
 
 type RoundResultScreenProps = {
   continueDisabled?: boolean;
@@ -59,7 +57,7 @@ export function RoundResultScreen({
       {outcome.kind === "win" ? (
         <StatusTag tone="success">Result</StatusTag>
       ) : outcome.kind === "tie" ? (
-        <StatusTag tone="warning">Sudden death</StatusTag>
+        <StatusTag tone="warning">{roundTieDescription(outcome)}</StatusTag>
       ) : (
         <StatusTag tone="warning">Round loss</StatusTag>
       )}

@@ -12,6 +12,7 @@ import type { MatchResult } from "../../contracts/matchResult";
 import type { PlayerStats } from "../../contracts/playerStats";
 import { colors, fonts } from "../../theme/tokens";
 import { scoreFromRounds } from "../duel/roundLoop";
+import { roundTieDescription } from "../duel/roundTieDescription";
 
 type MatchSummaryScreenProps = {
   matchResult: MatchResult;
@@ -35,7 +36,7 @@ function reactionSummary(
     case "win":
       return `${playerNames[outcome.winnerId] ?? "Player"} · ${outcome.reactionMs}ms`;
     case "tie":
-      return `Tie · ${outcome.reactionMs}ms`;
+      return `Tie · ${roundTieDescription(outcome)} · ${outcome.reactionMs}/${outcome.opponentReactionMs}ms (first/second)`;
     case "falseStart":
       return `${playerNames[outcome.playerId] ?? "Player"} false start`;
   }
@@ -67,6 +68,11 @@ export function MatchSummaryScreen({
         kicker="Match complete"
         title={title}
       />
+      {!winnerId && (
+        <StatusTag>
+          {`Equal total points after ${matchResult.rounds.length} rounds`}
+        </StatusTag>
+      )}
       {/* Both phones show the same id, which is how testers confirm a
           rematch was agreed under one fresh match. */}
       <Text style={styles.matchId}>

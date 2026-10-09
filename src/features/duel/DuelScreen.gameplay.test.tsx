@@ -541,7 +541,6 @@ describe("DuelScreen real two-phone gameplay", () => {
         expect(
           within(phone.getByText("Gil").parent!).getByText("3")
         ).toBeTruthy();
-        expect(phone.getByText("Round 1 — Tie · 200ms")).toBeTruthy();
         expect(phone.getByText("Round 2 — Hana · 200ms")).toBeTruthy();
         expect(phone.getByText("Round 3 — Gil · 200ms")).toBeTruthy();
         expect(phone.getByText("Round 4 — Gil false start")).toBeTruthy();
@@ -550,4 +549,83 @@ describe("DuelScreen real two-phone gameplay", () => {
       await view.unmount();
     }
   );
+  it.each([
+    { hostPitch: 0.9, guestPitch: 1.1, winner: "Hana" },
+    { hostPitch: 0.4, guestPitch: 1.1, winner: "Gil" },
+    { hostPitch: 0.4, guestPitch: 0.4, winner: null }
+  ])(
+    "explains the result on both phones with a 2500ms gap: %p",
+    async ({ hostPitch, guestPitch, winner }) => {
+      const { view, phones, calibrate, startRound, shoot } =
+        await renderPhones();
+      await calibrate("host");
+      await calibrate("guest");
+      await startRound();
+      await advance(3000);
+      await advance(200);
+      await shoot("host", hostPitch);
+      await advance(2500);
+      await shoot("guest", guestPitch);
+
+      for (const phone of [phones.host, phones.guest]) {
+        expect(phone.getByText(/^200\s*ms$/)).toBeTruthy();
+        expect(phone.getByText(/^2700\s*ms$/)).toBeTruthy();
+        if (winner) {
+          expect(phone.getByText(`${winner} wins`)).toBeTruthy();
+          expect(phone.queryByText("Tie")).toBeNull();
+        } else {
+          expect(phone.getByText("Tie")).toBeTruthy();
+          expect(phone.getByText(/both.*miss.*0.*points each/i)).toBeTruthy();
+          expect(phone.queryByText(/sudden death/i)).toBeNull();
+        }
+      }
+      await view.unmount();
+    }
+  );
+  it("distinguishes a final equal-total draw from the individual round ties", async () => {
+    const { view, phones, calibrate, startRound, shoot, nextRound, press } =
+      await renderPhones();
+    await calibrate("host");
+    await calibrate("guest");
+    for (const [index, { pitch, gap }] of [
+      { pitch: 0.4, gap: 2500 },
+      { pitch: 0.9, gap: 50 },
+      { pitch: 1.1, gap: 100 }
+    ].entries()) {
+      if (index > 0) await nextRound();
+      await startRound();
+      await advance(3000);
+      await advance(200);
+      await shoot("host", pitch);
+      await advance(gap);
+      await shoot("guest", pitch);
+    }
+    // Level total points require one tiebreaker. Neither player fires.
+    await nextRound();
+    await startRound();
+    await advance(3000);
+    await advance(3250);
+    for (const role of ["host", "guest"] as const) {
+      await press(role, "See match result");
+      const phone = phones[role];
+      expect(phone.getByText("Match drawn")).toBeTruthy();
+      expect(phone.getByText(/equal total points.*4 rounds/i)).toBeTruthy();
+      expect(
+        phone.getByText(/Round 1.*both.*miss.*0.*200.*2700/i)
+      ).toBeTruthy();
+      expect(
+        phone.getByText(/Round 2.*bodyshots.*100 ms.*1 point each.*200.*250/i)
+      ).toBeTruthy();
+      expect(
+        phone.getByText(/Round 3.*headshots.*100 ms.*2 points each.*200.*300/i)
+      ).toBeTruthy();
+      expect(phone.getByText(/Round 4.*both.*miss.*0/i)).toBeTruthy();
+      for (const name of ["Hana", "Gil"]) {
+        expect(
+          within(phone.getByText(name).parent!).getByText("3")
+        ).toBeTruthy();
+      }
+    }
+    await view.unmount();
+  });
 });
