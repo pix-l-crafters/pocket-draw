@@ -102,9 +102,9 @@ describe("classifyAimZone", () => {
     );
   });
 
-  test("rejects coincident, longitude-equivalent, and antipodal coordinates", () => {
+  test("keeps the pitch result for coincident GPS fixes but rejects antipodal coordinates", () => {
     expect(classifyAimZone({ zone: "bodyshot" }, 0, self, self).zone).toBe(
-      "miss"
+      "bodyshot"
     );
     expect(
       classifyAimZone(
@@ -113,7 +113,7 @@ describe("classifyAimZone", () => {
         { ...self, longitude: -180 },
         { ...self, longitude: 180 }
       ).zone
-    ).toBe("miss");
+    ).toBe("bodyshot");
     expect(
       classifyAimZone({ zone: "bodyshot" }, 90, self, {
         ...self,
@@ -122,22 +122,14 @@ describe("classifyAimZone", () => {
     ).toBe("miss");
   });
 
-  test("rejects separation hidden inside the combined GPS uncertainty", () => {
-    // These readings are about 111m apart, but their uncertainty disks overlap.
+  test("keeps a calibrated hit when nearby players' GPS uncertainty overlaps", () => {
+    // Players are five metres apart, within ordinary phone GPS uncertainty.
     expect(
       classifyAimZone(
         { zone: "bodyshot" },
         0,
-        { ...self, accuracy: 60 },
-        { ...north, accuracy: 60 }
-      ).zone
-    ).toBe("miss");
-    expect(
-      classifyAimZone(
-        { zone: "bodyshot" },
-        0,
-        { ...self, accuracy: 50 },
-        { ...north, accuracy: 50 }
+        { ...self, accuracy: 5 },
+        { latitude: 0.000045, longitude: 0, accuracy: 5 }
       ).zone
     ).toBe("bodyshot");
   });
@@ -146,12 +138,7 @@ describe("classifyAimZone", () => {
       zone: "miss",
       missReason: "offTarget"
     });
-    for (const opponent of [
-      null,
-      self,
-      { ...north, accuracy: 200 },
-      { ...self, longitude: 180 }
-    ]) {
+    for (const opponent of [null, { ...self, longitude: 180 }]) {
       expect(
         classifyAimZone({ zone: "bodyshot" }, 180, self, opponent)
       ).toEqual({
