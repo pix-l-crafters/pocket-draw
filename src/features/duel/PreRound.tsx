@@ -3,8 +3,9 @@ import * as Haptics from "expo-haptics";
 import { Accelerometer } from "expo-sensors";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
-import { Button, IconButton, ProgressBar } from "react-native-paper";
+import { IconButton, ProgressBar } from "react-native-paper";
 
+import { CutCornerButton } from "../../components/CutCornerButton";
 import { PermissionNotice } from "../../components/PermissionNotice";
 import type { DuelChannel, DuelMessage } from "../../contracts/duelChannel";
 import type { Zone } from "../../contracts/roundOutcome";
@@ -396,16 +397,8 @@ export function PreRound({
   };
   const handleFireRef = useRef(handleFire);
   handleFireRef.current = handleFire;
-
-  useEffect(() => {
-    if (
-      (phase !== "fire" && phase !== "countdown" && phase !== "warning") ||
-      (Platform.OS !== "android" && Platform.OS !== "ios")
-    ) {
-      return undefined;
-    }
-    return subscribeVolumeFire(() => handleFireRef.current());
-  }, [phase]);
+  const advanceRef = useRef<(() => void) | null>(null);
+  const confirmActionEnabledRef = useRef(false);
 
   const startCountdown = () => {
     falseStarts.arm(attemptRef.current);
@@ -470,6 +463,35 @@ export function PreRound({
 
   const confirmDisabled =
     phase === "position" && (!topEdgeDown || (isHost && !peerReady));
+  advanceRef.current = advance;
+  confirmActionEnabledRef.current =
+    clockCalibrationStatus === "ready" &&
+    pitchStatus === "started" &&
+    !motionDenied &&
+    !confirmDisabled;
+
+  useEffect(() => {
+    if (
+      (phase !== "separate" &&
+        phase !== "position" &&
+        phase !== "fire" &&
+        phase !== "countdown" &&
+        phase !== "warning") ||
+      (Platform.OS !== "android" && Platform.OS !== "ios")
+    ) {
+      return undefined;
+    }
+    return subscribeVolumeFire(({ direction }) => {
+      const currentPhase = phaseRef.current;
+      if (currentPhase === "separate" || currentPhase === "position") {
+        if (direction === "up" && confirmActionEnabledRef.current) {
+          advanceRef.current?.();
+        }
+        return;
+      }
+      handleFireRef.current();
+    });
+  }, [phase]);
 
   const status = useMemo(() => {
     if (phase === "separate") return "STAND APART";
@@ -496,89 +518,98 @@ export function PreRound({
         onPress={() => setAudioMuted((muted) => !muted)}
         style={styles.muteButton}
       />
-      <Text style={styles.kicker}>PRE-ROUND RITUAL</Text>
-      <Text style={styles.heading}>
-        {clockCalibrationStatus === "ready"
-          ? (sendError ?? status)
-          : clockCalibrationStatus === "failed"
-            ? "CLOCK CALIBRATION FAILED"
-            : "CALIBRATING CLOCKS"}
-      </Text>
-      <Text style={styles.detail}>
-        {clockCalibrationStatus === "failed"
-          ? "Check the connection to your opponent, then retry before the duel."
-          : clockCalibrationStatus === "calibrating"
-            ? "Synchronizing both players’ clocks before timed play."
-            : phase === "separate" &&
-              "Face your opponent from a few paces away, then confirm."}
-        {clockCalibrationStatus === "ready" &&
-          phase === "position" &&
-          (isHost
-            ? "Point both phones' top edges toward the ground. You start the countdown."
-            : "Point your phone's top edge toward the ground, then confirm.")}
-        {clockCalibrationStatus === "ready" &&
-          phase === "waiting" &&
-          "The countdown starts when the host is ready."}
-        {clockCalibrationStatus === "ready" &&
-          phase === "countdown" &&
-          "Keep still until the buzz."}
-      </Text>
-      <Text style={styles.detail}>
-        {pitchStatus !== "started"
-          ? pitchStatus === "starting"
-            ? "STARTING MOTION SENSORS"
-            : "MOTION UNAVAILABLE — enable motion access in settings, then retry."
-          : falseStartPlayer !== null
-            ? "FALSE START — the non-offending player can still shoot at FIRE."
-            : "Aim the top edge at your opponent. Missing GPS or a calibrated compass counts as a miss."}
-      </Text>
-      {!motionDenied &&
-        pitchStatus !== "started" &&
-        pitchStatus !== "starting" &&
-        (pitchStatus === "permissionDenied" ? (
+      <View style={styles.content}>
+        <Text style={styles.kicker}>PRE-ROUND RITUAL</Text>
+        <Text style={styles.heading}>
+          {clockCalibrationStatus === "ready"
+            ? (sendError ?? status)
+            : clockCalibrationStatus === "failed"
+              ? "CLOCK CALIBRATION FAILED"
+              : "CALIBRATING CLOCKS"}
+        </Text>
+        <Text style={styles.detail}>
+          {clockCalibrationStatus === "failed"
+            ? "Check the connection to your opponent, then retry before the duel."
+            : clockCalibrationStatus === "calibrating"
+              ? "Synchronizing both players’ clocks before timed play."
+              : phase === "separate" &&
+                "Face your opponent from a few paces away, then confirm or press volume up."}
+          {clockCalibrationStatus === "ready" &&
+            phase === "position" &&
+            (isHost
+              ? "Point both phones' top edges toward the ground, then press volume up to start the countdown."
+              : "Point your phone's top edge toward the ground, then confirm or press volume up.")}
+          {clockCalibrationStatus === "ready" &&
+            phase === "waiting" &&
+            "The countdown starts when the host is ready."}
+          {clockCalibrationStatus === "ready" &&
+            phase === "countdown" &&
+            "Keep still until the buzz."}
+        </Text>
+        <Text style={styles.detail}>
+          {pitchStatus !== "started"
+            ? pitchStatus === "starting"
+              ? "STARTING MOTION SENSORS"
+              : "MOTION UNAVAILABLE — enable motion access in settings, then retry."
+            : falseStartPlayer !== null
+              ? "FALSE START — the non-offending player can still shoot at FIRE."
+              : "Aim the top edge at your opponent. Missing GPS or a calibrated compass counts as a miss."}
+        </Text>
+        {!motionDenied && pitchStatus === "permissionDenied" && (
           <PermissionNotice
             canAskAgain={false}
             capability="Motion"
             message="Pitch sensing is needed to capture calibrated shot zones."
             onRetry={recheckMotion}
           />
-        ) : (
-          <Button onPress={recheckMotion}>RETRY MOTION</Button>
-        ))}
-      {clockCalibrationStatus === "failed" && (
-        <Button
-          mode="contained"
-          onPress={onRetryClockCalibration}
-        >
-          RETRY CALIBRATION
-        </Button>
-      )}
-      {clockCalibrationStatus === "ready" && phase === "countdown" && (
-        <ProgressBar
-          progress={(COUNTDOWN_VALUES.length - (countdown ?? 3)) / 3}
-          color={colors.accent}
-        />
-      )}
-      {clockCalibrationStatus === "ready" &&
-        (phase === "separate" || phase === "position") &&
-        (motionDenied ? (
-          <PermissionNotice
-            canAskAgain={false}
-            capability="Motion"
-            message="Pocket Draw reads the phone's tilt to check your starting pose, so the round can't begin without motion access."
-            onRetry={recheckMotion}
+        )}
+        {clockCalibrationStatus === "ready" &&
+          (phase === "separate" || phase === "position") &&
+          motionDenied && (
+            <PermissionNotice
+              canAskAgain={false}
+              capability="Motion"
+              message="Pocket Draw reads the phone's tilt to check your starting pose, so the round can't begin without motion access."
+              onRetry={recheckMotion}
+            />
+          )}
+        {clockCalibrationStatus === "ready" && phase === "countdown" && (
+          <ProgressBar
+            progress={(COUNTDOWN_VALUES.length - (countdown ?? 3)) / 3}
+            color={colors.accent}
           />
-        ) : (
+        )}
+      </View>
+      <View style={styles.actions}>
+        {!motionDenied &&
+          pitchStatus !== "started" &&
+          pitchStatus !== "starting" &&
+          (pitchStatus === "permissionDenied" ? null : (
+            <CutCornerButton
+              fillAvailableHeight
+              label="RETRY MOTION"
+              onPress={recheckMotion}
+            />
+          ))}
+        {clockCalibrationStatus === "failed" && (
+          <CutCornerButton
+            fillAvailableHeight
+            label="RETRY CALIBRATION"
+            onPress={onRetryClockCalibration}
+          />
+        )}
+        {clockCalibrationStatus === "ready" &&
+          (phase === "separate" || phase === "position") &&
+          !motionDenied &&
           pitchStatus === "started" && (
-            <Button
-              mode="contained"
+            <CutCornerButton
+              fillAvailableHeight
               disabled={confirmDisabled}
+              label="CONFIRM"
               onPress={advance}
-            >
-              CONFIRM
-            </Button>
-          )
-        ))}
+            />
+          )}
+      </View>
 
       {/* Android intercepts volume keys; iOS observes volume changes while
           preserving the normal volume adjustment. Tap remains available. */}
@@ -629,10 +660,19 @@ export function PreRound({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: colors.background,
-    flex: 1,
+    flex: 1
+  },
+  content: {
+    flex: 1.6,
     gap: 18,
-    justifyContent: "center",
-    padding: 28
+    justifyContent: "flex-end",
+    paddingBottom: 24,
+    paddingHorizontal: 28,
+    paddingTop: 28
+  },
+  actions: {
+    flex: 1,
+    gap: 12
   },
   muteButton: {
     position: "absolute",
