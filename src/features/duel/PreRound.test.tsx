@@ -408,7 +408,8 @@ describe("PreRound countdown and draw", () => {
         type: "raised",
         atMs: expect.any(Number),
         reactionMs: 200,
-        zone: "miss"
+        zone: "miss",
+        missReason: "tooLow"
       }
     ]);
   });
@@ -445,7 +446,8 @@ describe("PreRound countdown and draw", () => {
         type: "raised",
         atMs: expect.any(Number),
         reactionMs: 100,
-        zone: "miss"
+        zone: "miss",
+        missReason: "offTarget"
       }
     ]);
     expect(
@@ -459,18 +461,20 @@ describe("PreRound countdown and draw", () => {
       winnerId: "guest",
       winnerPoints: 1,
       reactionMs: 100,
-      opponentReactionMs: 900
+      opponentReactionMs: 900,
+      misses: [{ playerId: "host", reason: "offTarget" }]
     });
   });
 
   it.each([
-    [1, "bodyshot"],
-    [1.1, "headshot"],
-    [0.4, "miss"]
+    [1, "bodyshot", undefined],
+    [1.1, "headshot", undefined],
+    [0.4, "miss", "tooLow"],
+    [1.3, "miss", "tooHigh"]
   ] as const)(
-    "captures the calibrated pitch zone at %s radians",
-    async (theta, zone) => {
-      const { completeRitual, deliver, shots, view, wait } =
+    "captures the calibrated pitch zone and reason at %s radians",
+    async (theta, zone, missReason) => {
+      const { completeRitual, deliver, sent, shots, view, wait } =
         await renderPreRound("host");
       await completeRitual();
       await wait(COUNTDOWN_DURATION_MS + 200);
@@ -487,6 +491,13 @@ describe("PreRound countdown and draw", () => {
         zone: "bodyshot"
       });
       expect(shots[0]).toMatchObject({ selfReactionMs: 200, selfZone: zone });
+      if (missReason) {
+        expect(shots[0].selfMissReason).toBe(missReason);
+        expect(sent.at(-1)).toMatchObject({ type: "raised", zone, missReason });
+      } else {
+        expect(shots[0]).not.toHaveProperty("selfMissReason");
+        expect(sent.at(-1)).not.toHaveProperty("missReason");
+      }
       expect(
         judgeRoundShots(
           { id: "host", name: "Host" },
@@ -509,6 +520,49 @@ describe("PreRound countdown and draw", () => {
       );
     }
   );
+
+  it("captures unavailable pitch and preserves the first peer miss reason through judgment", async () => {
+    const { completeRitual, deliver, sent, shots, view, wait } =
+      await renderPreRound("host");
+    await completeRitual();
+    await wait(COUNTDOWN_DURATION_MS + 200);
+    await act(() =>
+      mockPitchListeners.forEach((listener) => listener({ rotation: null }))
+    );
+    await fireEvent.press(view.getByLabelText("Fire"));
+    await deliver({
+      type: "raised",
+      atMs: 1,
+      reactionMs: 250,
+      zone: "miss",
+      missReason: "tooLow"
+    });
+    await deliver({
+      type: "raised",
+      atMs: 2,
+      reactionMs: 260,
+      zone: "miss",
+      missReason: "tooHigh"
+    });
+    expect(sent.at(-1)).toMatchObject({
+      zone: "miss",
+      missReason: "trackingUnavailable"
+    });
+    expect(shots[0]).toMatchObject({
+      selfMissReason: "trackingUnavailable",
+      opponentMissReason: "tooLow"
+    });
+    expect(
+      judgeRoundShots(
+        { id: "host", name: "Host" },
+        { id: "guest", name: "Guest" },
+        shots[0]
+      ).misses
+    ).toEqual([
+      { playerId: "guest", reason: "tooLow" },
+      { playerId: "host", reason: "trackingUnavailable" }
+    ]);
+  });
 
   it.each(["tap", "volume", "movement"] as const)(
     "warns on the first early %s, then disqualifies the second",

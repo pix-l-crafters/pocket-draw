@@ -13,7 +13,7 @@ import {
 import { AppState, type AppStateStatus } from "react-native";
 
 import type { DuelChannel, DuelMessage } from "../../contracts/duelChannel";
-import type { Zone } from "../../contracts/roundOutcome";
+import { classifyZone, type ShotClassification } from "./pitchZoneClassifier";
 import { useAimTracking } from "./useAimTracking";
 
 jest.mock("expo-location", () => ({
@@ -99,7 +99,7 @@ async function mount(clockOffsetMs = 0) {
     isConnected: () => connected
   };
   const view = await renderHook<
-    (zone: Zone) => Zone,
+    (shot: ShotClassification) => ShotClassification,
     { clockOffsetMs: number }
   >(({ clockOffsetMs }) => useAimTracking(channel, clockOffsetMs), {
     initialProps: { clockOffsetMs }
@@ -188,21 +188,57 @@ describe("useAimTracking", () => {
     jest.restoreAllMocks();
   });
 
+  test("retains pitch causes without aim and records stale or unreliable tracking at fire time", async () => {
+    const duel = await mount();
+    expect(duel.capture(classifyZone(0.4))).toEqual({
+      zone: "miss",
+      missReason: "tooLow"
+    });
+    expect(duel.capture(classifyZone(1.3))).toEqual({
+      zone: "miss",
+      missReason: "tooHigh"
+    });
+    expect(duel.capture({ zone: "bodyshot" })).toEqual({
+      zone: "miss",
+      missReason: "trackingUnavailable"
+    });
+    await duel.trustedReadings();
+    await duel.setHeading(heading(180));
+    expect(duel.capture({ zone: "bodyshot" })).toEqual({
+      zone: "miss",
+      missReason: "offTarget"
+    });
+    await duel.wait(2001);
+    expect(duel.capture({ zone: "bodyshot" })).toEqual({
+      zone: "miss",
+      missReason: "trackingUnavailable"
+    });
+    await duel.setHeading(heading(180, 180, 2));
+    expect(duel.capture({ zone: "bodyshot" })).toEqual({
+      zone: "miss",
+      missReason: "trackingUnavailable"
+    });
+    expect(duel.capture(classifyZone(0.4))).toEqual({
+      zone: "miss",
+      missReason: "tooLow"
+    });
+  });
+
   test("missing readings never produce a hit", async () => {
     const duel = await mount();
-    expect(duel.capture("bodyshot")).toBe("miss");
+    expect(duel.capture({ zone: "bodyshot" }).zone).toBe("miss");
     await duel.setPosition();
     await duel.setHeading();
-    expect(duel.capture("headshot")).toBe("miss");
+    expect(duel.capture({ zone: "headshot" }).zone).toBe("miss");
     await duel.receive(peerPosition());
-    expect(duel.capture("headshot")).toBe("headshot");
-    expect(duel.capture("miss")).toBe("miss");
+    expect(duel.capture({ zone: "headshot" }).zone).toBe("headshot");
+    expect(duel.capture({ zone: "miss" }).zone).toBe("miss");
   });
 
   test("uses an existing foreground grant and requests frequent high-accuracy GPS", async () => {
     const duel = await mount();
     await duel.trustedReadings();
-    expect(duel.capture("bodyshot")).toBe("bodyshot");
+    expect(duel.capture({ zone: "bodyshot" }).zone).toBe("bodyshot");
     expect(requestForegroundPermissionsAsync).not.toHaveBeenCalled();
     expect(watchPositionAsync).toHaveBeenCalledWith(
       { accuracy: Accuracy.High, timeInterval: 1000, distanceInterval: 0 },
@@ -218,47 +254,47 @@ describe("useAimTracking", () => {
     const duel = await mount();
     await duel.trustedReadings();
     expect(requestForegroundPermissionsAsync).toHaveBeenCalledTimes(1);
-    expect(duel.capture("bodyshot")).toBe("bodyshot");
+    expect(duel.capture({ zone: "bodyshot" }).zone).toBe("bodyshot");
   });
 
   test("a retained capture callback sees new compass and both players' GPS readings", async () => {
     const duel = await mount();
     await duel.trustedReadings();
-    expect(duel.capture("headshot")).toBe("headshot");
+    expect(duel.capture({ zone: "headshot" }).zone).toBe("headshot");
     await duel.view.rerender({ clockOffsetMs: 0 });
     expect(duel.view.result.current).toBe(duel.capture);
     await duel.setHeading(heading(180));
-    expect(duel.capture("headshot")).toBe("miss");
+    expect(duel.capture({ zone: "headshot" }).zone).toBe("miss");
     await duel.receive(peerPosition(-0.001));
-    expect(duel.capture("headshot")).toBe("headshot");
+    expect(duel.capture({ zone: "headshot" }).zone).toBe("headshot");
     await duel.setPosition(position(-0.002));
-    expect(duel.capture("bodyshot")).toBe("miss");
+    expect(duel.capture({ zone: "bodyshot" }).zone).toBe("miss");
     await duel.setHeading(heading(0));
-    expect(duel.capture("bodyshot")).toBe("bodyshot");
+    expect(duel.capture({ zone: "bodyshot" }).zone).toBe("bodyshot");
   });
 
   test("compares true north, never magnetic north or an uncalibrated compass", async () => {
     const duel = await mount();
     await duel.trustedReadings();
     await duel.setHeading(heading(180, 0));
-    expect(duel.capture("bodyshot")).toBe("miss");
+    expect(duel.capture({ zone: "bodyshot" }).zone).toBe("miss");
     await duel.setHeading(heading(-1, 0));
-    expect(duel.capture("bodyshot")).toBe("miss");
+    expect(duel.capture({ zone: "bodyshot" }).zone).toBe("miss");
     await duel.setHeading(heading(0, 180, 2));
-    expect(duel.capture("bodyshot")).toBe("miss");
+    expect(duel.capture({ zone: "bodyshot" }).zone).toBe("miss");
     await duel.setHeading(heading(0, 180, 3));
-    expect(duel.capture("bodyshot")).toBe("bodyshot");
+    expect(duel.capture({ zone: "bodyshot" }).zone).toBe("bodyshot");
   });
 
   test("requires heading freshness at capture, including the 2-second boundary", async () => {
     const duel = await mount();
     await duel.trustedReadings();
     await duel.wait(2000);
-    expect(duel.capture("bodyshot")).toBe("bodyshot");
+    expect(duel.capture({ zone: "bodyshot" }).zone).toBe("bodyshot");
     await duel.wait(1);
-    expect(duel.capture("bodyshot")).toBe("miss");
+    expect(duel.capture({ zone: "bodyshot" }).zone).toBe("miss");
     await duel.setHeading();
-    expect(duel.capture("bodyshot")).toBe("bodyshot");
+    expect(duel.capture({ zone: "bodyshot" }).zone).toBe("bodyshot");
   });
 
   test("requires fresh GPS on both sides and does not refresh it by publishing repeats", async () => {
@@ -266,14 +302,14 @@ describe("useAimTracking", () => {
     await duel.trustedReadings();
     await duel.wait(5000);
     await duel.setHeading();
-    expect(duel.capture("bodyshot")).toBe("bodyshot");
+    expect(duel.capture({ zone: "bodyshot" }).zone).toBe("bodyshot");
     await duel.wait(1);
     await duel.setHeading();
-    expect(duel.capture("bodyshot")).toBe("miss");
+    expect(duel.capture({ zone: "bodyshot" }).zone).toBe("miss");
     await duel.setPosition();
-    expect(duel.capture("bodyshot")).toBe("miss");
+    expect(duel.capture({ zone: "bodyshot" }).zone).toBe("miss");
     await duel.receive(peerPosition());
-    expect(duel.capture("bodyshot")).toBe("bodyshot");
+    expect(duel.capture({ zone: "bodyshot" }).zone).toBe("bodyshot");
   });
 
   test("includes network flight time when a 4500ms-old peer fix arrives 750ms later", async () => {
@@ -283,7 +319,7 @@ describe("useAimTracking", () => {
     await duel.setPosition();
     await duel.setHeading();
     await duel.receive(delayedFix);
-    expect(duel.capture("headshot")).toBe("miss");
+    expect(duel.capture({ zone: "headshot" }).zone).toBe("miss");
   });
 
   test("a repeated peer timestamp never renews the source GPS fix", async () => {
@@ -294,13 +330,13 @@ describe("useAimTracking", () => {
     await duel.setPosition();
     await duel.setHeading();
     await duel.receive(fix);
-    expect(duel.capture("headshot")).toBe("headshot");
+    expect(duel.capture({ zone: "headshot" }).zone).toBe("headshot");
     await duel.wait(1);
     await duel.setHeading();
     await duel.receive(fix);
-    expect(duel.capture("headshot")).toBe("miss");
+    expect(duel.capture({ zone: "headshot" }).zone).toBe("miss");
     await duel.receive(peerPosition());
-    expect(duel.capture("headshot")).toBe("headshot");
+    expect(duel.capture({ zone: "headshot" }).zone).toBe("headshot");
   });
 
   test("publishes the native GPS timestamp unchanged on initial, repeat, and changed fixes", async () => {
@@ -348,7 +384,7 @@ describe("useAimTracking", () => {
       const duel = await mount();
       await duel.trustedReadings();
       await duel.receive(peerPosition(0.001, 0, sampleAtMs));
-      expect(duel.capture("bodyshot")).toBe("miss");
+      expect(duel.capture({ zone: "bodyshot" }).zone).toBe("miss");
     }
   );
 
@@ -361,15 +397,15 @@ describe("useAimTracking", () => {
       await duel.receive(
         peerPosition(0.001, 0, Date.now() + clockOffsetMs - 1000)
       );
-      expect(duel.capture("bodyshot")).toBe("bodyshot");
+      expect(duel.capture({ zone: "bodyshot" }).zone).toBe("bodyshot");
       await duel.receive(
         peerPosition(0.001, 0, Date.now() + clockOffsetMs - 5001)
       );
-      expect(duel.capture("bodyshot")).toBe("miss");
+      expect(duel.capture({ zone: "bodyshot" }).zone).toBe("miss");
       await duel.receive(
         peerPosition(0.001, 0, Date.now() + clockOffsetMs + 1)
       );
-      expect(duel.capture("bodyshot")).toBe("miss");
+      expect(duel.capture({ zone: "bodyshot" }).zone).toBe("miss");
     }
   );
 
@@ -381,17 +417,17 @@ describe("useAimTracking", () => {
       await duel.setHeading();
       await duel.receive(peerPosition(0.001, 0, Date.now() + clockOffsetMs));
       const listener = [...duel.handlers][0];
-      expect(duel.capture("headshot")).toBe("miss");
+      expect(duel.capture({ zone: "headshot" }).zone).toBe("miss");
       await duel.view.rerender({ clockOffsetMs });
       expect(duel.view.result.current).toBe(duel.capture);
-      expect(duel.capture("headshot")).toBe("headshot");
+      expect(duel.capture({ zone: "headshot" }).zone).toBe("headshot");
       expect([...duel.handlers]).toEqual([listener]);
       expect(watchPositionAsync).toHaveBeenCalledTimes(1);
       expect(watchHeadingAsync).toHaveBeenCalledTimes(1);
       expect(positionSubscription.remove).not.toHaveBeenCalled();
       expect(headingSubscription.remove).not.toHaveBeenCalled();
       await duel.view.rerender({ clockOffsetMs: 0 });
-      expect(duel.capture("headshot")).toBe("miss");
+      expect(duel.capture({ zone: "headshot" }).zone).toBe("miss");
     }
   );
 
@@ -401,9 +437,9 @@ describe("useAimTracking", () => {
       const duel = await mount();
       await duel.trustedReadings();
       await duel.view.rerender({ clockOffsetMs });
-      expect(duel.capture("bodyshot")).toBe("miss");
+      expect(duel.capture({ zone: "bodyshot" }).zone).toBe("miss");
       await duel.view.rerender({ clockOffsetMs: 0 });
-      expect(duel.capture("bodyshot")).toBe("bodyshot");
+      expect(duel.capture({ zone: "bodyshot" }).zone).toBe("bodyshot");
     }
   );
 
@@ -417,7 +453,7 @@ describe("useAimTracking", () => {
       accuracy: 1,
       sampleAtMs: Date.now()
     });
-    expect(duel.capture("bodyshot")).toBe("miss");
+    expect(duel.capture({ zone: "bodyshot" }).zone).toBe("miss");
     await duel.receive({
       type: "aimPosition",
       latitude: 0.001,
@@ -425,7 +461,7 @@ describe("useAimTracking", () => {
       accuracy: NaN,
       sampleAtMs: Date.now()
     });
-    expect(duel.capture("bodyshot")).toBe("miss");
+    expect(duel.capture({ zone: "bodyshot" }).zone).toBe("miss");
   });
 
   test.each([
@@ -440,7 +476,7 @@ describe("useAimTracking", () => {
     await duel.setPosition(reading());
     await duel.wait(1000);
     await duel.setHeading();
-    expect(duel.capture("bodyshot")).toBe("miss");
+    expect(duel.capture({ zone: "bodyshot" }).zone).toBe("miss");
     expect(duel.sent).toEqual([]);
   });
 
@@ -448,20 +484,20 @@ describe("useAimTracking", () => {
     const duel = await mount();
     await duel.trustedReadings();
     await duel.setPosition(position(0, 0, Date.now(), 200));
-    expect(duel.capture("headshot")).toBe("miss");
+    expect(duel.capture({ zone: "headshot" }).zone).toBe("miss");
   });
 
   test("sensor error callbacks invalidate the previous good reading", async () => {
     const duel = await mount();
     await duel.trustedReadings();
     await act(() => headingError?.("Compass unavailable"));
-    expect(duel.capture("bodyshot")).toBe("miss");
+    expect(duel.capture({ zone: "bodyshot" }).zone).toBe("miss");
     await duel.setHeading();
-    expect(duel.capture("bodyshot")).toBe("bodyshot");
+    expect(duel.capture({ zone: "bodyshot" }).zone).toBe("bodyshot");
     await act(() => positionError?.("GPS unavailable"));
-    expect(duel.capture("bodyshot")).toBe("miss");
+    expect(duel.capture({ zone: "bodyshot" }).zone).toBe("miss");
     await duel.setPosition();
-    expect(duel.capture("bodyshot")).toBe("bodyshot");
+    expect(duel.capture({ zone: "bodyshot" }).zone).toBe("bodyshot");
   });
 
   test.each(["heading", "position", "permission"] as const)(
@@ -477,7 +513,7 @@ describe("useAimTracking", () => {
       const duel = await mount();
       await duel.trustedReadings();
       await duel.wait(1000);
-      expect(duel.capture("headshot")).toBe("miss");
+      expect(duel.capture({ zone: "headshot" }).zone).toBe("miss");
     }
   );
 
@@ -487,7 +523,7 @@ describe("useAimTracking", () => {
       .mockResolvedValue(permission(false, false));
     const duel = await mount();
     await duel.receive(peerPosition());
-    expect(duel.capture("bodyshot")).toBe("miss");
+    expect(duel.capture({ zone: "bodyshot" }).zone).toBe("miss");
     expect(watchPositionAsync).not.toHaveBeenCalled();
     expect(watchHeadingAsync).not.toHaveBeenCalled();
     expect(requestForegroundPermissionsAsync).not.toHaveBeenCalled();
@@ -502,7 +538,7 @@ describe("useAimTracking", () => {
       .mockResolvedValue(permission(false));
     const duel = await mount();
     await duel.receive(peerPosition());
-    expect(duel.capture("bodyshot")).toBe("miss");
+    expect(duel.capture({ zone: "bodyshot" }).zone).toBe("miss");
     expect(watchPositionAsync).not.toHaveBeenCalled();
   });
 
@@ -511,7 +547,7 @@ describe("useAimTracking", () => {
       .mocked(getForegroundPermissionsAsync)
       .mockResolvedValue(permission(false, false));
     const duel = await mount();
-    expect(duel.capture("bodyshot")).toBe("miss");
+    expect(duel.capture({ zone: "bodyshot" }).zone).toBe("miss");
     jest
       .mocked(getForegroundPermissionsAsync)
       .mockResolvedValue(permission(true));
@@ -520,7 +556,7 @@ describe("useAimTracking", () => {
     );
     await act(async () => {});
     await duel.trustedReadings();
-    expect(duel.capture("headshot")).toBe("headshot");
+    expect(duel.capture({ zone: "headshot" }).zone).toBe("headshot");
     expect(duel.view.result.current).toBe(duel.capture);
   });
 

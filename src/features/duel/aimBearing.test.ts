@@ -16,14 +16,20 @@ describe("classifyAimZone", () => {
   ] as const)(
     "classifies heading %s around north as %s",
     (heading, expected) => {
-      expect(classifyAimZone("bodyshot", heading, self, north)).toBe(expected);
+      expect(
+        classifyAimZone({ zone: "bodyshot" }, heading, self, north).zone
+      ).toBe(expected);
     }
   );
 
   test("preserves the supplied pitch zone instead of promoting it", () => {
-    expect(classifyAimZone("headshot", 0, self, north)).toBe("headshot");
-    expect(classifyAimZone("miss", 0, self, north)).toBe("miss");
-    expect(classifyAimZone("headshot", 180, self, north)).toBe("miss");
+    expect(classifyAimZone({ zone: "headshot" }, 0, self, north).zone).toBe(
+      "headshot"
+    );
+    expect(classifyAimZone({ zone: "miss" }, 0, self, north).zone).toBe("miss");
+    expect(classifyAimZone({ zone: "headshot" }, 180, self, north).zone).toBe(
+      "miss"
+    );
   });
 
   test.each([
@@ -31,31 +37,43 @@ describe("classifyAimZone", () => {
     [180, { latitude: -0.001, longitude: 0, accuracy: 1 }],
     [270, { latitude: 0, longitude: -0.001, accuracy: 1 }]
   ])("uses clockwise compass bearing %s", (heading, opponent) => {
-    expect(classifyAimZone("bodyshot", heading, self, opponent)).toBe(
-      "bodyshot"
-    );
+    expect(
+      classifyAimZone({ zone: "bodyshot" }, heading, self, opponent).zone
+    ).toBe("bodyshot");
   });
 
   test("uses the spherical initial bearing, not a flat latitude/longitude angle", () => {
     const origin = { latitude: 60, longitude: 0, accuracy: 1 };
     const opponent = { latitude: 61, longitude: 1, accuracy: 1 };
     // The initial great-circle bearing is about 25.8°, not the planar 45°.
-    expect(classifyAimZone("headshot", 26, origin, opponent)).toBe("headshot");
-    expect(classifyAimZone("headshot", 60, origin, opponent)).toBe("miss");
+    expect(
+      classifyAimZone({ zone: "headshot" }, 26, origin, opponent).zone
+    ).toBe("headshot");
+    expect(
+      classifyAimZone({ zone: "headshot" }, 60, origin, opponent).zone
+    ).toBe("miss");
   });
 
   test("takes the short route across the international date line", () => {
     const west = { latitude: 0, longitude: 179.999, accuracy: 1 };
     const east = { latitude: 0, longitude: -179.999, accuracy: 1 };
-    expect(classifyAimZone("bodyshot", 90, west, east)).toBe("bodyshot");
-    expect(classifyAimZone("bodyshot", 270, west, east)).toBe("miss");
-    expect(classifyAimZone("bodyshot", 270, east, west)).toBe("bodyshot");
+    expect(classifyAimZone({ zone: "bodyshot" }, 90, west, east).zone).toBe(
+      "bodyshot"
+    );
+    expect(classifyAimZone({ zone: "bodyshot" }, 270, west, east).zone).toBe(
+      "miss"
+    );
+    expect(classifyAimZone({ zone: "bodyshot" }, 270, east, west).zone).toBe(
+      "bodyshot"
+    );
   });
 
   test.each([null, undefined, NaN, Infinity, -1, 360, 361])(
     "rejects missing or invalid true heading %s",
     (heading) => {
-      expect(classifyAimZone("bodyshot", heading, self, north)).toBe("miss");
+      expect(
+        classifyAimZone({ zone: "bodyshot" }, heading, self, north).zone
+      ).toBe("miss");
     }
   );
 
@@ -76,22 +94,31 @@ describe("classifyAimZone", () => {
     { ...north, accuracy: NaN },
     { ...north, accuracy: Infinity }
   ])("rejects unusable GPS on either side: %s", (position) => {
-    expect(classifyAimZone("bodyshot", 0, position, north)).toBe("miss");
-    expect(classifyAimZone("bodyshot", 0, self, position)).toBe("miss");
+    expect(classifyAimZone({ zone: "bodyshot" }, 0, position, north).zone).toBe(
+      "miss"
+    );
+    expect(classifyAimZone({ zone: "bodyshot" }, 0, self, position).zone).toBe(
+      "miss"
+    );
   });
 
   test("rejects coincident, longitude-equivalent, and antipodal coordinates", () => {
-    expect(classifyAimZone("bodyshot", 0, self, self)).toBe("miss");
+    expect(classifyAimZone({ zone: "bodyshot" }, 0, self, self).zone).toBe(
+      "miss"
+    );
     expect(
       classifyAimZone(
-        "bodyshot",
+        { zone: "bodyshot" },
         0,
         { ...self, longitude: -180 },
         { ...self, longitude: 180 }
-      )
+      ).zone
     ).toBe("miss");
     expect(
-      classifyAimZone("bodyshot", 90, self, { ...self, longitude: 180 })
+      classifyAimZone({ zone: "bodyshot" }, 90, self, {
+        ...self,
+        longitude: 180
+      }).zone
     ).toBe("miss");
   });
 
@@ -99,19 +126,54 @@ describe("classifyAimZone", () => {
     // These readings are about 111m apart, but their uncertainty disks overlap.
     expect(
       classifyAimZone(
-        "bodyshot",
+        { zone: "bodyshot" },
         0,
         { ...self, accuracy: 60 },
         { ...north, accuracy: 60 }
-      )
+      ).zone
     ).toBe("miss");
     expect(
       classifyAimZone(
-        "bodyshot",
+        { zone: "bodyshot" },
         0,
         { ...self, accuracy: 50 },
         { ...north, accuracy: 50 }
-      )
+      ).zone
     ).toBe("bodyshot");
+  });
+  test("only trustworthy geometry records off-target rather than unavailable tracking", () => {
+    expect(classifyAimZone({ zone: "bodyshot" }, 180, self, north)).toEqual({
+      zone: "miss",
+      missReason: "offTarget"
+    });
+    for (const opponent of [
+      null,
+      self,
+      { ...north, accuracy: 200 },
+      { ...self, longitude: 180 }
+    ]) {
+      expect(
+        classifyAimZone({ zone: "bodyshot" }, 180, self, opponent)
+      ).toEqual({
+        zone: "miss",
+        missReason: "trackingUnavailable"
+      });
+    }
+    expect(classifyAimZone({ zone: "bodyshot" }, NaN, self, north)).toEqual({
+      zone: "miss",
+      missReason: "trackingUnavailable"
+    });
+  });
+
+  test("preserves known pitch misses even with unavailable or misaligned aim", () => {
+    expect(
+      classifyAimZone({ zone: "miss", missReason: "tooLow" }, null, null, null)
+    ).toEqual({ zone: "miss", missReason: "tooLow" });
+    expect(
+      classifyAimZone({ zone: "miss", missReason: "tooHigh" }, 180, self, north)
+    ).toEqual({ zone: "miss", missReason: "tooHigh" });
+    expect(classifyAimZone({ zone: "miss" }, null, null, null)).toEqual({
+      zone: "miss"
+    });
   });
 });

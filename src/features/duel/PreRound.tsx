@@ -7,7 +7,7 @@ import { Button, IconButton, ProgressBar } from "react-native-paper";
 
 import { PermissionNotice } from "../../components/PermissionNotice";
 import type { DuelChannel, DuelMessage } from "../../contracts/duelChannel";
-import type { Zone } from "../../contracts/roundOutcome";
+import type { MissReason, Zone } from "../../contracts/roundOutcome";
 import { useForegroundRecheck } from "../../lib/useForegroundRecheck";
 import { colors, fonts } from "../../theme/tokens";
 import { isTopEdgeDown } from "./calibrationPose";
@@ -96,6 +96,10 @@ export function PreRound({
   const attemptRef = useRef(0);
   const [selfZone, setSelfZone] = useState<Zone>("miss");
   const [opponentZone, setOpponentZone] = useState<Zone>("miss");
+  const [selfMissReason, setSelfMissReason] =
+    useState<Exclude<MissReason, "noShot">>();
+  const [opponentMissReason, setOpponentMissReason] =
+    useState<Exclude<MissReason, "noShot">>();
   const opponentShotReceivedRef = useRef(false);
 
   useEffect(() => {
@@ -309,6 +313,9 @@ export function PreRound({
       if (message.type === "raised" && !opponentShotReceivedRef.current) {
         opponentShotReceivedRef.current = true;
         setOpponentZone(message.zone);
+        setOpponentMissReason(
+          message.zone === "miss" ? message.missReason : undefined
+        );
         setOpponentReactionMs(message.reactionMs);
       }
     });
@@ -327,7 +334,9 @@ export function PreRound({
         opponentReactionMs,
         selfZone,
         opponentZone,
-        falseStartPlayer
+        falseStartPlayer,
+        ...(selfMissReason ? { selfMissReason } : {}),
+        ...(opponentMissReason ? { opponentMissReason } : {})
       });
     };
 
@@ -350,7 +359,9 @@ export function PreRound({
     selfReactionMs,
     selfZone,
     opponentZone,
-    falseStartPlayer
+    falseStartPlayer,
+    selfMissReason,
+    opponentMissReason
   ]);
 
   const handleFire = () => {
@@ -373,9 +384,9 @@ export function PreRound({
     if (!capture) return;
 
     const theta = pitchMonitor.currentTheta();
-    const zone = captureAim(
+    const shot = captureAim(
       theta === null
-        ? "miss"
+        ? { zone: "miss", missReason: "trackingUnavailable" }
         : classifyZone(
             computeRaiseFraction(
               theta,
@@ -384,14 +395,16 @@ export function PreRound({
             )
           )
     );
-    setSelfZone(zone);
+    setSelfZone(shot.zone);
+    setSelfMissReason(shot.missReason);
     setSelfReactionMs(capture.reactionMs);
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     safeSend({
       type: "raised",
       atMs: capture.raisedAtMs,
       reactionMs: capture.reactionMs,
-      zone
+      zone: shot.zone,
+      ...(shot.missReason ? { missReason: shot.missReason } : {})
     });
   };
   const handleFireRef = useRef(handleFire);

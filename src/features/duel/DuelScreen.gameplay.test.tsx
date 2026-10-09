@@ -501,7 +501,8 @@ describe("DuelScreen real two-phone gameplay", () => {
           winnerPoints: 1,
           loserPoints: 0,
           reactionMs: 200,
-          opponentReactionMs: 400
+          opponentReactionMs: 400,
+          misses: [{ playerId: "host-id", reason: "offTarget" }]
         },
         {
           kind: "falseStart",
