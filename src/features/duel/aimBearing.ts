@@ -48,10 +48,6 @@ export function classifyAimZone(
       Math.cos(opponentLatitude) *
       Math.cos(longitudeDifference);
   const y = Math.sin(longitudeDifference) * Math.cos(opponentLatitude);
-  // Coincident and antipodal points have no unique initial bearing.
-  if (Math.hypot(x, y) < 1e-12)
-    return { zone: "miss", missReason: "trackingUnavailable" };
-
   const haversine =
     Math.sin((opponentLatitude - latitude) / 2) ** 2 +
     Math.cos(latitude) *
@@ -59,7 +55,11 @@ export function classifyAimZone(
       Math.sin(longitudeDifference / 2) ** 2;
   const separation =
     2 * 6_371_000 * Math.asin(Math.sqrt(Math.min(1, haversine)));
-  if (separation <= self.accuracy + opponent.accuracy)
+  // A few paces is usually inside phone GPS uncertainty. The bearing cannot
+  // verify aim there, so keep the calibrated pitch result.
+  if (separation <= self.accuracy + opponent.accuracy) return shot;
+  // Coincident and antipodal points have no unique initial bearing.
+  if (Math.hypot(x, y) < 1e-12)
     return { zone: "miss", missReason: "trackingUnavailable" };
 
   const bearing = (Math.atan2(y, x) / radians + 360) % 360;

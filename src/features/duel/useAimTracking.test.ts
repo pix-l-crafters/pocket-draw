@@ -480,11 +480,11 @@ describe("useAimTracking", () => {
     expect(duel.sent).toEqual([]);
   });
 
-  test("unknown GPS uncertainty prevents a hit even with aligned headings", async () => {
+  test("overlapping GPS uncertainty keeps a calibrated pitch hit", async () => {
     const duel = await mount();
     await duel.trustedReadings();
     await duel.setPosition(position(0, 0, Date.now(), 200));
-    expect(duel.capture({ zone: "headshot" }).zone).toBe("miss");
+    expect(duel.capture({ zone: "headshot" }).zone).toBe("headshot");
   });
 
   test("sensor error callbacks invalidate the previous good reading", async () => {
