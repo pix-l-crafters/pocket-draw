@@ -2,6 +2,8 @@
 
 import {
   ZONE_POINTS,
+  type MissReason,
+  type RoundMiss,
   type RoundOutcome,
   type Zone
 } from "../../contracts/roundOutcome";
@@ -16,6 +18,8 @@ export type RoundShots = {
   opponentReactionMs: number | null;
   selfZone: Zone;
   opponentZone: Zone;
+  selfMissReason?: Exclude<MissReason, "noShot">;
+  opponentMissReason?: Exclude<MissReason, "noShot">;
   falseStartPlayer: "self" | "opponent" | null;
 };
 
@@ -47,6 +51,37 @@ export function judgeRoundShots(
   opponent: RoundPlayer,
   shots: RoundShots
 ): RoundOutcome {
+  const misses: RoundMiss[] = [];
+  const captured = [
+    {
+      playerId: self.id,
+      side: "self",
+      reactionMs: shots.selfReactionMs,
+      zone: shots.selfZone,
+      reason: shots.selfMissReason
+    },
+    {
+      playerId: opponent.id,
+      side: "opponent",
+      reactionMs: shots.opponentReactionMs,
+      zone: shots.opponentZone,
+      reason: shots.opponentMissReason
+    }
+  ] as const;
+  for (const shot of captured) {
+    if (shot.side === shots.falseStartPlayer) continue;
+    const reason =
+      shot.reactionMs === null
+        ? "noShot"
+        : shot.zone === "miss"
+          ? shot.reason
+          : undefined;
+    if (reason) misses.push({ playerId: shot.playerId, reason });
+  }
+  misses.sort((a, b) =>
+    a.playerId < b.playerId ? -1 : a.playerId > b.playerId ? 1 : 0
+  );
+  const diagnostics = misses.length ? { misses } : {};
   if (shots.falseStartPlayer !== null) {
     const selfOffended = shots.falseStartPlayer === "self";
     const reactionMs = selfOffended
@@ -60,11 +95,15 @@ export function judgeRoundShots(
       nonOffenderShot:
         reactionMs === null
           ? null
-          : { reactionMs, zone, points: ZONE_POINTS[zone] }
+          : { reactionMs, zone, points: ZONE_POINTS[zone] },
+      ...diagnostics
     };
   }
-  return resolveRoundOutcome(
-    toPlayerShot(self.id, shots.selfReactionMs, shots.selfZone),
-    toPlayerShot(opponent.id, shots.opponentReactionMs, shots.opponentZone)
-  );
+  return {
+    ...resolveRoundOutcome(
+      toPlayerShot(self.id, shots.selfReactionMs, shots.selfZone),
+      toPlayerShot(opponent.id, shots.opponentReactionMs, shots.opponentZone)
+    ),
+    ...diagnostics
+  };
 }

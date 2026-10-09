@@ -4,6 +4,19 @@
 
 export type Zone = "miss" | "bodyshot" | "headshot";
 
+/** A detected miss cause, not a reconstructed physical bullet trajectory. */
+export type MissReason =
+  | "tooLow"
+  | "tooHigh"
+  | "offTarget"
+  | "trackingUnavailable"
+  | "noShot";
+
+export type RoundMiss = {
+  playerId: string;
+  reason: MissReason;
+};
+
 export type ScoredShot = {
   reactionMs: number;
   zone: Zone;
@@ -23,7 +36,7 @@ export const ZONE_POINTS: Record<Zone, 0 | 1 | 2> = {
 // there since miss/bodyshot/headshot points are 0/1/2, a bijection), unequal
 // points is a "win". See
 // docs/superpowers/specs/2026-09-17-fire-mechanic-scoring-design.md.
-export type RoundOutcome =
+export type RoundOutcome = (
   | {
       kind: "win";
       winnerId: string;
@@ -46,7 +59,11 @@ export type RoundOutcome =
       nonOffenderId: string;
       // null means no shot was captured; a captured miss has zone "miss".
       nonOffenderShot: ScoredShot | null;
-    };
+    }
+) & {
+  /** Absent for older rounds that did not capture miss diagnostics. */
+  misses?: RoundMiss[];
+};
 
 // Producer implementation: src/features/duel/roundJudge.ts.
 // TODO(mobark): once the producer branch lands, replace mockRoundOutcome with

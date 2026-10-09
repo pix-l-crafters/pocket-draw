@@ -506,7 +506,8 @@ describe("DuelScreen real two-phone gameplay", () => {
           winnerPoints: 1,
           loserPoints: 0,
           reactionMs: 200,
-          opponentReactionMs: 400
+          opponentReactionMs: 400,
+          misses: [{ playerId: "host-id", reason: "offTarget" }]
         },
         {
           kind: "falseStart",
@@ -546,7 +547,6 @@ describe("DuelScreen real two-phone gameplay", () => {
         expect(
           within(phone.getByText("Gil").parent!).getByText("3")
         ).toBeTruthy();
-        expect(phone.getByText("Round 1 — Tie · 200ms")).toBeTruthy();
         expect(phone.getByText("Round 2 — Hana · 200ms")).toBeTruthy();
         expect(phone.getByText("Round 3 — Gil · 200ms")).toBeTruthy();
         expect(phone.getByText("Round 4 — Gil false start")).toBeTruthy();
@@ -555,4 +555,159 @@ describe("DuelScreen real two-phone gameplay", () => {
       await view.unmount();
     }
   );
+  it.each([
+    {
+      hostPitch: 0.9,
+      hostHeading: 0,
+      guestPitch: 1.1,
+      winner: "Hana",
+      miss: null
+    },
+    {
+      hostPitch: 0.4,
+      hostHeading: 0,
+      guestPitch: 1.1,
+      winner: "Gil",
+      miss: /raised too little/i
+    },
+    {
+      hostPitch: 0.4,
+      hostHeading: 0,
+      guestPitch: 0.4,
+      winner: null,
+      miss: /raised too little/i
+    },
+    {
+      hostPitch: 1.3,
+      hostHeading: 0,
+      guestPitch: 1.1,
+      winner: "Gil",
+      miss: /raised too far|too high/i
+    },
+    {
+      hostPitch: 0.9,
+      hostHeading: 90,
+      guestPitch: 1.1,
+      winner: "Gil",
+      miss: /off.target|aimed outside/i
+    },
+    {
+      hostPitch: 0.9,
+      hostHeading: NaN,
+      guestPitch: 1.1,
+      winner: "Gil",
+      miss: /could not verify|unavailable|unverified/i
+    }
+  ])(
+    "explains the result on both phones with a 2500ms gap: %p",
+    async ({ hostPitch, hostHeading, guestPitch, winner, miss }) => {
+      const { view, phones, calibrate, startRound, shoot } =
+        await renderPhones();
+      await calibrate("host");
+      await calibrate("guest");
+      await startRound();
+      await advance(3000);
+      await advance(200);
+      await shoot("host", hostPitch, hostHeading);
+      await advance(2500);
+      await shoot("guest", guestPitch);
+
+      for (const phone of [phones.host, phones.guest]) {
+        expect(phone.getByText(/^200\s*ms$/)).toBeTruthy();
+        expect(phone.getByText(/^2700\s*ms$/)).toBeTruthy();
+        if (miss) {
+          expect(
+            phone.getByRole("image", {
+              name: new RegExp(`Hana.*(?:${miss.source})`, "i")
+            })
+          ).toBeTruthy();
+        } else {
+          expect(phone.queryByRole("image", { name: /^Hana:/i })).toBeNull();
+        }
+        if (winner) {
+          expect(phone.getByText(`${winner} wins`)).toBeTruthy();
+          expect(phone.queryByText("Tie")).toBeNull();
+        } else {
+          expect(phone.getByText("Tie")).toBeTruthy();
+          expect(phone.getByText(/both.*miss.*0.*points each/i)).toBeTruthy();
+          expect(phone.queryByText(/sudden death/i)).toBeNull();
+          for (const name of ["Hana", "Gil"]) {
+            expect(
+              phone.getByRole("image", {
+                name: new RegExp(`${name}.*raised too little`, "i")
+              })
+            ).toBeTruthy();
+          }
+        }
+      }
+      await view.unmount();
+    }
+  );
+  it("distinguishes a final equal-total draw from the individual round ties", async () => {
+    const { view, phones, calibrate, startRound, shoot, nextRound, press } =
+      await renderPhones();
+    await calibrate("host");
+    await calibrate("guest");
+    for (const [index, { pitch, gap }] of [
+      { pitch: 0.4, gap: 2500 },
+      { pitch: 0.9, gap: 50 },
+      { pitch: 1.1, gap: 100 }
+    ].entries()) {
+      if (index > 0) await nextRound();
+      await startRound();
+      await advance(3000);
+      await advance(200);
+      await shoot("host", pitch);
+      await advance(gap);
+      await shoot("guest", pitch);
+    }
+    // Level total points require one tiebreaker. Neither player fires.
+    await nextRound();
+    await startRound();
+    await advance(3000);
+    await advance(3250);
+    for (const role of ["host", "guest"] as const) {
+      await press(role, "See match result");
+      const phone = phones[role];
+      expect(phone.getByText("Match drawn")).toBeTruthy();
+      expect(phone.getByText(/equal total points.*4 rounds/i)).toBeTruthy();
+      expect(
+        phone.getByText(/Round 1.*both.*miss.*0.*200.*2700/i)
+      ).toBeTruthy();
+      expect(
+        phone.getByText(/Round 2.*bodyshots.*100 ms.*1 point each.*200.*250/i)
+      ).toBeTruthy();
+      expect(
+        phone.getByText(/Round 3.*headshots.*100 ms.*2 points each.*200.*300/i)
+      ).toBeTruthy();
+      expect(phone.getByText(/Round 4.*both.*miss.*0/i)).toBeTruthy();
+      for (const name of ["Hana", "Gil"]) {
+        expect(
+          within(phone.getByText(name).parent!).getByText("3")
+        ).toBeTruthy();
+      }
+    }
+    await view.unmount();
+  });
+  it("explains unfired timeouts without inventing a physical miss", async () => {
+    const { view, phones, calibrate, startRound } = await renderPhones();
+    await calibrate("host");
+    await calibrate("guest");
+    await startRound();
+    await advance(3000);
+    await advance(3250);
+    for (const phone of [phones.host, phones.guest]) {
+      for (const name of ["Hana", "Gil"]) {
+        expect(
+          phone.getByRole("image", {
+            name: new RegExp(`${name}.*(?:no shot|did not fire)`, "i")
+          })
+        ).toBeTruthy();
+      }
+      expect(
+        phone.queryByRole("image", { name: /too little|too far|off.target/i })
+      ).toBeNull();
+    }
+    await view.unmount();
+  });
 });
