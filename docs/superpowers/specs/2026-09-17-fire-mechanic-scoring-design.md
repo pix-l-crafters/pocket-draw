@@ -36,6 +36,34 @@ v2's differentiated zone scoring (1 or 2 points) breaks that equivalence, so thi
 
 `roundLoop.ts` accumulates each round's actual zone points (0/1/2), including independent tie-window scores and the non-offender's false-start shot. `matchWinnerId`/`isMatchDecided` compare summed points, not round-win counts.
 
+### Recorded miss explanations
+
+Round results show a player-labeled diagram, explanation, and correction hint
+for each recorded miss. Causes are captured when firing, not inferred from
+zero points: a slower hit suppressed by a faster hit is not a physical miss.
+
+- `tooLow` / `tooHigh`: pitch fell below or above the existing calibrated hit
+  bands. These describe the raise fraction, not measured physical height.
+- `offTarget`: fresh, reliable compass and separated GPS fixes verified that
+  aim was outside the opponent's cone. The diagram is schematic; no exact
+  physical direction or bullet trajectory is reconstructed.
+- `trackingUnavailable`: motion or aim could not be verified, including stale,
+  unreliable, ambiguous, or overlapping position readings.
+- `noShot`: the player did not fire before the FIRE window ended.
+
+Known pitch misses retain their cause even when aim tracking is unavailable.
+The `raised` message carries the fired miss reason; `RoundOutcome.misses`
+retains player IDs and reasons in deterministic ID order through match history
+and reconnect comparison. False-start offenders are excluded. Older fired
+misses without diagnostics receive no guessed illustration.
+
+Raise-correction arrows and the off-target marker animate once for 650 ms on
+the native driver; essential diagrams and text remain visible. Tracking
+failures and no-shot diagrams stay static. Motion begins only after reading
+the reduced-motion preference; enabling it cancels and settles the animation.
+The result screen scrolls to keep both miss cards and the continue action
+reachable with large text.
+
 ## Zone classification — the feasibility question
 
 **Ruled out: literal position/height tracking.** Double-integrating accelerometer data to get a position in centimeters is a well-documented dead end — integration of both a constant bias and of noise makes it "highly sensitive to bias noise," and error grows unbounded over time. This is not usable for a multi-second duel round.
