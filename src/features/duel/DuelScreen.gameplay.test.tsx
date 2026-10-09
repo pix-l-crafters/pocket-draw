@@ -236,10 +236,25 @@ async function renderPhones() {
     await press(role, "I'm Ready");
     await press(role, "Start calibration");
     expect(mockPhones[role].motion.size).toBe(1);
-    await press(role, "Capture ready pose");
+    for (let index = 0; index <= 20; index += 1) {
+      await act(() => {
+        publishSensors(role);
+        mockPhones[role].tilt.forEach((listener) =>
+          listener({ x: 0, y: -0.9, z: 0 })
+        );
+        jest.advanceTimersByTime(100);
+      });
+    }
     mockPhones[role].pitch = 1;
-    await act(() => publishSensors(role));
-    await press(role, "Capture shoulder pose");
+    for (let index = 0; index <= 20; index += 1) {
+      await act(() => {
+        publishSensors(role);
+        mockPhones[role].tilt.forEach((listener) =>
+          listener({ x: 0, y: 0, z: 0.95 })
+        );
+        jest.advanceTimersByTime(100);
+      });
+    }
     expect(phones[role].queryByText("CONFIRM")).toBeNull();
     await press(role, "Continue");
     // Verify watchers finished mounting before delivering any round readings.
@@ -287,6 +302,7 @@ async function renderPhones() {
   return {
     view,
     phones,
+    hostChannel,
     press,
     calibrate,
     position,
@@ -326,6 +342,7 @@ describe("DuelScreen real two-phone gameplay", () => {
       const {
         view,
         phones,
+        hostChannel,
         press,
         calibrate,
         position,
@@ -354,7 +371,19 @@ describe("DuelScreen real two-phone gameplay", () => {
 
       // Round 1: independently calibrated bodyshots inside the 100ms window.
       await advance(200);
-      await shoot("host", 0.9);
+      const hostSend = jest.spyOn(hostChannel, "send");
+      mockPhones.host.pitch = 0.9;
+      await act(() => publishSensors("host"));
+      expect(mockVolumeListeners.size).toBe(2);
+      await act(() => {
+        const pressVolume = [...mockVolumeListeners][0];
+        pressVolume();
+        pressVolume();
+      });
+      await fireEvent.press(phones.host.getByRole("button", { name: "Fire" }));
+      expect(
+        hostSend.mock.calls.filter(([message]) => message.type === "raised")
+      ).toHaveLength(1);
       await advance(50);
       await shoot("guest", 0.9);
       for (const phone of [phones.host, phones.guest]) {
