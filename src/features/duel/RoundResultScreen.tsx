@@ -16,9 +16,13 @@ type RoundResultScreenProps = {
   continueLabel?: string;
   errorMessage?: string;
   onContinue: () => void;
+  /** `null` means the opponent never fired inside the window. */
+  opponentReactionMs: number | null;
   outcome: RoundOutcome;
   playerNames: Record<string, string>;
   roundNumber: number;
+  /** `null` means this player never fired inside the window. */
+  selfReactionMs: number | null;
 };
 
 function nameFor(playerNames: Record<string, string>, id: string): string {
@@ -44,9 +48,11 @@ export function RoundResultScreen({
   continueLabel = "Next round",
   errorMessage,
   onContinue,
+  opponentReactionMs,
   outcome,
   playerNames,
-  roundNumber
+  roundNumber,
+  selfReactionMs
 }: RoundResultScreenProps) {
   return (
     <ScrollView
@@ -69,15 +75,19 @@ export function RoundResultScreen({
       {outcome.kind !== "falseStart" ? (
         <View style={styles.statsRow}>
           <StatTile
-            label="First shot"
+            label="Your shot"
             tint={colors.accent}
-            unit="ms"
-            value={String(outcome.reactionMs)}
+            unit={selfReactionMs === null ? "" : "ms"}
+            value={selfReactionMs === null ? "No shot" : String(selfReactionMs)}
           />
           <StatTile
-            label="Second shot"
-            unit="ms"
-            value={String(outcome.opponentReactionMs)}
+            label="Their shot"
+            unit={opponentReactionMs === null ? "" : "ms"}
+            value={
+              opponentReactionMs === null
+                ? "No shot"
+                : String(opponentReactionMs)
+            }
           />
         </View>
       ) : (

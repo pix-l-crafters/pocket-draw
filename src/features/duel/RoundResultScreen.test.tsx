@@ -16,6 +16,7 @@ it("associates miss explanations and correction hints with each player", async (
   const view = await render(
     <RoundResultScreen
       onContinue={() => undefined}
+      opponentReactionMs={2700}
       outcome={{
         ...missTie,
         misses: [
@@ -25,6 +26,7 @@ it("associates miss explanations and correction hints with each player", async (
       }}
       playerNames={playerNames}
       roundNumber={1}
+      selfReactionMs={200}
     />
   );
 
@@ -42,9 +44,11 @@ it("does not invent explanations for historical rounds without diagnostics", asy
   const view = await render(
     <RoundResultScreen
       onContinue={() => undefined}
+      opponentReactionMs={2700}
       outcome={missTie}
       playerNames={playerNames}
       roundNumber={1}
+      selfReactionMs={200}
     />
   );
 
@@ -84,9 +88,11 @@ it.each<{ reason: MissReason; explanation: RegExp }>([
       const view = await render(
         <RoundResultScreen
           onContinue={() => undefined}
+          opponentReactionMs={2700}
           outcome={{ ...outcome, misses: [{ playerId: "gil", reason }] }}
           playerNames={playerNames}
           roundNumber={1}
+          selfReactionMs={200}
         />
       );
       expect(view.getByRole("image", { name: /Gil/ })).toBeTruthy();
@@ -100,6 +106,7 @@ it("illustrates the false-start offender without blaming the opponent", async ()
   const view = await render(
     <RoundResultScreen
       onContinue={() => undefined}
+      opponentReactionMs={2700}
       outcome={{
         kind: "falseStart",
         playerId: "hana",
@@ -108,6 +115,7 @@ it("illustrates the false-start offender without blaming the opponent", async ()
       }}
       playerNames={playerNames}
       roundNumber={1}
+      selfReactionMs={200}
     />
   );
 
@@ -116,4 +124,31 @@ it("illustrates the false-start offender without blaming the opponent", async ()
   ).toBeTruthy();
   expect(view.queryByRole("image", { name: /Gil.*false start/i })).toBeNull();
   expect(view.getByText(/stay still.*countdown/i)).toBeTruthy();
+});
+
+it("labels reaction times by player, not by shot order", async () => {
+  const view = await render(
+    <RoundResultScreen
+      onContinue={() => undefined}
+      opponentReactionMs={180}
+      outcome={{
+        kind: "win",
+        winnerId: "gil",
+        winnerZone: "bodyshot",
+        winnerPoints: 1,
+        loserPoints: 0,
+        reactionMs: 180,
+        opponentReactionMs: 240
+      }}
+      playerNames={playerNames}
+      roundNumber={1}
+      selfReactionMs={240}
+    />
+  );
+
+  // The opponent fired first, yet "Your shot" still shows this player's time.
+  expect(view.getByText("Your shot")).toBeTruthy();
+  expect(view.getByText(/^240/)).toBeTruthy();
+  expect(view.getByText("Their shot")).toBeTruthy();
+  expect(view.getByText(/^180/)).toBeTruthy();
 });
