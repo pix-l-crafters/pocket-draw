@@ -135,6 +135,7 @@ export function DuelScreen({
   }, [instructionsSeen, runClockCalibration]);
 
   const [roundResult, setRoundResult] = useState<RoundOutcome | null>(null);
+  const [roundShots, setRoundShots] = useState<RoundShots | null>(null);
   // Lives above PreRound on purpose: the opponent can finish their ritual
   // while this device is still on the previous round's result screen, and a
   // latch scoped to one round would drop that message.
@@ -391,6 +392,7 @@ export function DuelScreen({
       // so they reach the same outcome without either side being the scorer.
       const outcome = judgeRoundShots(self, opponent, shots);
       setLoop((state) => applyRoundOutcome(state, outcome));
+      setRoundShots(shots);
       setRoundResult(outcome);
     },
     [opponent, self]
@@ -533,8 +535,10 @@ export function DuelScreen({
         onContinue={() => {
           if (!matchDecided || saveStatus !== "saving") setRoundResult(null);
         }}
+        opponentReactionMs={roundShots?.opponentReactionMs ?? null}
         outcome={roundResult}
         playerNames={playerNames}
+        selfReactionMs={roundShots?.selfReactionMs ?? null}
         roundNumber={loop.rounds.length}
       />
     );
