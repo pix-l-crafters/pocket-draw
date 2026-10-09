@@ -8,7 +8,7 @@ All notable changes to this project will be documented in this file. See [conven
 
 ### Features
 
-- **(duel)** confirm the pre-round ritual with volume up and extend full-width action buttons from their existing position to the bottom edge.
+- **(duel)** support volume-up confirmation during draw calibration and pre-round setup; extend pre-round actions to the bottom edge.
 
 ## [0.4.0](https://github.com/pix-l-crafters/pocket-draw/compare/v0.3.1..v0.4.0) - 2026-10-08
 

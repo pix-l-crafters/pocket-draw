@@ -172,17 +172,25 @@ export function DrawCalibrationScreen({
       }
     }
   }, [completePose, matchesPose]);
+  const handleContinue = useCallback(() => {
+    if (status === "passed" && calibrationRef.current) {
+      onComplete(calibrationRef.current);
+    }
+  }, [onComplete, status]);
 
   useEffect(() => {
     if (
-      (status !== "ready" && status !== "shoulder") ||
+      (status !== "ready" && status !== "shoulder" && status !== "passed") ||
       (Platform.OS !== "android" && Platform.OS !== "ios")
     )
       return undefined;
     return subscribeVolumeFire(({ direction }) => {
       if (direction !== "up") return;
       const stage = stageRef.current;
-      if (stage === "passed") return;
+      if (stage === "passed") {
+        handleContinue();
+        return;
+      }
       const tilt = latestTiltRef.current;
       const ageMs = tilt ? Date.now() - tilt.atMs : Number.POSITIVE_INFINITY;
       const theta =
@@ -205,18 +213,12 @@ export function DrawCalibrationScreen({
       }
       completePose(theta);
     });
-  }, [status, completePose, matchesPose]);
+  }, [status, completePose, handleContinue, matchesPose]);
 
   const recheckMotion = useCallback(() => {
     if (status === "permissionDenied") void startCalibration();
   }, [startCalibration, status]);
   useForegroundRecheck(recheckMotion);
-
-  const handleContinue = () => {
-    if (status === "passed" && calibrationRef.current) {
-      onComplete(calibrationRef.current);
-    }
-  };
 
   const buttonLabel =
     status === "passed"
@@ -233,7 +235,7 @@ export function DrawCalibrationScreen({
     <View style={styles.screen}>
       <ScreenHeader
         kicker="Draw calibration"
-        subtitle="Hold each guided pose for two seconds or press volume up."
+        subtitle="Hold each guided pose for two seconds or press volume up. Press volume up to continue."
         title="Calibrate your draw"
       />
 

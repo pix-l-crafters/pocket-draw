@@ -137,6 +137,25 @@ describe("DrawCalibrationScreen", () => {
     expect(mockTiltListeners.size).toBe(0);
   });
 
+  it("continues calibration on volume-up after both poses pass", async () => {
+    const { view, onComplete } = await renderCalibration();
+    await fireEvent.press(view.getByText("Start calibration"));
+    await hold(0.2, 0, -0.9, 0);
+    await hold(0.2, 0, 0.9, 0);
+    await hold(1.2, 0, 0.9, 0);
+    await hold(1.2, 0, 0, 0.95);
+
+    expect(view.getByText("Calibration passed")).toBeTruthy();
+    await act(() => {
+      mockVolumeListeners.forEach((listener) => listener({ direction: "up" }));
+    });
+
+    expect(onComplete).toHaveBeenCalledWith({
+      thetaReady: 0.2,
+      thetaShoulder: 1.2
+    });
+  });
+
   it("shows clock failure and retries on the calibration screen", async () => {
     const { view, onRetryClockCalibration } = await renderCalibration("failed");
     expect(view.getByText("Clock: calibration failed")).toBeTruthy();
@@ -205,7 +224,12 @@ describe("DrawCalibrationScreen", () => {
       mockVolumeListeners.forEach((listener) => listener({ direction: "up" }));
     });
     expect(view.getByText("Calibration passed")).toBeTruthy();
-    expect(mockVolumeListeners.size).toBe(0);
+    expect(mockVolumeListeners.size).toBe(1);
+    await act(() => {
+      mockVolumeListeners.forEach((listener) =>
+        listener({ direction: "down" })
+      );
+    });
     expect(Haptics.notificationAsync).toHaveBeenCalledTimes(2);
     expect(onComplete).not.toHaveBeenCalled();
     expect(view.getByTestId("ready-pose-illustration")).toBeTruthy();
