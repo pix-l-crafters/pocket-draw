@@ -631,16 +631,29 @@ export function PreRound({
           accessibilityLabel="Fire"
           accessibilityRole="button"
           onPress={handleFire}
-          style={styles.fireOverlay}
+          style={[
+            styles.fireOverlay,
+            phase === "fire" && styles.fireOverlayActive
+          ]}
         >
-          <Text style={styles.fireHeading}>
+          <Text
+            style={[
+              styles.fireHeading,
+              phase === "fire" && styles.fireTextActive
+            ]}
+          >
             {phase === "fire"
               ? "FIRE!"
               : phase === "warning"
                 ? "WARNING"
                 : countdown}
           </Text>
-          <Text style={styles.fireDetail}>
+          <Text
+            style={[
+              styles.fireDetail,
+              phase === "fire" && styles.fireTextActive
+            ]}
+          >
             {phase === "warning"
               ? `${[...warnedPlayers]
                   .sort()
@@ -708,23 +721,25 @@ const styles = StyleSheet.create({
   fireOverlay: {
     ...StyleSheet.absoluteFillObject,
     alignItems: "center",
-    backgroundColor: colors.accent,
+    backgroundColor: colors.background,
     gap: 12,
     justifyContent: "center",
     padding: 24
   },
+  fireOverlayActive: { backgroundColor: colors.accent },
   fireHeading: {
-    color: colors.background,
+    color: colors.text,
     fontFamily: fonts.displayBold,
     fontSize: 72,
     letterSpacing: 2
   },
   fireDetail: {
-    color: colors.background,
+    color: colors.text,
     fontFamily: fonts.mono,
     fontSize: 14,
     letterSpacing: 1.5,
     textAlign: "center",
     textTransform: "uppercase"
-  }
+  },
+  fireTextActive: { color: colors.background }
 });

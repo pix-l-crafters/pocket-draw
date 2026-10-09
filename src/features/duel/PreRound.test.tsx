@@ -2,7 +2,7 @@
 
 import { act, fireEvent, render } from "@testing-library/react-native";
 import * as Haptics from "expo-haptics";
-import { Platform } from "react-native";
+import { Platform, StyleSheet } from "react-native";
 import { PaperProvider } from "react-native-paper";
 
 import type { DuelChannel, DuelMessage } from "../../contracts/duelChannel";
@@ -304,6 +304,27 @@ describe("PreRound countdown and draw", () => {
       { type: "countdown", value: 1 },
       { type: "fire", atMs: expect.any(Number) }
     ]);
+  });
+
+  it("switches from a dark countdown to a red FIRE cue with readable text", async () => {
+    const { completeRitual, view, wait } = await renderPreRound("host");
+    await completeRitual();
+
+    const overlay = view.getByRole("button", { name: "Fire" });
+    expect(StyleSheet.flatten(overlay.props.style).backgroundColor).toBe(
+      "#08090b"
+    );
+    expect(StyleSheet.flatten(view.getByText("3").props.style).color).toBe(
+      "#f2f4f7"
+    );
+
+    await wait(COUNTDOWN_DURATION_MS);
+    expect(StyleSheet.flatten(overlay.props.style).backgroundColor).toBe(
+      "#ff4b3e"
+    );
+    expect(StyleSheet.flatten(view.getByText("FIRE!").props.style).color).toBe(
+      "#08090b"
+    );
   });
 
   it("times a guest reaction from the host FIRE timestamp in the local clock", async () => {
