@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Modal, Platform, StyleSheet, View } from "react-native";
+import { IconButton } from "react-native-paper";
 
 import { CutCornerButton } from "../../components/CutCornerButton";
+import { ScreenHeader } from "../../components/ScreenHeader";
 import type { DuelMessage } from "../../contracts/duelChannel";
 import type { DuelLink } from "../../contracts/duelLink";
 import type {
@@ -91,6 +93,7 @@ export function DuelScreen({
 }: DuelScreenProps) {
   const { channel } = link;
   const [helpOpen, setHelpOpen] = useState(false);
+  const [separationConfirmed, setSeparationConfirmed] = useState(false);
   const [calibration, setCalibration] = useState<PitchCalibration | null>(null);
   const analyticsRoundsRef = useRef<RoundAnalytics[]>([]);
   const pendingShotRef = useRef<ShotDiagnostics | null>(null);
@@ -580,28 +583,59 @@ export function DuelScreen({
     </View>
   ) : null;
 
+  const setupControls = (
+    <View style={styles.setupControls}>
+      <IconButton
+        accessibilityLabel="Help"
+        icon="help-circle-outline"
+        iconColor={colors.textMuted60}
+        onPress={() => setHelpOpen(true)}
+      />
+      {onExit ? <DuelExitButton onPress={exit} /> : null}
+    </View>
+  );
+  const helpModal = (
+    <Modal
+      onRequestClose={() => setHelpOpen(false)}
+      visible={helpOpen}
+    >
+      <GameInstructionsScreen onClose={() => setHelpOpen(false)} />
+    </Modal>
+  );
+
+  if (!separationConfirmed) {
+    return (
+      <View style={styles.container}>
+        {setupControls}
+        <View style={styles.separationContent}>
+          <ScreenHeader
+            kicker="Duel setup"
+            subtitle="Face your opponent from a few paces away. The phones cannot measure this distance, so confirm when both players are ready."
+            title="STAND APART"
+          />
+          <View style={styles.separationAction}>
+            <CutCornerButton
+              label="CONTINUE TO CALIBRATION"
+              onPress={() => setSeparationConfirmed(true)}
+            />
+          </View>
+        </View>
+        {helpModal}
+      </View>
+    );
+  }
+
   if (!calibration) {
     return (
       <View style={styles.container}>
+        {setupControls}
         <DrawCalibrationScreen
           clockCalibrationStatus={clockCalibrationStatus}
           onComplete={setCalibration}
           onRetryClockCalibration={runClockCalibration}
           paused={helpOpen}
         />
-        <View style={styles.helpRow}>
-          <CutCornerButton
-            label="Help"
-            onPress={() => setHelpOpen(true)}
-          />
-        </View>
-        {exitControl}
-        <Modal
-          onRequestClose={() => setHelpOpen(false)}
-          visible={helpOpen}
-        >
-          <GameInstructionsScreen onClose={() => setHelpOpen(false)} />
-        </Modal>
+        {helpModal}
       </View>
     );
   }
@@ -657,6 +691,7 @@ export function DuelScreen({
           if (!matchDecided || saveStatus !== "saving") setRoundResult(null);
         }}
         opponentReactionMs={roundShots?.opponentReactionMs ?? null}
+        opponentZone={roundShots?.opponentZone ?? "miss"}
         outcome={roundResult}
         playerNames={playerNames}
         selfReactionMs={roundShots?.selfReactionMs ?? null}
@@ -687,6 +722,7 @@ export function DuelScreen({
           gameBeginStartedForMatchRef.current = matchId;
         }}
         onToggleAudioMuted={() => setAudioMuted((muted) => !muted)}
+        onHelp={() => setHelpOpen(true)}
         onRetryClockCalibration={runClockCalibration}
         onRoundShots={handleRoundShots}
         onShotDiagnostics={(shot) => {
@@ -699,6 +735,7 @@ export function DuelScreen({
         }
         role={role}
       />
+      {helpModal}
     </View>
   );
 }
@@ -707,9 +744,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1
   },
-  helpRow: {
-    paddingHorizontal: 24,
-    paddingBottom: 12
+  setupControls: {
+    alignItems: "center",
+    backgroundColor: colors.background,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 8,
+    paddingTop: 8
+  },
+  separationContent: {
+    flex: 1,
+    padding: 24
+  },
+  separationAction: {
+    marginTop: "auto"
   },
   exitRow: {
     alignItems: "flex-end",

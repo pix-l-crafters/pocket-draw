@@ -21,6 +21,7 @@ function match(
         kind: "win",
         winnerId,
         winnerZone: "bodyshot",
+        loserZone: "miss",
         winnerPoints: 1,
         loserPoints: 0,
         reactionMs: winnerId === a ? 200 : 250,

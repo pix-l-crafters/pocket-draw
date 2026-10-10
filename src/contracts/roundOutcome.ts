@@ -54,6 +54,8 @@ export type RoundOutcome = (
       kind: "win";
       winnerId: string;
       winnerZone: Zone;
+      /** The losing player's detected zone, even when timing made it score 0. */
+      loserZone: Zone;
       winnerPoints: number;
       loserPoints: number;
       reactionMs: number;

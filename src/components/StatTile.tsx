@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { colors, fonts } from "../theme/tokens";
 
 type StatTileProps = {
+  detail?: string;
   label: string;
   tint?: string;
   unit?: string;
@@ -10,6 +11,7 @@ type StatTileProps = {
 };
 
 export function StatTile({
+  detail,
   label,
   tint = colors.text,
   unit,
@@ -22,6 +24,7 @@ export function StatTile({
         {value}
         {unit ? <Text style={styles.unit}> {unit}</Text> : null}
       </Text>
+      {detail ? <Text style={styles.detail}>{detail}</Text> : null}
     </View>
   );
 }
@@ -39,6 +42,12 @@ const styles = StyleSheet.create({
     fontSize: 8.5,
     letterSpacing: 1.5,
     textTransform: "uppercase"
+  },
+  detail: {
+    color: colors.textMuted60,
+    fontFamily: fonts.body,
+    fontSize: 14,
+    marginTop: 6
   },
   value: {
     fontFamily: fonts.displayBold,

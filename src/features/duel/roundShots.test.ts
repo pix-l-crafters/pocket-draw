@@ -120,6 +120,7 @@ describe("round shots", () => {
       kind: "win",
       winnerId: guest.id,
       winnerZone: "bodyshot",
+      loserZone: "miss",
       winnerPoints: 1,
       loserPoints: 0,
       reactionMs: 220,

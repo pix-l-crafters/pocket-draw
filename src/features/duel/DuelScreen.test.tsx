@@ -139,21 +139,11 @@ describe("DuelScreen clock calibration", () => {
 
     expect(view.getByRole("button", { name: "Exit duel" })).toBeTruthy();
     expect(view.queryByText("Exit")).toBeNull();
-    expect(view.queryByText("STAND APART")).toBeNull();
+    expect(view.getByText("STAND APART")).toBeTruthy();
+    expect(view.getByRole("button", { name: "Help" })).toBeTruthy();
+    await fireEvent.press(view.getByText("CONTINUE TO CALIBRATION"));
+    expect(view.getByText("Calibrate your draw")).toBeTruthy();
     await fireEvent.press(view.getByText("Start calibration"));
-    for (let index = 0; index <= 20; index += 1) {
-      await act(() => {
-        mockPitchListeners.forEach((listener) =>
-          listener({ rotation: { beta: 0 } })
-        );
-        mockAccelerometerListeners.forEach((listener) =>
-          listener({ x: 0, y: 0.9, z: 0 })
-        );
-        mockNowMs += 100;
-      });
-    }
-    expect(view.queryByText("STAND APART")).toBeNull();
-    expect(view.queryByText("Continue")).toBeNull();
     for (let index = 0; index <= 20; index += 1) {
       await act(() => {
         mockPitchListeners.forEach((listener) =>
@@ -166,8 +156,20 @@ describe("DuelScreen clock calibration", () => {
       });
     }
     expect(view.queryByText("STAND APART")).toBeNull();
+    expect(view.queryByText("Continue")).toBeNull();
+    for (let index = 0; index <= 20; index += 1) {
+      await act(() => {
+        mockPitchListeners.forEach((listener) =>
+          listener({ rotation: { beta: 0 } })
+        );
+        mockAccelerometerListeners.forEach((listener) =>
+          listener({ x: 0, y: 0.9, z: 0 })
+        );
+        mockNowMs += 100;
+      });
+    }
     await fireEvent.press(view.getByText("Continue"));
-    expect(view.getByText("STAND APART")).toBeTruthy();
+    expect(view.getByText("POINT THE TOP EDGE TOWARD THE GROUND")).toBeTruthy();
     expect(view.queryByText("CALIBRATING CLOCKS")).toBeNull();
     await fireEvent.press(view.getByRole("button", { name: "Exit duel" }));
     expect(link.status()).toBe("closed");
@@ -207,7 +209,7 @@ describe("DuelScreen clock calibration", () => {
         />
       </PaperProvider>
     );
-    expect(view.getByText("Calibrate your draw")).toBeTruthy();
+    expect(view.getByText("STAND APART")).toBeTruthy();
     expect(view.getByRole("button", { name: "Help" })).toBeTruthy();
     expect(view.queryByText("How to play")).toBeNull();
     expect(view.queryByText("Exit")).toBeNull();
@@ -260,6 +262,7 @@ describe("DuelScreen clock calibration", () => {
         </PaperProvider>
       );
 
+      await fireEvent.press(view.getByText("CONTINUE TO CALIBRATION"));
       await fireEvent.press(view.getByText("Start calibration"));
       for (const action of recoveryActions) {
         expect(view.getByText(action)).toBeTruthy();
