@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Platform, StyleSheet, View } from "react-native";
+import { Modal, Platform, StyleSheet, View } from "react-native";
 
+import { CutCornerButton } from "../../components/CutCornerButton";
 import type { DuelMessage } from "../../contracts/duelChannel";
 import type { DuelLink } from "../../contracts/duelLink";
 import type {
@@ -89,7 +90,7 @@ export function DuelScreen({
   self
 }: DuelScreenProps) {
   const { channel } = link;
-  const [instructionsSeen, setInstructionsSeen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [calibration, setCalibration] = useState<PitchCalibration | null>(null);
   const analyticsRoundsRef = useRef<RoundAnalytics[]>([]);
   const pendingShotRef = useRef<ShotDiagnostics | null>(null);
@@ -149,8 +150,8 @@ export function DuelScreen({
       });
   }, []);
   useEffect(() => {
-    if (instructionsSeen) runClockCalibration();
-  }, [instructionsSeen, runClockCalibration]);
+    runClockCalibration();
+  }, [runClockCalibration]);
 
   const [roundResult, setRoundResult] = useState<RoundOutcome | null>(null);
   const [roundShots, setRoundShots] = useState<RoundShots | null>(null);
@@ -577,21 +578,28 @@ export function DuelScreen({
     </View>
   ) : null;
 
-  if (!instructionsSeen || !calibration) {
+  if (!calibration) {
     return (
       <View style={styles.container}>
+        <DrawCalibrationScreen
+          clockCalibrationStatus={clockCalibrationStatus}
+          onComplete={setCalibration}
+          onRetryClockCalibration={runClockCalibration}
+          paused={helpOpen}
+        />
+        <View style={styles.helpRow}>
+          <CutCornerButton
+            label="Help"
+            onPress={() => setHelpOpen(true)}
+          />
+        </View>
         {exitControl}
-        {!instructionsSeen ? (
-          <GameInstructionsScreen
-            onContinue={() => setInstructionsSeen(true)}
-          />
-        ) : (
-          <DrawCalibrationScreen
-            clockCalibrationStatus={clockCalibrationStatus}
-            onComplete={setCalibration}
-            onRetryClockCalibration={runClockCalibration}
-          />
-        )}
+        <Modal
+          onRequestClose={() => setHelpOpen(false)}
+          visible={helpOpen}
+        >
+          <GameInstructionsScreen onClose={() => setHelpOpen(false)} />
+        </Modal>
       </View>
     );
   }
@@ -685,6 +693,10 @@ export function DuelScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1
+  },
+  helpRow: {
+    paddingHorizontal: 24,
+    paddingBottom: 12
   },
   exitRow: {
     alignItems: "flex-end",

@@ -122,7 +122,6 @@ describe("DuelScreen clock calibration", () => {
 
     expect(view.getByRole("button", { name: "Exit duel" })).toBeTruthy();
     expect(view.queryByText("Exit")).toBeNull();
-    await fireEvent.press(view.getByText("I'm Ready"));
     expect(view.queryByText("STAND APART")).toBeNull();
     await fireEvent.press(view.getByText("Start calibration"));
     for (let index = 0; index <= 20; index += 1) {
@@ -167,7 +166,7 @@ describe("DuelScreen clock calibration", () => {
     peer.dispose();
   });
 
-  it("lets the player close the duel while reading instructions", async () => {
+  it("lets the player exit from the initial calibration screen", async () => {
     const [duelChannel] = createMockDuelChannelPair();
     const disconnect = jest.fn();
     const link = createDuelLink({
@@ -191,7 +190,9 @@ describe("DuelScreen clock calibration", () => {
         />
       </PaperProvider>
     );
-    expect(view.getByText("How to play")).toBeTruthy();
+    expect(view.getByText("Calibrate your draw")).toBeTruthy();
+    expect(view.getByRole("button", { name: "Help" })).toBeTruthy();
+    expect(view.queryByText("How to play")).toBeNull();
     expect(view.queryByText("Exit")).toBeNull();
     await fireEvent.press(view.getByRole("button", { name: "Exit duel" }));
     expect(link.status()).toBe("closed");
@@ -242,7 +243,6 @@ describe("DuelScreen clock calibration", () => {
         </PaperProvider>
       );
 
-      await fireEvent.press(view.getByText("I'm Ready"));
       await fireEvent.press(view.getByText("Start calibration"));
       for (const action of recoveryActions) {
         expect(view.getByText(action)).toBeTruthy();

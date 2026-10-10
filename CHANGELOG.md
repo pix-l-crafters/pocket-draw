@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file. See [conven
 
 ---
 
+## [Unreleased]
+
+### Features
+
+- **(duel)** make gameplay instructions optional from calibration.
+
+---
+
 ## [0.5.0](https://github.com/pix-l-crafters/pocket-draw/compare/v0.4.0..v0.5.0) - 2026-10-10
 
 ### Bug Fixes
