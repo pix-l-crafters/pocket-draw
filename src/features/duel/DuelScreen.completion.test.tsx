@@ -118,6 +118,7 @@ async function renderDuel() {
       />
     </PaperProvider>
   );
+  await fireEvent.press(view.getByText("CONTINUE TO CALIBRATION"));
   await fireEvent.press(view.getByText("Complete calibration"));
   return view;
 }

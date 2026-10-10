@@ -77,6 +77,7 @@ export function resolveRoundOutcome(
 
   const fasterWins = fasterScore.points > slowerScore.points;
   const winner = fasterWins ? faster : slower;
+  const loser = fasterWins ? slower : faster;
   const winnerScore = fasterWins ? fasterScore : slowerScore;
   const loserScore = fasterWins ? slowerScore : fasterScore;
 
@@ -84,6 +85,7 @@ export function resolveRoundOutcome(
     kind: "win",
     winnerId: winner.playerId,
     winnerZone: winnerScore.zone,
+    loserZone: loser.zone,
     winnerPoints: winnerScore.points,
     loserPoints: loserScore.points,
     reactionMs: faster.reactionMs,

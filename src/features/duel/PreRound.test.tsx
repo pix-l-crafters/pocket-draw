@@ -308,12 +308,10 @@ describe("PreRound countdown and draw", () => {
     }
   );
 
-  it("asks players to stand apart without claiming to have measured it", async () => {
+  it("starts at the phone-down step because separation happens before calibration", async () => {
     const { view } = await renderPreRound("guest");
 
-    expect(view.getByText("STAND APART")).toBeTruthy();
-    expect(view.queryByText(/dBm|signal|confirmed/i)).toBeNull();
-    await fireEvent.press(view.getByText("CONFIRM"));
+    expect(view.queryByText("STAND APART")).toBeNull();
     expect(view.getByText("POINT THE TOP EDGE TOWARD THE GROUND")).toBeTruthy();
   });
 

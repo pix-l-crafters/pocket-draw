@@ -177,6 +177,7 @@ it.each<{ reason: MissReason; explanation: RegExp }>([
         kind: "win",
         winnerId: "hana",
         winnerZone: "bodyshot",
+        loserZone: "miss",
         winnerPoints: 1,
         loserPoints: 0,
         reactionMs: 200,
@@ -241,6 +242,7 @@ it("labels reaction times by player, not by shot order", async () => {
         kind: "win",
         winnerId: "gil",
         winnerZone: "bodyshot",
+        loserZone: "headshot",
         winnerPoints: 1,
         loserPoints: 0,
         reactionMs: 180,
@@ -249,6 +251,8 @@ it("labels reaction times by player, not by shot order", async () => {
       playerNames={playerNames}
       roundNumber={1}
       selfReactionMs={240}
+      selfZone="headshot"
+      opponentZone="bodyshot"
     />
   );
 
@@ -257,4 +261,30 @@ it("labels reaction times by player, not by shot order", async () => {
   expect(view.getByText(/^240/)).toBeTruthy();
   expect(view.getByText("Their shot")).toBeTruthy();
   expect(view.getByText(/^180/)).toBeTruthy();
+  expect(view.getByText("Gil — BODYSHOT (1 pt)")).toBeTruthy();
+  expect(view.getByText("Headshot")).toBeTruthy();
+  expect(view.getByText("Body shot")).toBeTruthy();
+});
+
+it("shows both players' zones after a false start", async () => {
+  const view = await render(
+    <RoundResultScreen
+      onContinue={() => undefined}
+      opponentReactionMs={420}
+      opponentZone="headshot"
+      outcome={{
+        kind: "falseStart",
+        playerId: "hana",
+        nonOffenderId: "gil",
+        nonOffenderShot: { reactionMs: 420, zone: "headshot", points: 2 }
+      }}
+      playerNames={playerNames}
+      roundNumber={1}
+      selfReactionMs={null}
+      selfZone="miss"
+    />
+  );
+
+  expect(view.getByText("Miss")).toBeTruthy();
+  expect(view.getByText("Headshot")).toBeTruthy();
 });

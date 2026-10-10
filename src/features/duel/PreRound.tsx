@@ -59,7 +59,6 @@ const TRACKING_WARNINGS: Record<AimMissReason, string> = {
 };
 
 type Phase =
-  | "separate"
   | "position"
   | "waiting"
   | "announcing"
@@ -82,6 +81,7 @@ type PreRoundProps = {
   clockOffsetMs: number;
   audioMuted: boolean;
   onToggleAudioMuted: () => void;
+  onHelp?: () => void;
   playGameBegin: boolean;
   onGameBeginStart: () => void;
   onRetryClockCalibration: () => void;
@@ -103,6 +103,7 @@ export function PreRound({
   clockOffsetMs,
   audioMuted,
   onToggleAudioMuted,
+  onHelp,
   playGameBegin,
   onGameBeginStart,
   onRetryClockCalibration,
@@ -116,7 +117,7 @@ export function PreRound({
   const countdown1Audio = useAudioPlayer(DUEL_CUES.countdown1);
   const fireAudio = useAudioPlayer(DUEL_CUES.fire);
   const gunshotAudio = useAudioPlayer(DUEL_CUES.gunshot);
-  const [phase, setPhase] = useState<Phase>("separate");
+  const [phase, setPhase] = useState<Phase>("position");
   const phaseRef = useRef(phase);
   phaseRef.current = phase;
   const latestAimRef = useRef<AimDiagnostics | null>(null);
@@ -563,12 +564,6 @@ export function PreRound({
   };
 
   const advance = () => {
-    // Separation is the players' own call: nothing on the phone measures
-    // the distance between them, so the step only asks.
-    if (phase === "separate") {
-      setPhase("position");
-      return;
-    }
     if (phase !== "position" || !topEdgeDown) return;
 
     if (playGameBegin && !introStartedRef.current) {
@@ -597,17 +592,14 @@ export function PreRound({
 
   useEffect(() => {
     if (
-      (phase !== "separate" &&
-        phase !== "position" &&
-        phase !== "fire" &&
-        phase !== "countdown") ||
+      (phase !== "position" && phase !== "fire" && phase !== "countdown") ||
       (Platform.OS !== "android" && Platform.OS !== "ios")
     ) {
       return undefined;
     }
     return subscribeVolumeFire(({ direction }) => {
       const currentPhase = phaseRef.current;
-      if (currentPhase === "separate" || currentPhase === "position") {
+      if (currentPhase === "position") {
         if (direction === "up" && confirmActionEnabledRef.current) {
           advanceRef.current?.();
         }
@@ -618,7 +610,6 @@ export function PreRound({
   }, [phase]);
 
   const status = useMemo(() => {
-    if (phase === "separate") return "STAND APART";
     if (phase === "position") {
       if (!topEdgeDown) return "POINT THE TOP EDGE TOWARD THE GROUND";
       return isHost && !peerReady
@@ -633,6 +624,15 @@ export function PreRound({
 
   return (
     <View style={styles.container}>
+      {onHelp && phase === "position" && (
+        <IconButton
+          accessibilityLabel="Help"
+          icon="help-circle-outline"
+          iconColor={colors.textMuted60}
+          onPress={onHelp}
+          style={styles.helpButton}
+        />
+      )}
       <IconButton
         accessibilityLabel={
           audioMuted ? "Turn duel sound on" : "Mute duel sound"
@@ -656,8 +656,7 @@ export function PreRound({
             ? "Check the connection to your opponent, then retry before the duel."
             : clockCalibrationStatus === "calibrating"
               ? "Synchronizing both players’ clocks before timed play."
-              : phase === "separate" &&
-                "Face your opponent from a few paces away, then confirm or press volume up."}
+              : null}
           {clockCalibrationStatus === "ready" &&
             phase === "position" &&
             (isHost
@@ -689,9 +688,7 @@ export function PreRound({
         </Text>
         {clockCalibrationStatus === "ready" &&
           pitchStatus === "started" &&
-          (phase === "separate" ||
-            phase === "position" ||
-            phase === "waiting") &&
+          (phase === "position" || phase === "waiting") &&
           !!trackingIssues?.length && (
             <View
               accessibilityLiveRegion="polite"
@@ -719,7 +716,7 @@ export function PreRound({
           />
         )}
         {clockCalibrationStatus === "ready" &&
-          (phase === "separate" || phase === "position") &&
+          phase === "position" &&
           motionDenied && (
             <PermissionNotice
               canAskAgain={false}
@@ -754,7 +751,7 @@ export function PreRound({
           />
         )}
         {clockCalibrationStatus === "ready" &&
-          (phase === "separate" || phase === "position") &&
+          phase === "position" &&
           !motionDenied &&
           pitchStatus === "started" && (
             <CutCornerButton
@@ -834,6 +831,11 @@ const styles = StyleSheet.create({
   muteButton: {
     position: "absolute",
     right: 8,
+    top: 8
+  },
+  helpButton: {
+    left: 8,
+    position: "absolute",
     top: 8
   },
   kicker: {

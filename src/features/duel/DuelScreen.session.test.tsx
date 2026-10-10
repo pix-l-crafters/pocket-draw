@@ -247,6 +247,7 @@ async function renderPhones(network = testNetwork()) {
   const host = within(view.getByTestId("host"));
   const guest = within(view.getByTestId("guest"));
   for (const phone of [host, guest]) {
+    await fireEvent.press(phone.getByText("CONTINUE TO CALIBRATION"));
     await fireEvent.press(phone.getByText("Complete calibration"));
   }
   return { host, guest, network, onExit };
@@ -337,7 +338,7 @@ describe("DuelScreen session flows", () => {
     for (const phone of [host, guest]) {
       await fireEvent.press(phone.getByText("Finish round"));
       expect(phone.getByText("Round 2")).toBeTruthy();
-      expect(phone.getByText("Hana wins")).toBeTruthy();
+      expect(phone.getByText("Hana — BODYSHOT (1 pt)")).toBeTruthy();
     }
   });
 

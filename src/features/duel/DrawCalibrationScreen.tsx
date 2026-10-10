@@ -101,9 +101,9 @@ export function DrawCalibrationScreen({
   const accelerometerRef = useRef<{ remove(): void } | null>(null);
   const latestTiltRef = useRef<TiltReading | null>(null);
   const holdRef = useRef(new PoseHold());
-  const stageRef = useRef<"ready" | "shoulder" | "passed">("ready");
-  const thetaReadyRef = useRef<number | null>(null);
-  const readyPoseRef = useRef<CalibrationPoseSnapshot | null>(null);
+  const stageRef = useRef<"ready" | "shoulder" | "passed">("shoulder");
+  const thetaShoulderRef = useRef<number | null>(null);
+  const shoulderPoseRef = useRef<CalibrationPoseSnapshot | null>(null);
   const calibrationRef = useRef<PitchCalibration | null>(null);
   const pausedRef = useRef(paused);
   pausedRef.current = paused;
@@ -124,11 +124,12 @@ export function DrawCalibrationScreen({
   const matchesPose = useCallback(
     (stage: "ready" | "shoulder", tilt: TiltReading, theta: number | null) =>
       theta !== null &&
-      (stage === "ready"
-        ? isTopEdgeDown(tilt.x, tilt.y, tilt.z)
-        : isTopEdgeForward(tilt.x, tilt.y, tilt.z) &&
-          thetaReadyRef.current !== null &&
-          Math.abs(theta - thetaReadyRef.current) >= MIN_CALIBRATION_ARC_RAD),
+      (stage === "shoulder"
+        ? isTopEdgeForward(tilt.x, tilt.y, tilt.z)
+        : isTopEdgeDown(tilt.x, tilt.y, tilt.z) &&
+          thetaShoulderRef.current !== null &&
+          Math.abs(theta - thetaShoulderRef.current) >=
+            MIN_CALIBRATION_ARC_RAD),
     []
   );
 
@@ -159,17 +160,17 @@ export function DrawCalibrationScreen({
           : null,
         motion: pitchMonitorRef.current?.snapshot() ?? null
       };
-      if (stage === "ready") {
-        thetaReadyRef.current = theta;
-        readyPoseRef.current = snapshot;
-        stageRef.current = "shoulder";
-        setStatus("shoulder");
+      if (stage === "shoulder") {
+        thetaShoulderRef.current = theta;
+        shoulderPoseRef.current = snapshot;
+        stageRef.current = "ready";
+        setStatus("ready");
       } else {
         calibrationRef.current = {
-          thetaReady: thetaReadyRef.current!,
-          thetaShoulder: theta,
-          readyPose: readyPoseRef.current!,
-          shoulderPose: snapshot
+          thetaReady: theta,
+          thetaShoulder: thetaShoulderRef.current!,
+          readyPose: snapshot,
+          shoulderPose: shoulderPoseRef.current!
         };
         stageRef.current = "passed";
         proximityFeedback.stop();
@@ -200,18 +201,18 @@ export function DrawCalibrationScreen({
     accelerometerRef.current = null;
     latestTiltRef.current = null;
     holdRef.current.reset();
-    stageRef.current = "ready";
-    thetaReadyRef.current = null;
-    readyPoseRef.current = null;
+    stageRef.current = "shoulder";
+    thetaShoulderRef.current = null;
+    shoulderPoseRef.current = null;
     calibrationRef.current = null;
     setPoseHint(null);
     setStatus("starting");
 
     const pitchMonitor = new PitchMonitor((theta) => {
-      const thetaReady = thetaReadyRef.current;
-      if (thetaReady !== null && appActiveRef.current) {
+      const thetaShoulder = thetaShoulderRef.current;
+      if (thetaShoulder !== null && appActiveRef.current) {
         proximityFeedback.update(
-          theta === null ? null : Math.abs(theta - thetaReady),
+          theta === null ? null : Math.abs(theta - thetaShoulder),
           MIN_CALIBRATION_ARC_RAD
         );
       }
@@ -249,7 +250,7 @@ export function DrawCalibrationScreen({
           return;
         completePose(theta);
       });
-      setStatus("ready");
+      setStatus("shoulder");
     } catch {
       if (pitchMonitorRef.current === pitchMonitor) {
         pitchMonitor.stop();
@@ -293,9 +294,9 @@ export function DrawCalibrationScreen({
         theta === null
       ) {
         setPoseHint(
-          stage === "ready"
-            ? "Point the top edge down first."
-            : "Point the top edge forward and raise the phone from ready first."
+          stage === "shoulder"
+            ? "Point the top edge forward at shoulder height first."
+            : "Point the top edge down and lower the phone from shoulder height first."
         );
         void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         return;
@@ -336,15 +337,15 @@ export function DrawCalibrationScreen({
         <View style={styles.stepRow}>
           <View style={styles.stepVisual}>
             <Text style={styles.stepNumber}>
-              {status === "shoulder" || status === "passed" ? "✓" : "01"}
+              {status === "ready" || status === "passed" ? "✓" : "01"}
             </Text>
             <PoseIllustration
-              active={status === "ready"}
-              pose="ready"
+              active={status === "shoulder"}
+              pose="shoulder"
             />
           </View>
           <Text style={[styles.stepText, poseTextLayout]}>
-            Phone down at your side, top edge toward the ground.
+            Phone at shoulder height, top edge pointing forward.
           </Text>
         </View>
         <View style={styles.divider} />
@@ -354,12 +355,12 @@ export function DrawCalibrationScreen({
               {status === "passed" ? "✓" : "02"}
             </Text>
             <PoseIllustration
-              active={status === "shoulder"}
-              pose="shoulder"
+              active={status === "ready"}
+              pose="ready"
             />
           </View>
           <Text style={[styles.stepText, poseTextLayout]}>
-            Phone at shoulder height, top edge pointing forward.
+            Phone down at your side, top edge toward the ground.
           </Text>
         </View>
       </CutCornerSurface>

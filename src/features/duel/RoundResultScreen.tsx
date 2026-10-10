@@ -22,6 +22,7 @@ type RoundResultScreenProps = {
   onContinue: () => void;
   /** `null` means the opponent never fired inside the window. */
   opponentReactionMs: number | null;
+  opponentZone?: Zone;
   outcome: RoundOutcome;
   playerNames: Record<string, string>;
   roundNumber: number;
@@ -40,12 +41,18 @@ function titleFor(
 ): string {
   switch (outcome.kind) {
     case "win":
-      return `${nameFor(playerNames, outcome.winnerId)} wins`;
+      return `${nameFor(playerNames, outcome.winnerId)} — ${outcome.winnerZone.toUpperCase()} (${outcome.winnerPoints} ${outcome.winnerPoints === 1 ? "pt" : "pts"})`;
     case "tie":
       return "Tie";
     case "falseStart":
       return `${nameFor(playerNames, outcome.playerId)} false start`;
   }
+}
+
+function zoneLabel(zone: Zone): string {
+  if (zone === "headshot") return "Headshot";
+  if (zone === "bodyshot") return "Body shot";
+  return "Miss";
 }
 
 export function RoundResultScreen({
@@ -55,6 +62,7 @@ export function RoundResultScreen({
   errorMessage,
   onContinue,
   opponentReactionMs,
+  opponentZone = "miss",
   outcome,
   playerNames,
   roundNumber,
@@ -97,42 +105,23 @@ export function RoundResultScreen({
         <StatusTag tone="warning">Round loss</StatusTag>
       )}
 
-      {outcome.kind !== "falseStart" ? (
-        <View style={styles.statsRow}>
-          <StatTile
-            label="Your shot"
-            tint={colors.accent}
-            unit={selfReactionMs === null ? "" : "ms"}
-            value={selfReactionMs === null ? "No shot" : String(selfReactionMs)}
-          />
-          <StatTile
-            label="Their shot"
-            unit={opponentReactionMs === null ? "" : "ms"}
-            value={
-              opponentReactionMs === null
-                ? "No shot"
-                : String(opponentReactionMs)
-            }
-          />
-        </View>
-      ) : (
-        <View style={styles.statsRow}>
-          <StatTile
-            label={nameFor(playerNames, outcome.nonOffenderId)}
-            unit="pts"
-            value={String(outcome.nonOffenderShot?.points ?? 0)}
-          />
-          <StatTile
-            label="Reaction time"
-            unit={outcome.nonOffenderShot ? "ms" : ""}
-            value={
-              outcome.nonOffenderShot
-                ? String(outcome.nonOffenderShot.reactionMs)
-                : "No shot"
-            }
-          />
-        </View>
-      )}
+      <View style={styles.statsRow}>
+        <StatTile
+          detail={zoneLabel(selfZone)}
+          label="Your shot"
+          tint={colors.accent}
+          unit={selfReactionMs === null ? "" : "ms"}
+          value={selfReactionMs === null ? "No shot" : String(selfReactionMs)}
+        />
+        <StatTile
+          detail={zoneLabel(opponentZone)}
+          label="Their shot"
+          unit={opponentReactionMs === null ? "" : "ms"}
+          value={
+            opponentReactionMs === null ? "No shot" : String(opponentReactionMs)
+          }
+        />
+      </View>
 
       {outcome.kind === "falseStart" && (
         <RoundIllustration

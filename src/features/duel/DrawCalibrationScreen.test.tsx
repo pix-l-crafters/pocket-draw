@@ -133,17 +133,16 @@ describe("DrawCalibrationScreen", () => {
     jest.restoreAllMocks();
   });
 
-  it("gives progressive haptic feedback while approaching the shoulder pose", async () => {
+  it("gives progressive haptic feedback while lowering from the shoulder pose", async () => {
     const { view } = await renderCalibration();
     await fireEvent.press(view.getByText("Start calibration"));
-    await hold(0.2, 0, -0.9, 0);
-    await hold(0.2, 0, 0.9, 0);
-    expect(view.getByText("Shoulder pose")).toBeTruthy();
+    await hold(1.2, 0, 0, 0.95);
+    expect(view.getByText("Ready pose")).toBeTruthy();
     expect(mockPlay).toHaveBeenCalledTimes(1);
 
     await act(() =>
       mockMotionListeners.forEach((listener) =>
-        listener({ rotation: { beta: 0.2 } })
+        listener({ rotation: { beta: 1.2 } })
       )
     );
     await act(() => jest.advanceTimersByTime(300));
@@ -152,7 +151,7 @@ describe("DrawCalibrationScreen", () => {
     ).length;
     await act(() =>
       mockMotionListeners.forEach((listener) =>
-        listener({ rotation: { beta: 0.23 } })
+        listener({ rotation: { beta: 1.17 } })
       )
     );
     const approachingPulses = mockImpact.mock.calls.length;
@@ -160,13 +159,13 @@ describe("DrawCalibrationScreen", () => {
     expect(mockImpact.mock.calls.length).toBe(approachingPulses);
     await act(() =>
       mockMotionListeners.forEach((listener) =>
-        listener({ rotation: { beta: 0.245 } })
+        listener({ rotation: { beta: 1.155 } })
       )
     );
     expect(farPulses).toBeGreaterThan(1);
     expect(mockImpact.mock.calls.length).toBeGreaterThan(approachingPulses);
 
-    await hold(1.2, 0, 0, 0.95);
+    await hold(0.2, 0, 0.9, 0);
     const pulseCountAtPass = mockImpact.mock.calls.length;
     await act(() => jest.advanceTimersByTime(1_000));
     expect(mockImpact).toHaveBeenCalledTimes(pulseCountAtPass);
@@ -183,11 +182,10 @@ describe("DrawCalibrationScreen", () => {
       });
     const { view } = await renderCalibration();
     await fireEvent.press(view.getByText("Start calibration"));
-    await hold(0.2, 0, -0.9, 0);
-    await hold(0.2, 0, 0.9, 0);
+    await hold(1.2, 0, 0, 0.95);
     await act(() =>
       mockMotionListeners.forEach((listener) =>
-        listener({ rotation: { beta: 0.2 } })
+        listener({ rotation: { beta: 1.2 } })
       )
     );
     expect(mockImpact).toHaveBeenCalled();
@@ -215,21 +213,20 @@ describe("DrawCalibrationScreen", () => {
     await fireEvent.press(
       content.getByRole("button", { name: "Start calibration" })
     );
-    expect(content.getByText("Ready pose")).toBeTruthy();
+    expect(content.getByText("Shoulder pose")).toBeTruthy();
     expect(onComplete).not.toHaveBeenCalled();
   });
 
   it("automatically checks both valid poses after a steady hold", async () => {
     const { view, onComplete } = await renderCalibration();
     await fireEvent.press(view.getByText("Start calibration"));
-    await hold(0.2, 0, -0.9, 0);
-    expect(view.queryByText("Shoulder pose")).toBeNull();
-    await hold(0.2, 0, 0.9, 0);
     expect(view.getByText("Shoulder pose")).toBeTruthy();
-    expect(view.getAllByText("✓")).toHaveLength(1);
-    await hold(1.2, 0, 0.9, 0);
-    expect(view.queryByText("Continue")).toBeNull();
     await hold(1.2, 0, 0, 0.95);
+    expect(view.getByText("Ready pose")).toBeTruthy();
+    expect(view.getAllByText("✓")).toHaveLength(1);
+    await hold(0.2, 0, 0, 0.95);
+    expect(view.queryByText("Continue")).toBeNull();
+    await hold(0.2, 0, 0.9, 0);
     expect(view.getByText("Calibration passed")).toBeTruthy();
     expect(view.getAllByText("✓")).toHaveLength(2);
     expect(mockSuccess).toHaveBeenCalledTimes(2);
@@ -259,10 +256,8 @@ describe("DrawCalibrationScreen", () => {
   it("continues calibration on volume-up after both poses pass", async () => {
     const { view, onComplete } = await renderCalibration();
     await fireEvent.press(view.getByText("Start calibration"));
-    await hold(0.2, 0, -0.9, 0);
-    await hold(0.2, 0, 0.9, 0);
-    await hold(1.2, 0, 0.9, 0);
     await hold(1.2, 0, 0, 0.95);
+    await hold(0.2, 0, 0.9, 0);
 
     expect(view.getByText("Calibration passed")).toBeTruthy();
 
@@ -297,7 +292,7 @@ describe("DrawCalibrationScreen", () => {
       jest.advanceTimersByTime(351);
       mockVolumeListeners.forEach((listener) => listener({ direction: "up" }));
     });
-    expect(view.queryByText("Shoulder pose")).toBeNull();
+    expect(view.queryByText("Ready pose")).toBeNull();
     expect(mockImpact).toHaveBeenCalledTimes(1);
   });
 
@@ -309,28 +304,30 @@ describe("DrawCalibrationScreen", () => {
     expect(view.getByText(/Hold steady or press volume up/)).toBeTruthy();
     await act(() => {
       mockMotionListeners.forEach((listener) =>
-        listener({ rotation: { beta: 0.2 } })
+        listener({ rotation: { beta: 1.2 } })
       );
-      mockTiltListeners.forEach((listener) =>
-        listener({ x: 0, y: -0.9, z: 0 })
-      );
+      mockTiltListeners.forEach((listener) => listener({ x: 0, y: 0.9, z: 0 }));
       mockVolumeListeners.forEach((listener) => listener({ direction: "up" }));
     });
-    expect(view.getByText(/Point the top edge down first/)).toBeTruthy();
+    expect(
+      view.getByText(/Point the top edge forward at shoulder height first/)
+    ).toBeTruthy();
     expect(mockImpact).toHaveBeenCalledTimes(1);
-    expect(view.queryByText("Shoulder pose")).toBeNull();
+    expect(view.queryByText("Ready pose")).toBeNull();
 
     await act(() => {
-      mockTiltListeners.forEach((listener) => listener({ x: 0, y: 0.9, z: 0 }));
+      mockTiltListeners.forEach((listener) =>
+        listener({ x: 0, y: 0, z: 0.95 })
+      );
       mockVolumeListeners.forEach((listener) =>
         listener({ direction: "down" })
       );
     });
-    expect(view.queryByText("Shoulder pose")).toBeNull();
+    expect(view.queryByText("Ready pose")).toBeNull();
     await act(() =>
       mockVolumeListeners.forEach((listener) => listener({ direction: "up" }))
     );
-    expect(view.getByText("Shoulder pose")).toBeTruthy();
+    expect(view.getByText("Ready pose")).toBeTruthy();
     expect(view.getAllByText("✓")).toHaveLength(1);
 
     await act(() => {
@@ -339,11 +336,14 @@ describe("DrawCalibrationScreen", () => {
       );
       mockVolumeListeners.forEach((listener) => listener({ direction: "up" }));
     });
-    expect(view.getByText(/raise the phone from ready first/)).toBeTruthy();
+    expect(
+      view.getByText(/lower the phone from shoulder height first/)
+    ).toBeTruthy();
     await act(() => {
       mockMotionListeners.forEach((listener) =>
-        listener({ rotation: { beta: 1.2 } })
+        listener({ rotation: { beta: 0.2 } })
       );
+      mockTiltListeners.forEach((listener) => listener({ x: 0, y: 0.9, z: 0 }));
       mockVolumeListeners.forEach((listener) => listener({ direction: "up" }));
     });
     expect(view.getByText("Calibration passed")).toBeTruthy();
@@ -388,7 +388,7 @@ describe("DrawCalibrationScreen", () => {
     }
     mockGranted = true;
     await fireEvent.press(content.getByRole("button", { name: "Check Again" }));
-    expect(content.getByText("Ready pose")).toBeTruthy();
+    expect(content.getByText("Shoulder pose")).toBeTruthy();
     expect(content.queryByText("Motion access needed")).toBeNull();
   });
 
@@ -400,7 +400,7 @@ describe("DrawCalibrationScreen", () => {
     expect(content.getByText("Motion unavailable")).toBeTruthy();
     mockAvailable = true;
     await fireEvent.press(content.getByRole("button", { name: "Retry" }));
-    expect(content.getByText("Ready pose")).toBeTruthy();
+    expect(content.getByText("Shoulder pose")).toBeTruthy();
     expect(onComplete).not.toHaveBeenCalled();
   });
 });

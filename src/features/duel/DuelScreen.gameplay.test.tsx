@@ -255,29 +255,34 @@ async function renderPhones() {
   };
   const press = async (role: DuelRole, label: string) => {
     mockNativeOwner = role;
-    await fireEvent.press(phones[role].getByText(label));
+    const target =
+      phones[role].queryByText(label) ??
+      phones[role].getByRole("button", { name: label });
+    await fireEvent.press(target);
     await act(async () => {
       publishSensors(role);
     });
   };
   const calibrate = async (role: DuelRole) => {
+    await press(role, "CONTINUE TO CALIBRATION");
     await press(role, "Start calibration");
     expect(mockPhones[role].motion.size).toBe(1);
-    for (let index = 0; index <= 20; index += 1) {
-      await act(() => {
-        publishSensors(role);
-        mockPhones[role].tilt.forEach((listener) =>
-          listener({ x: 0, y: -0.9, z: 0 })
-        );
-        jest.advanceTimersByTime(100);
-      });
-    }
     mockPhones[role].pitch = 1;
     for (let index = 0; index <= 20; index += 1) {
       await act(() => {
         publishSensors(role);
         mockPhones[role].tilt.forEach((listener) =>
           listener({ x: 0, y: 0, z: 0.95 })
+        );
+        jest.advanceTimersByTime(100);
+      });
+    }
+    mockPhones[role].pitch = 0;
+    for (let index = 0; index <= 20; index += 1) {
+      await act(() => {
+        publishSensors(role);
+        mockPhones[role].tilt.forEach((listener) =>
+          listener({ x: 0, y: -0.9, z: 0 })
         );
         jest.advanceTimersByTime(100);
       });
@@ -295,7 +300,6 @@ async function renderPhones() {
     }
   };
   const position = async (role: DuelRole) => {
-    await press(role, "CONFIRM");
     await act(() => {
       mockPhones[role].tilt.forEach((listener) =>
         listener({ x: 0, y: -1, z: 0 })
@@ -367,11 +371,12 @@ describe("DuelScreen real two-phone gameplay", () => {
     const { phones, press } = await renderPhones();
     const host = phones.host;
 
-    expect(host.getByText("Calibrate your draw")).toBeTruthy();
+    expect(host.getByText("STAND APART")).toBeTruthy();
     expect(host.getByRole("button", { name: "Help" })).toBeTruthy();
     expect(host.queryByText("How to play")).toBeNull();
+    await press("host", "CONTINUE TO CALIBRATION");
     await press("host", "Start calibration");
-    expect(host.getByText("Ready pose")).toBeTruthy();
+    expect(host.getByText("Shoulder pose")).toBeTruthy();
     await act(() => {
       publishSensors("host");
       mockPhones.host.tilt.forEach((listener) =>
@@ -381,7 +386,7 @@ describe("DuelScreen real two-phone gameplay", () => {
 
     await press("host", "Help");
     mockVolumeListeners.forEach((listener) => listener({ direction: "up" }));
-    expect(host.getByText("Ready pose")).toBeTruthy();
+    expect(host.getByText("Shoulder pose")).toBeTruthy();
     for (let index = 0; index <= 20; index += 1) {
       await act(() => {
         publishSensors("host");
@@ -391,13 +396,13 @@ describe("DuelScreen real two-phone gameplay", () => {
         jest.advanceTimersByTime(100);
       });
     }
-    expect(host.queryByText("Shoulder pose")).toBeNull();
+    expect(host.queryByText("Ready pose")).toBeNull();
     expect(host.getByRole("button", { name: "Close help" })).toBeTruthy();
     expect(host.getByText("How to play")).toBeTruthy();
     await press("host", "Close help");
 
     expect(host.queryByText("How to play")).toBeNull();
-    expect(host.getByText("Ready pose")).toBeTruthy();
+    expect(host.getByText("Shoulder pose")).toBeTruthy();
   });
 
   it.each(["tap", "volume", "movement"] as const)(
@@ -419,7 +424,7 @@ describe("DuelScreen real two-phone gameplay", () => {
       await press("host", "CONFIRM");
       expect(phones.host.getByText("WAITING FOR YOUR OPPONENT")).toBeTruthy();
       expect(phones.host.queryByRole("button", { name: "Fire" })).toBeNull();
-      expect(phones.guest.getByText("Start calibration")).toBeTruthy();
+      expect(phones.guest.getByText("STAND APART")).toBeTruthy();
 
       await calibrate("guest");
       await position("guest");
@@ -468,7 +473,7 @@ describe("DuelScreen real two-phone gameplay", () => {
       await shoot("guest", 0.9);
       for (const phone of [phones.host, phones.guest]) {
         expect(phone.getByText("Round 2")).toBeTruthy();
-        expect(phone.getByText("Hana wins")).toBeTruthy();
+        expect(phone.getByText("Hana — HEADSHOT (2 pts)")).toBeTruthy();
       }
 
       // Round 3: a faster raised headshot aimed east misses the northern
@@ -482,7 +487,7 @@ describe("DuelScreen real two-phone gameplay", () => {
       await shoot("guest", 0.9);
       for (const phone of [phones.host, phones.guest]) {
         expect(phone.getByText("Round 3")).toBeTruthy();
-        expect(phone.getByText("Gil wins")).toBeTruthy();
+        expect(phone.getByText("Gil — BODYSHOT (1 pt)")).toBeTruthy();
         expect(phone.getByText("Next round")).toBeTruthy();
       }
       // 1+2+0 versus 1+1+1: exactly level, so a fourth round is required.
@@ -548,7 +553,7 @@ describe("DuelScreen real two-phone gameplay", () => {
       await shoot("guest", 0.9);
       for (const phone of [phones.host, phones.guest]) {
         expect(phone.getByText("Round 4")).toBeTruthy();
-        expect(phone.getByText("Hana wins")).toBeTruthy();
+        expect(phone.getByText("Hana — HEADSHOT (2 pts)")).toBeTruthy();
         expect(phone.getByText(/^300\s*ms$/)).toBeTruthy();
       }
 
@@ -564,6 +569,7 @@ describe("DuelScreen real two-phone gameplay", () => {
           kind: "win",
           winnerId: "host-id",
           winnerZone: "headshot",
+          loserZone: "bodyshot",
           winnerPoints: 2,
           loserPoints: 1,
           reactionMs: 200,
@@ -573,6 +579,7 @@ describe("DuelScreen real two-phone gameplay", () => {
           kind: "win",
           winnerId: "guest-id",
           winnerZone: "bodyshot",
+          loserZone: "miss",
           winnerPoints: 1,
           loserPoints: 0,
           reactionMs: 200,
@@ -583,6 +590,7 @@ describe("DuelScreen real two-phone gameplay", () => {
           kind: "win",
           winnerId: "host-id",
           winnerZone: "headshot",
+          loserZone: "bodyshot",
           winnerPoints: 2,
           loserPoints: 1,
           reactionMs: 300,
@@ -698,7 +706,7 @@ describe("DuelScreen real two-phone gameplay", () => {
           expect(phone.queryByRole("image", { name: /^Hana:/i })).toBeNull();
         }
         if (winner) {
-          expect(phone.getByText(`${winner} wins`)).toBeTruthy();
+          expect(phone.getByText(new RegExp(`^${winner} —`))).toBeTruthy();
           expect(phone.queryByText("Tie")).toBeNull();
         } else {
           expect(phone.getByText("Tie")).toBeTruthy();
