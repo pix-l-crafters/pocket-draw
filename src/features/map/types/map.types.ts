@@ -27,10 +27,15 @@ export type NearbyPlayer = {
   lastSeen: Date;
 };
 
-export type NearbyPlayersState =
+export type VisiblePlayersState =
   | { status: "loading" }
   | { status: "ready"; players: NearbyPlayer[] }
   | { status: "error"; message: string };
+
+export type NearbyPlayersState = VisiblePlayersState & {
+  /** Null until both location and presence are available. */
+  nearbyPlayers: NearbyPlayer[] | null;
+};
 
 export type PresencePublishState =
   | { status: "idle" }
