@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file. See [conven
 
 ## [Unreleased]
 
+### Bug Fixes
+
+- **(duel)** wait for peer shot or no-shot confirmation before judging, preventing delayed packets from splitting match completion and tiebreaker decisions.
+
 ### Features
 
 - **(duel)** make gameplay instructions optional from calibration.

@@ -39,12 +39,6 @@ const COUNTDOWN_TICK_MS = 1000;
 /** Fixed 3-2-1 countdown: one second per tick, FIRE on zero. Never random. */
 export const COUNTDOWN_DURATION_MS =
   COUNTDOWN_VALUES.length * COUNTDOWN_TICK_MS;
-/**
- * The opponent's `raised` still has to cross the network after they tap, so
- * scoring them a miss waits a little past the window. Without the grace both
- * devices can score the same last-instant shot differently.
- */
-const PEER_SHOT_GRACE_MS = 250;
 
 // Checked before the countdown so a player fixes tracking instead of losing
 // the round to a miss they could not see coming.
@@ -68,6 +62,8 @@ type Phase =
 
 type PreRoundProps = {
   channel: DuelChannel;
+  matchId: string;
+  roundNumber: number;
   calibration: PitchCalibration;
   selfPlayerId: string;
   falseStarts: FalseStartCoordinator;
@@ -92,6 +88,8 @@ type PreRoundProps = {
 
 export function PreRound({
   channel,
+  matchId,
+  roundNumber,
   calibration,
   selfPlayerId,
   falseStarts,
@@ -145,6 +143,8 @@ export function PreRound({
   const [opponentMissReason, setOpponentMissReason] =
     useState<Exclude<MissReason, "noShot">>();
   const opponentShotReceivedRef = useRef(false);
+  const [opponentShotResolved, setOpponentShotResolved] = useState(false);
+  const [windowClosed, setWindowClosed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -371,20 +371,59 @@ export function PreRound({
         setPhase((current) => (current === "fire" ? current : "countdown"));
         showTick(message.value);
       }
-      if (message.type === "raised" && !opponentShotReceivedRef.current) {
+      if (
+        message.type === "raised" &&
+        message.reactionMs <= FIRE_WINDOW_MS &&
+        !opponentShotReceivedRef.current
+      ) {
         opponentShotReceivedRef.current = true;
         setOpponentZone(message.zone);
         setOpponentMissReason(
           message.zone === "miss" ? message.missReason : undefined
         );
         setOpponentReactionMs(message.reactionMs);
+        setOpponentShotResolved(true);
+      }
+      if (
+        message.type === "noShot" &&
+        message.matchId === matchId &&
+        message.roundNumber === roundNumber &&
+        !opponentShotReceivedRef.current
+      ) {
+        opponentShotReceivedRef.current = true;
+        setOpponentShotResolved(true);
       }
     });
-  }, [channel, falseStarts]);
+  }, [channel, falseStarts, matchId, roundNumber]);
 
-  // Both shots in, or the window closed: the round is decided either way.
+  // Close only our capture window. A peer packet can arrive arbitrarily later;
+  // wait for their captured shot or explicit no-shot instead of guessing.
   useEffect(() => {
     if (phase !== "fire") return undefined;
+    // Capture accepts the inclusive 3000 ms boundary.
+    const deadline = firedAtRef.current + FIRE_WINDOW_MS + 1;
+    const timer = setTimeout(
+      () => {
+        if (
+          !reactionTimerRef.current.getCapture() &&
+          !safeSend({ type: "noShot", matchId, roundNumber })
+        )
+          return;
+        setWindowClosed(true);
+      },
+      Math.max(0, deadline - Date.now())
+    );
+    return () => clearTimeout(timer);
+  }, [phase, channel, matchId, roundNumber]);
+
+  useEffect(() => {
+    if (
+      phase !== "fire" ||
+      !opponentShotResolved ||
+      (selfReactionMs === null && !windowClosed) ||
+      (falseStartPlayer !== null && !windowClosed)
+    )
+      return;
 
     const report = () => {
       if (reportedRef.current) return;
@@ -401,18 +440,7 @@ export function PreRound({
       });
     };
 
-    if (
-      falseStartPlayer === null &&
-      selfReactionMs !== null &&
-      opponentReactionMs !== null
-    ) {
-      report();
-      return undefined;
-    }
-
-    const deadline = firedAtRef.current + FIRE_WINDOW_MS + PEER_SHOT_GRACE_MS;
-    const timer = setTimeout(report, Math.max(0, deadline - Date.now()));
-    return () => clearTimeout(timer);
+    report();
   }, [
     onRoundShots,
     opponentReactionMs,
@@ -422,7 +450,9 @@ export function PreRound({
     opponentZone,
     falseStartPlayer,
     selfMissReason,
-    opponentMissReason
+    opponentMissReason,
+    opponentShotResolved,
+    windowClosed
   ]);
 
   const handleFire = () => {
@@ -769,6 +799,8 @@ export function PreRound({
         <Pressable
           accessibilityLabel="Fire"
           accessibilityRole="button"
+          accessibilityState={{ disabled: windowClosed }}
+          disabled={windowClosed}
           onPress={handleFire}
           style={[
             styles.fireOverlay,
@@ -781,7 +813,11 @@ export function PreRound({
               phase === "fire" && styles.fireTextActive
             ]}
           >
-            {phase === "fire" ? "FIRE!" : countdown}
+            {phase === "fire"
+              ? windowClosed
+                ? "SYNCING SHOTS"
+                : "FIRE!"
+              : countdown}
           </Text>
           <Text
             style={[

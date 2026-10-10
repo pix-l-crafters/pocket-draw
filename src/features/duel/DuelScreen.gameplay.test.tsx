@@ -210,8 +210,18 @@ async function advance(ms: number) {
   });
 }
 
-async function renderPhones() {
-  const [hostChannel, guestChannel] = createMockDuelChannelPair();
+async function renderPhones(guestShotDelayMs = 0) {
+  const [hostChannel, rawGuestChannel] = createMockDuelChannelPair();
+  const guestChannel = {
+    ...rawGuestChannel,
+    send: (message: Parameters<typeof rawGuestChannel.send>[0]) => {
+      if (message.type === "raised" && guestShotDelayMs > 0) {
+        setTimeout(() => rawGuestChannel.send(message), guestShotDelayMs);
+      } else {
+        rawGuestChannel.send(message);
+      }
+    }
+  };
   const players = {
     host: { id: "host-id", name: "Hana" },
     guest: { id: "guest-id", name: "Gil" }
@@ -339,7 +349,10 @@ async function renderPhones() {
     position,
     startRound,
     shoot,
-    nextRound
+    nextRound,
+    delayGuestShots: (ms: number) => {
+      guestShotDelayMs = ms;
+    }
   };
 }
 
@@ -365,6 +378,56 @@ describe("DuelScreen real two-phone gameplay", () => {
   afterEach(() => {
     Platform.OS = originalPlatform;
     jest.useRealTimers();
+  });
+
+  it("does not start a tiebreaker when the deciding peer shot is delayed past the local window", async () => {
+    const {
+      view,
+      phones,
+      calibrate,
+      startRound,
+      shoot,
+      nextRound,
+      press,
+      delayGuestShots
+    } = await renderPhones();
+    await calibrate("host");
+    await calibrate("guest");
+    for (let round = 1; round <= 3; round += 1) {
+      if (round > 1) await nextRound();
+      if (round === 3) delayGuestShots(3500);
+      await startRound();
+      await advance(3000);
+      await advance(200);
+      await shoot("host", round === 3 ? 0.4 : 0.9);
+      await advance(50);
+      await shoot("guest", 0.9);
+      await advance(3000);
+      // The peer fired in time. Network delay must not invent a no-shot tie.
+      if (round === 3) {
+        expect(phones.guest.getByText("See match result")).toBeTruthy();
+        expect(phones.host.queryByText("Next round")).toBeNull();
+      }
+      await advance(500);
+      for (const phone of [phones.host, phones.guest]) {
+        expect(phone.getByText(`Round ${round}`)).toBeTruthy();
+        expect(
+          phone.getByText(round === 3 ? "Gil — BODYSHOT (1 pt)" : "Tie")
+        ).toBeTruthy();
+      }
+    }
+    for (const role of ["host", "guest"] as const) {
+      expect(phones[role].queryByText("Next round")).toBeNull();
+      await press(role, "See match result");
+      expect(phones[role].getByText("Gil wins")).toBeTruthy();
+      expect(
+        within(phones[role].getByText("Hana").parent!).getByText("2")
+      ).toBeTruthy();
+      expect(
+        within(phones[role].getByText("Gil").parent!).getByText("3")
+      ).toBeTruthy();
+    }
+    await view.unmount();
   });
 
   it("opens optional help over calibration and returns to the active step", async () => {

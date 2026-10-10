@@ -43,6 +43,32 @@ class FakeDataChannel implements RtcDataChannelLike {
 }
 
 describe("WebRTC DuelChannel adapter", () => {
+  it("accepts no-shot confirmations only for a valid match and round", () => {
+    expect(
+      isDuelMessage({ type: "noShot", matchId: MATCH_ID, roundNumber: 1 })
+    ).toBe(true);
+    expect(
+      isDuelMessage({ type: "noShot", matchId: MATCH_ID, roundNumber: 4 })
+    ).toBe(true);
+    for (const roundNumber of [
+      undefined,
+      null,
+      "1",
+      0,
+      5,
+      1.5,
+      NaN,
+      Infinity
+    ]) {
+      expect(
+        isDuelMessage({ type: "noShot", matchId: MATCH_ID, roundNumber })
+      ).toBe(false);
+    }
+    expect(
+      isDuelMessage({ type: "noShot", matchId: "invalid", roundNumber: 1 })
+    ).toBe(false);
+  });
+
   it("rejects incoming raised messages without a valid zone", () => {
     const rtcChannel = new FakeDataChannel();
     const connection = createDuelDataChannelConnection(rtcChannel);
