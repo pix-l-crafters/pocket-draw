@@ -98,6 +98,8 @@ export function DuelScreen({
     string | null
   >(null);
   const [matchId, setMatchId] = useState(firstMatchId);
+  const [audioMuted, setAudioMuted] = useState(false);
+  const gameBeginStartedForMatchRef = useRef<string | null>(null);
   const falseStarts = useMemo(
     () => new FalseStartCoordinator(channel, self.id, opponent.id),
     [channel, self.id, opponent.id, matchId]
@@ -637,6 +639,7 @@ export function DuelScreen({
   if (roundResult) {
     return (
       <RoundResultScreen
+        audioMuted={audioMuted}
         continueDisabled={matchDecided && saveStatus === "saving"}
         continueLabel={
           !matchDecided
@@ -657,6 +660,7 @@ export function DuelScreen({
         outcome={roundResult}
         playerNames={playerNames}
         selfReactionMs={roundShots?.selfReactionMs ?? null}
+        selfZone={roundShots?.selfZone ?? "miss"}
         roundNumber={loop.rounds.length}
       />
     );
@@ -668,6 +672,7 @@ export function DuelScreen({
       {/* Keyed on the match, round and resume: a fresh PreRound is the round
           reset. */}
       <PreRound
+        audioMuted={audioMuted}
         key={`${matchId}:${loop.rounds.length}:${resumeCount}`}
         channel={channel}
         calibration={calibration}
@@ -678,12 +683,20 @@ export function DuelScreen({
         clockCalibrationStatus={clockCalibrationStatus}
         clockOffsetMs={clockOffsetMs}
         onCountdownStart={consumePeerReady}
+        onGameBeginStart={() => {
+          gameBeginStartedForMatchRef.current = matchId;
+        }}
+        onToggleAudioMuted={() => setAudioMuted((muted) => !muted)}
         onRetryClockCalibration={runClockCalibration}
         onRoundShots={handleRoundShots}
         onShotDiagnostics={(shot) => {
           pendingShotRef.current = shot;
         }}
         peerReady={peerReady}
+        playGameBegin={
+          loop.rounds.length === 0 &&
+          gameBeginStartedForMatchRef.current !== matchId
+        }
         role={role}
       />
     </View>

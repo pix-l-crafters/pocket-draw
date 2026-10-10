@@ -1,4 +1,8 @@
-import { setAudioModeAsync, useAudioPlayer } from "expo-audio";
+import {
+  setAudioModeAsync,
+  useAudioPlayer,
+  type AudioPlayer
+} from "expo-audio";
 import * as Haptics from "expo-haptics";
 import { Accelerometer } from "expo-sensors";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -16,7 +20,7 @@ import type { MissReason, Zone } from "../../contracts/roundOutcome";
 import { useForegroundRecheck } from "../../lib/useForegroundRecheck";
 import { colors, fonts } from "../../theme/tokens";
 import { isTopEdgeDown } from "./calibrationPose";
-import { COUNTDOWN_AUDIO_SOURCE } from "./countdownAudio";
+import { DUEL_CUES } from "./countdownAudio";
 import { FalseStartCoordinator } from "./falseStartCoordinator";
 import { FireSignalCoordinator, type DuelRole } from "./fireSignalCoordinator";
 import {
@@ -27,7 +31,7 @@ import {
 import { classifyZone, computeRaiseFraction } from "./pitchZoneClassifier";
 import { ReactionTimer } from "./reactionTimer";
 import { FIRE_WINDOW_MS, type RoundShots } from "./roundShots";
-import { useAimTracking } from "./useAimTracking";
+import { useAimTracking, type AimMissReason } from "./useAimTracking";
 import { subscribeVolumeFire } from "./volumeFireTrigger";
 
 const COUNTDOWN_VALUES = [3, 2, 1] as const;
@@ -42,10 +46,23 @@ export const COUNTDOWN_DURATION_MS =
  */
 const PEER_SHOT_GRACE_MS = 250;
 
+// Checked before the countdown so a player fixes tracking instead of losing
+// the round to a miss they could not see coming.
+const TRACKING_WARNINGS: Record<AimMissReason, string> = {
+  locationUnavailable:
+    "Your location signal is weak. Turn on precise location and try moving outside.",
+  compassUnavailable: "Compass not ready. Move your phone in a figure 8.",
+  opponentLocationUnavailable:
+    "Couldn't get your opponent's location. Ask them to turn on precise location and move outside.",
+  trackingUnavailable:
+    "Couldn't sync timing with your opponent's phone. Stay connected and wait a moment."
+};
+
 type Phase =
   | "separate"
   | "position"
   | "waiting"
+  | "announcing"
   | "countdown"
   | "fire"
   | "done";
@@ -63,6 +80,10 @@ type PreRoundProps = {
   peerReady: boolean;
   clockCalibrationStatus: "calibrating" | "ready" | "failed";
   clockOffsetMs: number;
+  audioMuted: boolean;
+  onToggleAudioMuted: () => void;
+  playGameBegin: boolean;
+  onGameBeginStart: () => void;
   onRetryClockCalibration: () => void;
   onCountdownStart: () => void;
   onRoundShots: (shots: RoundShots) => void;
@@ -80,19 +101,32 @@ export function PreRound({
   peerReady,
   clockCalibrationStatus,
   clockOffsetMs,
+  audioMuted,
+  onToggleAudioMuted,
+  playGameBegin,
+  onGameBeginStart,
   onRetryClockCalibration,
   onCountdownStart,
   onRoundShots,
   onShotDiagnostics
 }: PreRoundProps) {
-  const countdownAudio = useAudioPlayer(COUNTDOWN_AUDIO_SOURCE);
+  const gameBeginAudio = useAudioPlayer(DUEL_CUES.gameBegin);
+  const countdown3Audio = useAudioPlayer(DUEL_CUES.countdown3);
+  const countdown2Audio = useAudioPlayer(DUEL_CUES.countdown2);
+  const countdown1Audio = useAudioPlayer(DUEL_CUES.countdown1);
+  const fireAudio = useAudioPlayer(DUEL_CUES.fire);
+  const gunshotAudio = useAudioPlayer(DUEL_CUES.gunshot);
   const [phase, setPhase] = useState<Phase>("separate");
   const phaseRef = useRef(phase);
   phaseRef.current = phase;
   const latestAimRef = useRef<AimDiagnostics | null>(null);
-  const captureAim = useAimTracking(channel, clockOffsetMs, (diagnostics) => {
-    latestAimRef.current = diagnostics;
-  });
+  const { captureAim, trackingIssues } = useAimTracking(
+    channel,
+    clockOffsetMs,
+    (diagnostics) => {
+      latestAimRef.current = diagnostics;
+    }
+  );
   const pitchMonitor = useMemo(() => new PitchMonitor(), []);
   const [pitchStatus, setPitchStatus] = useState<
     PitchMonitorStartResult | "starting"
@@ -161,12 +195,13 @@ export function PreRound({
   const [opponentReactionMs, setOpponentReactionMs] = useState<number | null>(
     null
   );
-  const [audioMuted, setAudioMuted] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const reactionTimerRef = useRef(new ReactionTimer());
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const firedAtRef = useRef(0);
   const reportedRef = useRef(false);
+  const introStartedRef = useRef(false);
+  const afterIntroRef = useRef<(() => void) | null>(null);
 
   // Timers and the message handler both read this, and neither sees a state
   // value captured on a later render.
@@ -174,6 +209,27 @@ export function PreRound({
   audioMutedRef.current = audioMuted;
 
   const isHost = role === "host";
+
+  useEffect(() => {
+    for (const player of [
+      gameBeginAudio,
+      countdown3Audio,
+      countdown2Audio,
+      countdown1Audio,
+      fireAudio,
+      gunshotAudio
+    ]) {
+      player.volume = audioMuted ? 0 : 1;
+    }
+  }, [
+    audioMuted,
+    gameBeginAudio,
+    countdown3Audio,
+    countdown2Audio,
+    countdown1Audio,
+    fireAudio,
+    gunshotAudio
+  ]);
 
   // Countdown timers fire up to ~3s after the first tick. Without this, leaving
   // the duel mid-countdown sends on a closed channel and throws inside
@@ -202,14 +258,20 @@ export function PreRound({
     }
   };
 
-  const playCountdownAudio = () => {
-    if (!COUNTDOWN_AUDIO_SOURCE || audioMutedRef.current) return;
-    countdownAudio.seekTo(0);
-    countdownAudio.play();
+  const playCue = (player: AudioPlayer) => {
+    if (audioMutedRef.current) return;
+    player.seekTo(0);
+    player.play();
   };
 
   const showTick = (value: number) => {
-    playCountdownAudio();
+    playCue(
+      value === 3
+        ? countdown3Audio
+        : value === 2
+          ? countdown2Audio
+          : countdown1Audio
+    );
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setCountdown(value);
   };
@@ -230,6 +292,7 @@ export function PreRound({
         falseStarts.markFire(signal.atMs);
         setCountdown(0);
         setPhase("fire");
+        playCue(fireAudio);
         void Haptics.notificationAsync(
           Haptics.NotificationFeedbackType.Success
         );
@@ -279,7 +342,7 @@ export function PreRound({
   }, [motionAttempt, falseStarts]);
 
   useEffect(() => {
-    // The countdown cue must be audible even with the iOS silent switch on —
+    // Duel cues must be audible even with the iOS silent switch on —
     // haptic strength alone varies too much across devices to be fair timing.
     void setAudioModeAsync({ playsInSilentMode: true });
   }, []);
@@ -391,7 +454,7 @@ export function PreRound({
           );
     const shot = captureAim(
       theta === null
-        ? { zone: "miss", missReason: "trackingUnavailable" }
+        ? { zone: "miss", missReason: "tiltUnavailable" }
         : classifyZone(raiseFraction!)
     );
     onShotDiagnostics?.({
@@ -406,6 +469,7 @@ export function PreRound({
     setSelfZone(shot.zone);
     setSelfMissReason(shot.missReason);
     setSelfReactionMs(capture.reactionMs);
+    playCue(gunshotAudio);
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     safeSend({
       type: "raised",
@@ -468,6 +532,36 @@ export function PreRound({
     }, COUNTDOWN_DURATION_MS);
   };
 
+  useEffect(() => {
+    const subscription = gameBeginAudio.addListener(
+      "playbackStatusUpdate",
+      (status) => {
+        if (!status.didJustFinish) return;
+        const afterIntro = afterIntroRef.current;
+        afterIntroRef.current = null;
+        afterIntro?.();
+      }
+    );
+    return () => subscription.remove();
+  }, [gameBeginAudio]);
+
+  useEffect(() => {
+    if (!audioMuted || !afterIntroRef.current) return;
+    gameBeginAudio.pause();
+    const afterIntro = afterIntroRef.current;
+    afterIntroRef.current = null;
+    afterIntro();
+  }, [audioMuted, gameBeginAudio]);
+
+  const finishPosition = () => {
+    if (isHost) {
+      startCountdown();
+    } else if (safeSend({ type: "ready" })) {
+      setFalseStartPlayer(null);
+      setPhase("waiting");
+    }
+  };
+
   const advance = () => {
     // Separation is the players' own call: nothing on the phone measures
     // the distance between them, so the step only asks.
@@ -477,14 +571,19 @@ export function PreRound({
     }
     if (phase !== "position" || !topEdgeDown) return;
 
-    if (isHost) {
-      startCountdown();
+    if (playGameBegin && !introStartedRef.current) {
+      introStartedRef.current = true;
+      onGameBeginStart();
+      if (audioMutedRef.current) {
+        finishPosition();
+        return;
+      }
+      afterIntroRef.current = finishPosition;
+      setPhase("announcing");
+      playCue(gameBeginAudio);
       return;
     }
-
-    if (!safeSend({ type: "ready" })) return;
-    setFalseStartPlayer(null);
-    setPhase("waiting");
+    finishPosition();
   };
 
   const confirmDisabled =
@@ -527,6 +626,7 @@ export function PreRound({
         : "PHONE POSITION CONFIRMED";
     }
     if (phase === "waiting") return "WAITING FOR THE DRAW";
+    if (phase === "announcing") return "THE GAME WILL NOW BEGIN";
     if (phase === "countdown") return "GET READY";
     return "DRAW!";
   }, [isHost, peerReady, phase, topEdgeDown]);
@@ -535,11 +635,11 @@ export function PreRound({
     <View style={styles.container}>
       <IconButton
         accessibilityLabel={
-          audioMuted ? "Turn countdown sound on" : "Mute countdown sound"
+          audioMuted ? "Turn duel sound on" : "Mute duel sound"
         }
         icon={audioMuted ? "volume-off" : "volume-high"}
         iconColor={colors.textMuted60}
-        onPress={() => setAudioMuted((muted) => !muted)}
+        onPress={onToggleAudioMuted}
         style={styles.muteButton}
       />
       <View style={styles.content}>
@@ -587,6 +687,29 @@ export function PreRound({
               : "MOTION UNAVAILABLE — enable motion access in settings, then retry."
             : "Aim the top edge at your opponent. Missing GPS or a calibrated compass counts as a miss."}
         </Text>
+        {clockCalibrationStatus === "ready" &&
+          pitchStatus === "started" &&
+          (phase === "separate" ||
+            phase === "position" ||
+            phase === "waiting") &&
+          !!trackingIssues?.length && (
+            <View
+              accessibilityLiveRegion="polite"
+              style={styles.trackingCheck}
+            >
+              <Text style={styles.trackingKicker}>
+                TRACKING NOT READY — SHOTS WILL MISS
+              </Text>
+              {trackingIssues.map((reason) => (
+                <Text
+                  key={reason}
+                  style={styles.trackingWarning}
+                >
+                  {TRACKING_WARNINGS[reason]}
+                </Text>
+              ))}
+            </View>
+          )}
         {!motionDenied && pitchStatus === "permissionDenied" && (
           <PermissionNotice
             canAskAgain={false}
@@ -731,6 +854,18 @@ const styles = StyleSheet.create({
     fontFamily: fonts.body,
     fontSize: 18,
     minHeight: 48
+  },
+  trackingCheck: { gap: 4 },
+  trackingKicker: {
+    color: colors.warning,
+    fontFamily: fonts.mono,
+    fontSize: 12,
+    letterSpacing: 1.5
+  },
+  trackingWarning: {
+    color: colors.warning,
+    fontFamily: fonts.body,
+    fontSize: 16
   },
   fireOverlay: {
     ...StyleSheet.absoluteFillObject,

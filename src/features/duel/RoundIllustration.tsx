@@ -14,10 +14,22 @@ import Svg, {
   Text as SvgText
 } from "react-native-svg";
 
-import type { MissReason } from "../../contracts/roundOutcome";
+import type {
+  MissReason,
+  TrackingMissReason
+} from "../../contracts/roundOutcome";
 import { colors, fonts } from "../../theme/tokens";
 
 type IllustrationReason = MissReason | "falseStart";
+
+const TRACKING_REASONS: ReadonlySet<IllustrationReason> =
+  new Set<TrackingMissReason>([
+    "tiltUnavailable",
+    "compassUnavailable",
+    "locationUnavailable",
+    "opponentLocationUnavailable",
+    "trackingUnavailable"
+  ]);
 
 const explanations: Record<
   IllustrationReason,
@@ -37,9 +49,29 @@ const explanations: Record<
     explanation: "Aimed outside the opponent's cone at the moment of firing.",
     hint: "Face your opponent and aim toward them before firing. The exact direction of the miss is not recorded."
   },
+  tiltUnavailable: {
+    explanation:
+      "Couldn't read the phone's tilt when firing, so the shot couldn't be scored.",
+    hint: "Check that motion access is on in Settings. If this keeps happening, restart Pocket Draw after the match."
+  },
+  compassUnavailable: {
+    explanation:
+      "Compass not ready: it was uncalibrated or not updating, so aim couldn't be checked.",
+    hint: "Move the phone in a figure 8, away from metal and magnets, before the next round."
+  },
+  locationUnavailable: {
+    explanation:
+      "Location signal too weak: the phone had no recent GPS fix, so aim couldn't be checked.",
+    hint: "Turn on precise location and move outside, away from tall buildings."
+  },
+  opponentLocationUnavailable: {
+    explanation:
+      "Couldn't get the opponent's location, so aim couldn't be checked.",
+    hint: "The opponent should turn on precise location and move outside. Both phones need GPS."
+  },
   trackingUnavailable: {
     explanation:
-      "Tracking could not verify the shot; its physical direction is unknown.",
+      "Tracking could not verify the shot; the exact cause wasn't recorded.",
     hint: "Check motion, compass, and precise location access, then hold steady with clear space between players."
   },
   noShot: {
@@ -62,16 +94,12 @@ export function RoundIllustration({
 }) {
   const [progress] = useState(() => new Animated.Value(1));
   const isRaise = reason === "tooLow" || reason === "tooHigh";
+  const isTracking = TRACKING_REASONS.has(reason);
   const { explanation, hint } = explanations[reason];
 
   useEffect(() => {
     progress.setValue(1);
-    if (
-      reason === "trackingUnavailable" ||
-      reason === "noShot" ||
-      reason === "falseStart"
-    )
-      return;
+    if (isTracking || reason === "noShot" || reason === "falseStart") return;
 
     let mounted = true;
     let preferenceResolved = false;
@@ -121,7 +149,7 @@ export function RoundIllustration({
       subscription.remove();
       settle();
     };
-  }, [progress, reason]);
+  }, [isTracking, progress, reason]);
 
   return (
     <View style={styles.card}>
@@ -237,7 +265,7 @@ export function RoundIllustration({
                 strokeWidth={2}
               />
             </>
-          ) : reason === "trackingUnavailable" ? (
+          ) : isTracking ? (
             <>
               <Rect
                 x={25}

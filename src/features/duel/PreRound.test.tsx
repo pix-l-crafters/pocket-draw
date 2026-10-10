@@ -8,9 +8,25 @@ import { PaperProvider } from "react-native-paper";
 import type { DuelChannel, DuelMessage } from "../../contracts/duelChannel";
 import type { ShotDiagnostics } from "../../contracts/matchAnalytics";
 import { appTheme } from "../../theme/appTheme";
+import { DUEL_CUES } from "./countdownAudio";
 import { FalseStartCoordinator } from "./falseStartCoordinator";
 import type { DuelRole } from "./fireSignalCoordinator";
 import { COUNTDOWN_DURATION_MS, PreRound } from "./PreRound";
+
+jest.mock("./countdownAudio", () => ({
+  DUEL_CUES: {
+    gameBegin: 1,
+    countdown3: 2,
+    countdown2: 3,
+    countdown1: 4,
+    fire: 5,
+    gunshot: 6,
+    headshot: 7,
+    bodyshot: 8,
+    miss: 9,
+    falseStart: 10
+  }
+}));
 import type { RoundShots } from "./roundShots";
 import { judgeRoundShots } from "./roundShots";
 
@@ -96,9 +112,41 @@ jest.mock("expo-sensors", () => ({
   }
 }));
 
+const mockAudioPlayers = new Map<
+  unknown,
+  {
+    play: jest.Mock;
+    seekTo: jest.Mock;
+    pause: jest.Mock;
+    finish: () => void;
+    addListener: (
+      event: string,
+      listener: (status: { didJustFinish: boolean }) => void
+    ) => { remove: () => void };
+  }
+>();
 jest.mock("expo-audio", () => ({
   setAudioModeAsync: async () => undefined,
-  useAudioPlayer: () => ({ seekTo: () => undefined, play: () => undefined })
+  useAudioPlayer: (source: unknown) => {
+    if (!mockAudioPlayers.has(source)) {
+      let onStatus: ((status: { didJustFinish: boolean }) => void) | undefined;
+      mockAudioPlayers.set(source, {
+        seekTo: jest.fn(),
+        pause: jest.fn(),
+        play: jest.fn(),
+        finish: () => onStatus?.({ didJustFinish: true }),
+        addListener: (_event: string, listener: typeof onStatus) => {
+          onStatus = listener;
+          return {
+            remove: () => {
+              onStatus = undefined;
+            }
+          };
+        }
+      });
+    }
+    return mockAudioPlayers.get(source);
+  }
 }));
 
 jest.mock("expo-haptics", () => ({
@@ -113,6 +161,8 @@ async function renderPreRound(
   options: {
     clockOffsetMs?: number;
     clockCalibrationStatus?: "calibrating" | "ready" | "failed";
+    playGameBegin?: boolean;
+    audioMuted?: boolean;
   } = {},
   platform: MobilePlatform = "android"
 ) {
@@ -150,6 +200,10 @@ async function renderPreRound(
         onCountdownStart={() => undefined}
         onRoundShots={(round) => shots.push(round)}
         onShotDiagnostics={(shot) => diagnostics.push(shot)}
+        onGameBeginStart={() => undefined}
+        playGameBegin={options.playGameBegin ?? false}
+        audioMuted={options.audioMuted ?? false}
+        onToggleAudioMuted={() => undefined}
         peerReady
         role={role}
       />
@@ -218,6 +272,7 @@ async function renderPreRound(
 
 describe("PreRound countdown and draw", () => {
   beforeEach(() => {
+    mockAudioPlayers.clear();
     jest.mocked(Haptics.notificationAsync).mockClear();
     accelerometerListeners.length = 0;
     motionPermission.granted = true;
@@ -262,6 +317,55 @@ describe("PreRound countdown and draw", () => {
     expect(view.getByText("POINT THE TOP EDGE TOWARD THE GROUND")).toBeTruthy();
   });
 
+  it("warns before the countdown which tracking reading would make shots miss", async () => {
+    const { deliver, view } = await renderPreRound("guest");
+    // The check runs once a second against the latest compass reading.
+    const checkWithCompassAccuracy = (accuracy: number) =>
+      act(() => {
+        mockHeadingListeners.forEach((listener) =>
+          listener({ trueHeading: 0, magHeading: 0, accuracy })
+        );
+        jest.advanceTimersByTime(1000);
+      });
+    expect(view.queryByText(/TRACKING NOT READY/)).toBeNull();
+
+    await checkWithCompassAccuracy(3);
+    expect(view.getByText(/TRACKING NOT READY/)).toBeTruthy();
+    expect(
+      view.getByText(/Couldn't get your opponent's location/)
+    ).toBeTruthy();
+    expect(view.queryByText(/Compass not ready/)).toBeNull();
+
+    await checkWithCompassAccuracy(1);
+    expect(
+      view.getByText("Compass not ready. Move your phone in a figure 8.")
+    ).toBeTruthy();
+
+    await deliver({
+      type: "aimPosition",
+      latitude: 0.001,
+      longitude: 0,
+      accuracy: 1,
+      sampleAtMs: Date.now()
+    });
+    await checkWithCompassAccuracy(3);
+    expect(view.queryByText(/TRACKING NOT READY/)).toBeNull();
+  });
+
+  it("keeps the tracking check out of the countdown", async () => {
+    const { setReading, view, wait } = await renderPreRound("host");
+    await fireEvent.press(view.getByText("CONFIRM"));
+    await setReading({ x: 0, y: -1, z: 0 });
+    await wait(1000);
+    expect(
+      view.getByText(/Couldn't get your opponent's location/)
+    ).toBeTruthy();
+
+    await fireEvent.press(view.getByText("CONFIRM"));
+    await wait(1000);
+    expect(view.queryByText(/TRACKING NOT READY/)).toBeNull();
+  });
+
   it("uses volume-up to confirm each enabled pre-round step", async () => {
     const { deliver, pressVolume, sent, setReading, view } =
       await renderPreRound("host");
@@ -290,24 +394,73 @@ describe("PreRound countdown and draw", () => {
 
     expect(sent).toEqual([{ type: "countdown", value: 3 }]);
     expect(view.getByText("3")).toBeTruthy();
+    expect(
+      mockAudioPlayers.get(DUEL_CUES.countdown3)?.play
+    ).toHaveBeenCalledTimes(1);
 
     await wait(1000);
     expect(view.getByText("2")).toBeTruthy();
+    expect(
+      mockAudioPlayers.get(DUEL_CUES.countdown2)?.play
+    ).toHaveBeenCalledTimes(1);
 
     await wait(1000);
     expect(view.getByText("1")).toBeTruthy();
+    expect(
+      mockAudioPlayers.get(DUEL_CUES.countdown1)?.play
+    ).toHaveBeenCalledTimes(1);
 
     await wait(COUNTDOWN_DURATION_MS - 2000 - 1);
     expect(view.queryByText("FIRE!")).toBeNull();
 
     await wait(1);
     expect(view.getByText("FIRE!")).toBeTruthy();
+    expect(mockAudioPlayers.get(DUEL_CUES.fire)?.play).toHaveBeenCalledTimes(1);
     expect(sent).toEqual([
       { type: "countdown", value: 3 },
       { type: "countdown", value: 2 },
       { type: "countdown", value: 1 },
       { type: "fire", atMs: expect.any(Number) }
     ]);
+  });
+
+  it("waits for the round-one announcement before starting the countdown", async () => {
+    const { completeRitual, sent, view } = await renderPreRound("host", {
+      playGameBegin: true
+    });
+    await completeRitual();
+    expect(
+      mockAudioPlayers.get(DUEL_CUES.gameBegin)?.play
+    ).toHaveBeenCalledTimes(1);
+    expect(sent).toEqual([]);
+    await act(() => mockAudioPlayers.get(DUEL_CUES.gameBegin)?.finish());
+    expect(sent).toEqual([{ type: "countdown", value: 3 }]);
+    expect(view.getByText("3")).toBeTruthy();
+  });
+
+  it("skips the announcement when muted and keeps the countdown silent", async () => {
+    const { completeRitual, sent } = await renderPreRound("host", {
+      playGameBegin: true,
+      audioMuted: true
+    });
+    await completeRitual();
+    expect(sent).toEqual([{ type: "countdown", value: 3 }]);
+    expect(
+      mockAudioPlayers.get(DUEL_CUES.gameBegin)?.play
+    ).not.toHaveBeenCalled();
+    expect(
+      mockAudioPlayers.get(DUEL_CUES.countdown3)?.play
+    ).not.toHaveBeenCalled();
+  });
+
+  it("waits for the guest announcement before telling the host it is ready", async () => {
+    const { completeRitual, sent } = await renderPreRound("guest", {
+      playGameBegin: true
+    });
+    await completeRitual();
+    expect(sent).toEqual([]);
+    await act(() => mockAudioPlayers.get(DUEL_CUES.gameBegin)?.finish());
+    expect(sent).toEqual([{ type: "ready" }]);
   });
 
   it("switches from a dark countdown to a red FIRE cue with readable text", async () => {
@@ -370,6 +523,9 @@ describe("PreRound countdown and draw", () => {
       expect(view.getByText("FIRE!")).toBeTruthy();
       await wait(400);
       await fireEvent.press(view.getByLabelText("Fire"));
+      expect(
+        mockAudioPlayers.get(DUEL_CUES.gunshot)?.play
+      ).toHaveBeenCalledTimes(1);
       expect(diagnostics).toHaveLength(1);
       expect(diagnostics[0]).toMatchObject({
         thetaFire: 1,
@@ -601,10 +757,10 @@ describe("PreRound countdown and draw", () => {
     });
     expect(sent.at(-1)).toMatchObject({
       zone: "miss",
-      missReason: "trackingUnavailable"
+      missReason: "tiltUnavailable"
     });
     expect(shots[0]).toMatchObject({
-      selfMissReason: "trackingUnavailable",
+      selfMissReason: "tiltUnavailable",
       opponentMissReason: "tooLow"
     });
     expect(
@@ -615,7 +771,7 @@ describe("PreRound countdown and draw", () => {
       ).misses
     ).toEqual([
       { playerId: "guest", reason: "tooLow" },
-      { playerId: "host", reason: "trackingUnavailable" }
+      { playerId: "host", reason: "tiltUnavailable" }
     ]);
   });
 

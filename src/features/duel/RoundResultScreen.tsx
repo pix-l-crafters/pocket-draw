@@ -1,17 +1,21 @@
 // Per-round outcome and reaction times; match-level ties are shown separately.
 
+import { setAudioModeAsync, useAudioPlayer } from "expo-audio";
+import { useEffect, useRef } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { CutCornerButton } from "../../components/CutCornerButton";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { StatTile } from "../../components/StatTile";
 import { StatusTag } from "../../components/StatusTag";
-import type { RoundOutcome } from "../../contracts/roundOutcome";
+import type { RoundOutcome, Zone } from "../../contracts/roundOutcome";
 import { colors, fonts } from "../../theme/tokens";
+import { DUEL_CUES } from "./countdownAudio";
 import { RoundIllustration } from "./RoundIllustration";
 import { roundTieDescription } from "./roundTieDescription";
 
 type RoundResultScreenProps = {
+  audioMuted?: boolean;
   continueDisabled?: boolean;
   continueLabel?: string;
   errorMessage?: string;
@@ -23,6 +27,7 @@ type RoundResultScreenProps = {
   roundNumber: number;
   /** `null` means this player never fired inside the window. */
   selfReactionMs: number | null;
+  selfZone?: Zone;
 };
 
 function nameFor(playerNames: Record<string, string>, id: string): string {
@@ -44,6 +49,7 @@ function titleFor(
 }
 
 export function RoundResultScreen({
+  audioMuted = false,
   continueDisabled = false,
   continueLabel = "Next round",
   errorMessage,
@@ -52,8 +58,27 @@ export function RoundResultScreen({
   outcome,
   playerNames,
   roundNumber,
-  selfReactionMs
+  selfReactionMs,
+  selfZone = "miss"
 }: RoundResultScreenProps) {
+  const cue =
+    outcome.kind === "falseStart" ? DUEL_CUES.falseStart : DUEL_CUES[selfZone];
+  const player = useAudioPlayer(cue);
+  const playedRef = useRef(false);
+  useEffect(() => {
+    if (audioMuted || playedRef.current) return;
+    playedRef.current = true;
+    let mounted = true;
+    void setAudioModeAsync({ playsInSilentMode: true }).then(() => {
+      if (!mounted) return;
+      player.seekTo(0);
+      player.play();
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [audioMuted, player]);
+
   return (
     <ScrollView
       contentContainerStyle={styles.content}

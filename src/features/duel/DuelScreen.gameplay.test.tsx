@@ -127,7 +127,24 @@ jest.mock("expo", () => {
 
 jest.mock("expo-audio", () => ({
   setAudioModeAsync: async () => undefined,
-  useAudioPlayer: () => ({ seekTo: () => undefined, play: () => undefined })
+  useAudioPlayer: () => {
+    let onStatus: ((status: { didJustFinish: boolean }) => void) | undefined;
+    return {
+      seekTo: () => undefined,
+      pause: () => undefined,
+      play: () => {
+        void Promise.resolve().then(() => onStatus?.({ didJustFinish: true }));
+      },
+      addListener: (_event: string, listener: typeof onStatus) => {
+        onStatus = listener;
+        return {
+          remove: () => {
+            onStatus = undefined;
+          }
+        };
+      }
+    };
+  }
 }));
 jest.mock("expo-haptics", () => ({
   impactAsync: async () => undefined,
@@ -652,7 +669,7 @@ describe("DuelScreen real two-phone gameplay", () => {
       hostHeading: NaN,
       guestPitch: 1.1,
       winner: "Gil",
-      miss: /could not verify|unavailable|unverified/i
+      miss: /compass not ready/i
     }
   ])(
     "explains the result on both phones with a 2500ms gap: %p",

@@ -14,6 +14,11 @@ import { DuelScreen } from "./DuelScreen";
 import type { PitchCalibration } from "./pitchMonitor";
 import type { RoundShots } from "./roundShots";
 
+jest.mock("expo-audio", () => ({
+  setAudioModeAsync: async () => undefined,
+  useAudioPlayer: () => ({ seekTo: () => undefined, play: () => undefined })
+}));
+
 const REMATCH_ID = "22222222-2222-4222-8222-222222222222";
 
 jest.mock("../backend/matchAnalytics", () => ({
