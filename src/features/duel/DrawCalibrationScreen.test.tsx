@@ -1,5 +1,6 @@
-import { act, fireEvent, render } from "@testing-library/react-native";
+import { act, fireEvent, render, within } from "@testing-library/react-native";
 import * as Haptics from "expo-haptics";
+import { Linking } from "react-native";
 import { PaperProvider } from "react-native-paper";
 
 import { appTheme } from "../../theme/appTheme";
@@ -15,6 +16,7 @@ const mockVolumeListeners = new Set<
   (event: { direction: "up" | "down" }) => void
 >();
 let mockGranted = true;
+let mockAvailable = true;
 
 jest.mock("expo-haptics", () => ({
   impactAsync: jest.fn(async () => undefined),
@@ -34,7 +36,7 @@ jest.mock("./volumeFireTrigger", () => ({
 
 jest.mock("expo-sensors", () => ({
   DeviceMotion: {
-    isAvailableAsync: async () => true,
+    isAvailableAsync: async () => mockAvailable,
     getPermissionsAsync: async () => ({
       granted: mockGranted,
       canAskAgain: false
@@ -107,11 +109,30 @@ describe("DrawCalibrationScreen", () => {
     mockTiltListeners.clear();
     mockVolumeListeners.clear();
     mockGranted = true;
+    mockAvailable = true;
     jest.mocked(Haptics.notificationAsync).mockClear();
     jest.mocked(Haptics.impactAsync).mockClear();
   });
 
   afterEach(() => jest.useRealTimers());
+
+  it("keeps pose instructions and the start action in one scrollable region", async () => {
+    const { view, onComplete } = await renderCalibration();
+    const scroll = view.getByTestId("draw-calibration-scroll");
+    expect(scroll.type).toBe("RCTScrollView");
+    const content = within(scroll);
+    expect(
+      content.getByText("Phone down at your side, top edge toward the ground.")
+    ).toBeTruthy();
+    expect(
+      content.getByText("Phone at shoulder height, top edge pointing forward.")
+    ).toBeTruthy();
+    await fireEvent.press(
+      content.getByRole("button", { name: "Start calibration" })
+    );
+    expect(content.getByText("Ready pose")).toBeTruthy();
+    expect(onComplete).not.toHaveBeenCalled();
+  });
 
   it("automatically checks both valid poses after a steady hold", async () => {
     const { view, onComplete } = await renderCalibration();
@@ -128,7 +149,8 @@ describe("DrawCalibrationScreen", () => {
     expect(view.getAllByText("✓")).toHaveLength(2);
     expect(Haptics.notificationAsync).toHaveBeenCalledTimes(2);
     expect(view.getByText("Clock: ✓ calibrated")).toBeTruthy();
-    await fireEvent.press(view.getByText("Continue"));
+    const content = within(view.getByTestId("draw-calibration-scroll"));
+    await fireEvent.press(content.getByRole("button", { name: "Continue" }));
     expect(onComplete).toHaveBeenCalledWith({
       thetaReady: 0.2,
       thetaShoulder: 1.2
@@ -159,7 +181,8 @@ describe("DrawCalibrationScreen", () => {
   it("shows clock failure and retries on the calibration screen", async () => {
     const { view, onRetryClockCalibration } = await renderCalibration("failed");
     expect(view.getByText("Clock: calibration failed")).toBeTruthy();
-    await fireEvent.press(view.getByText("Retry clock"));
+    const content = within(view.getByTestId("draw-calibration-scroll"));
+    await fireEvent.press(content.getByRole("button", { name: "Retry clock" }));
     expect(onRetryClockCalibration).toHaveBeenCalledTimes(1);
   });
 
@@ -236,11 +259,39 @@ describe("DrawCalibrationScreen", () => {
     expect(view.getByTestId("shoulder-pose-illustration")).toBeTruthy();
   });
 
-  it("keeps motion permission recovery available", async () => {
+  it("keeps Settings and permission recovery in the scrollable content", async () => {
     mockGranted = false;
     const { view } = await renderCalibration();
     await fireEvent.press(view.getByText("Start calibration"));
-    expect(view.getByText("Motion access needed")).toBeTruthy();
-    expect(view.queryByText("Continue")).toBeNull();
+    const content = within(view.getByTestId("draw-calibration-scroll"));
+    expect(content.getByText("Motion access needed")).toBeTruthy();
+    expect(content.queryByText("Continue")).toBeNull();
+    const openSettings = jest
+      .spyOn(Linking, "openSettings")
+      .mockResolvedValue();
+    try {
+      await fireEvent.press(
+        content.getByRole("button", { name: "Open Settings" })
+      );
+      expect(openSettings).toHaveBeenCalledTimes(1);
+    } finally {
+      openSettings.mockRestore();
+    }
+    mockGranted = true;
+    await fireEvent.press(content.getByRole("button", { name: "Check Again" }));
+    expect(content.getByText("Ready pose")).toBeTruthy();
+    expect(content.queryByText("Motion access needed")).toBeNull();
+  });
+
+  it("retries unavailable motion from the scrollable content", async () => {
+    mockAvailable = false;
+    const { view, onComplete } = await renderCalibration();
+    await fireEvent.press(view.getByText("Start calibration"));
+    const content = within(view.getByTestId("draw-calibration-scroll"));
+    expect(content.getByText("Motion unavailable")).toBeTruthy();
+    mockAvailable = true;
+    await fireEvent.press(content.getByRole("button", { name: "Retry" }));
+    expect(content.getByText("Ready pose")).toBeTruthy();
+    expect(onComplete).not.toHaveBeenCalled();
   });
 });

@@ -1,7 +1,7 @@
 import * as Haptics from "expo-haptics";
 import { Accelerometer } from "expo-sensors";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Platform, StyleSheet, Text, View } from "react-native";
+import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { CutCornerButton } from "../../components/CutCornerButton";
 import { CutCornerSurface } from "../../components/CutCornerSurface";
@@ -232,7 +232,11 @@ export function DrawCalibrationScreen({
             : "Retry";
 
   return (
-    <View style={styles.screen}>
+    <ScrollView
+      contentContainerStyle={styles.content}
+      style={styles.screen}
+      testID="draw-calibration-scroll"
+    >
       <ScreenHeader
         kicker="Draw calibration"
         subtitle="Hold each guided pose for two seconds or press volume up. Press volume up to continue."
@@ -316,14 +320,17 @@ export function DrawCalibrationScreen({
           />
         ) : null}
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
     backgroundColor: colors.background,
-    flex: 1,
+    flex: 1
+  },
+  content: {
+    flexGrow: 1,
     padding: 24
   },
   instructionCard: {
