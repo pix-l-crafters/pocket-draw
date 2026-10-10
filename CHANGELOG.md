@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file. See [conven
 
 ---
 
+## [Unreleased]
+
+### Bug Fixes
+
+- **(duel)** use the host's calibrated, authoritative round result on both phones so delayed false-start messages cannot split scores.
+
 ## [0.6.0](https://github.com/pix-l-crafters/pocket-draw/compare/v0.5.0..v0.6.0) - 2026-10-10
 
 ### Bug Fixes

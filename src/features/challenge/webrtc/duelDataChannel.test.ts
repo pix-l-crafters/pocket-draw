@@ -43,6 +43,86 @@ class FakeDataChannel implements RtcDataChannelLike {
 }
 
 describe("WebRTC DuelChannel adapter", () => {
+  it("accepts complete round outcomes and rejects malformed round results", () => {
+    const outcomes = [
+      {
+        kind: "win",
+        winnerId: "host-id",
+        winnerZone: "bodyshot",
+        loserZone: "miss",
+        winnerPoints: 1,
+        loserPoints: 0,
+        reactionMs: 200,
+        opponentReactionMs: 3000,
+        misses: [{ playerId: "guest-id", reason: "noShot" }]
+      },
+      {
+        kind: "tie",
+        zone: "headshot",
+        pointsEach: 2,
+        reactionMs: 200,
+        opponentReactionMs: 250
+      },
+      {
+        kind: "falseStart",
+        playerId: "guest-id",
+        nonOffenderId: "host-id",
+        nonOffenderShot: { reactionMs: 200, zone: "bodyshot", points: 1 }
+      },
+      {
+        kind: "falseStart",
+        playerId: "guest-id",
+        nonOffenderId: "host-id",
+        nonOffenderShot: null
+      }
+    ];
+    for (const outcome of outcomes) {
+      expect(
+        isDuelMessage({
+          type: "roundResult",
+          matchId: MATCH_ID,
+          roundNumber: 1,
+          outcome
+        })
+      ).toBe(true);
+    }
+    const valid = {
+      type: "roundResult",
+      matchId: MATCH_ID,
+      roundNumber: 1,
+      outcome: outcomes[0]
+    };
+    for (const malformed of [
+      { ...valid, matchId: "invalid" },
+      { ...valid, roundNumber: 0 },
+      { ...valid, roundNumber: 5 },
+      { ...valid, roundNumber: 1.5 },
+      { ...valid, outcome: null },
+      { ...valid, outcome: { kind: "unknown" } },
+      { ...valid, outcome: { ...outcomes[0], winnerId: undefined } },
+      { ...valid, outcome: { ...outcomes[0], winnerPoints: NaN } },
+      {
+        ...valid,
+        outcome: {
+          ...outcomes[0],
+          misses: [{ playerId: "guest-id", reason: "invalid" }]
+        }
+      },
+      { ...valid, outcome: { kind: "tie", zone: "headshot", pointsEach: 2 } },
+      {
+        ...valid,
+        outcome: {
+          kind: "falseStart",
+          playerId: "guest-id",
+          nonOffenderId: "host-id",
+          nonOffenderShot: { reactionMs: 200, zone: "invalid", points: 1 }
+        }
+      }
+    ]) {
+      expect(isDuelMessage(malformed)).toBe(false);
+    }
+  });
+
   it("accepts no-shot confirmations only for a valid match and round", () => {
     expect(
       isDuelMessage({ type: "noShot", matchId: MATCH_ID, roundNumber: 1 })

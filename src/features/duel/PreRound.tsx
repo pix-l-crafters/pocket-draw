@@ -134,6 +134,12 @@ export function PreRound({
   const [falseStartPlayer, setFalseStartPlayer] = useState<
     "self" | "opponent" | null
   >(null);
+  const selfViolationRef = useRef<{
+    atMs: number;
+    kind: "warning" | "falseStart";
+  } | null>(null);
+  const clockOffsetRef = useRef(clockOffsetMs);
+  clockOffsetRef.current = clockOffsetMs;
   const attemptRef = useRef(0);
   const cancelledAttemptRef = useRef(-1);
   const [selfZone, setSelfZone] = useState<Zone>("miss");
@@ -165,7 +171,21 @@ export function PreRound({
 
   useEffect(() => {
     const unsubscribe = falseStarts.onOutcome((outcome) => {
+      if (
+        role === "host" &&
+        phaseRef.current === "fire" &&
+        outcome.playerId !== selfPlayerId
+      ) {
+        if (outcome.atMs - clockOffsetRef.current < firedAtRef.current) {
+          setFalseStartPlayer("opponent");
+        } else {
+          falseStarts.discardViolation(outcome.playerId);
+        }
+        return;
+      }
       if (phaseRef.current !== "countdown") return;
+      if (outcome.playerId === selfPlayerId)
+        selfViolationRef.current = { atMs: outcome.atMs, kind: outcome.kind };
       cancelledAttemptRef.current = attemptRef.current;
       phaseRef.current = "position";
       timersRef.current.forEach(clearTimeout);
@@ -186,7 +206,7 @@ export function PreRound({
       unsubscribe();
       falseStarts.endRound();
     };
-  }, [falseStarts, selfPlayerId]);
+  }, [falseStarts, selfPlayerId, role]);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [topEdgeDown, setTopEdgeDown] = useState(false);
   const [motionDenied, setMotionDenied] = useState(false);
@@ -288,6 +308,18 @@ export function PreRound({
   useEffect(
     () =>
       fireCoordinator.onFire((signal) => {
+        if (
+          role === "guest" &&
+          selfViolationRef.current !== null &&
+          selfViolationRef.current.atMs >= signal.atMs
+        ) {
+          falseStarts.discardViolation(
+            selfPlayerId,
+            selfViolationRef.current.kind
+          );
+          selfViolationRef.current = null;
+          setFalseStartPlayer(null);
+        }
         firedAtRef.current = signal.atMs;
         reactionTimerRef.current.start(signal.atMs);
         falseStarts.markFire(signal.atMs);
@@ -298,7 +330,7 @@ export function PreRound({
           Haptics.NotificationFeedbackType.Success
         );
       }),
-    [fireCoordinator, falseStarts]
+    [fireCoordinator, falseStarts, role, selfPlayerId]
   );
 
   const recheckMotion = useCallback(() => {
@@ -362,6 +394,7 @@ export function PreRound({
           attemptRef.current = message.attempt ?? 0;
           falseStarts.arm(attemptRef.current);
           setFalseStartPlayer(null);
+          selfViolationRef.current = null;
         } else if (
           (message.attempt ?? 0) !== attemptRef.current ||
           phaseRef.current !== "countdown"

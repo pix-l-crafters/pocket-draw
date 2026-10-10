@@ -42,7 +42,8 @@ describe("FalseStartCoordinator", () => {
       for (const coordinator of [a, b]) {
         expect(coordinator.getOutcome()).toEqual({
           kind: "falseStart",
-          playerId: "a"
+          playerId: "a",
+          atMs: 100
         });
         expect(coordinator.hasFalseStarted("a")).toBe(true);
         expect(coordinator.hasFalseStarted("b")).toBe(true);
@@ -65,12 +66,18 @@ describe("FalseStartCoordinator", () => {
         input === "button"
           ? local.processLocalFire(100)
           : local.processLocalSample(movement(100));
-      expect(outcome).toEqual({ kind: "warning", playerId: "local" });
+      expect(outcome).toEqual({
+        kind: "warning",
+        playerId: "local",
+        atMs: 100
+      });
       local.processLocalFire(101);
       local.processLocalSample(movement(102));
       expect(deliveries).toHaveLength(1);
       deliveries[0]();
-      expect(notices).toEqual([{ kind: "warning", playerId: "local" }]);
+      expect(notices).toEqual([
+        { kind: "warning", playerId: "local", atMs: 100 }
+      ]);
       expect(local.getWarningCount("local")).toBe(1);
       expect(peer.getWarningCount("local")).toBe(1);
       const oldDelivery = deliveries[0];
@@ -82,7 +89,8 @@ describe("FalseStartCoordinator", () => {
       expect(peer.hasFalseStarted("local")).toBe(false);
       expect(local.processLocalFire(200)).toEqual({
         kind: "falseStart",
-        playerId: "local"
+        playerId: "local",
+        atMs: 200
       });
       deliveries[1]();
       expect(peer.hasFalseStarted("local")).toBe(true);
@@ -110,7 +118,9 @@ describe("FalseStartCoordinator", () => {
 
     // Peer delivery can lag behind this phone's FIRE for the active round.
     peerChannel.send({ type: "falseStart", atMs: 99 });
-    expect(notices).toEqual([{ kind: "falseStart", playerId: "peer" }]);
+    expect(notices).toEqual([
+      { kind: "falseStart", playerId: "peer", atMs: 99 }
+    ]);
     expect(local.hasFalseStarted("peer")).toBe(true);
     local.dispose();
   });
@@ -131,7 +141,8 @@ describe("FalseStartCoordinator", () => {
       // Invalid movement must not consume the detector's one-shot arm.
       expect(local.processLocalSample(movement(0))).toEqual({
         kind: "warning",
-        playerId: "local"
+        playerId: "local",
+        atMs: 0
       });
       expect(deliveries).toHaveLength(1);
       local.dispose();
@@ -166,11 +177,13 @@ describe("FalseStartCoordinator", () => {
 
       expect(zuluNotice).toEqual({
         kind: "warning",
-        playerId: "alpha"
+        playerId: "alpha",
+        atMs: 101
       });
       expect(alphaNotice).toEqual({
         kind: "warning",
-        playerId: "zulu"
+        playerId: "zulu",
+        atMs: 100
       });
       for (const coordinator of [zulu, alpha]) {
         expect(coordinator.getWarningCount("zulu")).toBe(1);
@@ -204,7 +217,8 @@ describe("FalseStartCoordinator", () => {
     expect(local.hasFalseStarted("peer")).toBe(false);
     expect(local.processLocalSample(movement(200))).toEqual({
       kind: "falseStart",
-      playerId: "local"
+      playerId: "local",
+      atMs: 200
     });
     unsubscribe();
     const noticeCount = notices.length;
@@ -245,13 +259,17 @@ describe("FalseStartCoordinator", () => {
       } else {
         expect(local.processLocalFire(100)).toEqual({
           kind: "warning",
-          playerId: "local"
+          playerId: "local",
+          atMs: 100
         });
       }
-      expect(notices).toEqual([{ kind: "warning", playerId: "local" }]);
+      expect(notices).toEqual([
+        { kind: "warning", playerId: "local", atMs: 100 }
+      ]);
       expect(local.getOutcome()).toEqual({
         kind: "warning",
-        playerId: "local"
+        playerId: "local",
+        atMs: 100
       });
       expect(local.processLocalSample(movement(101))).toBeNull();
       local.dispose();

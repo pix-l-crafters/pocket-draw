@@ -2,7 +2,7 @@
 // Duel game logic (Tanachat, Tianze, Mobark). Duel code should depend on
 // this interface, not on a WebRTC or signaling implementation directly.
 
-import type { MissReason, Zone } from "./roundOutcome";
+import type { MissReason, RoundOutcome, Zone } from "./roundOutcome";
 
 export type DuelMessage =
   // Handshake: the guest announces itself as soon as the channel opens, and
@@ -26,6 +26,12 @@ export type DuelMessage =
   // Silence is not a miss: the sender confirms its FIRE window closed
   // without a shot. Match/round scope keeps old confirmations out of rematches.
   | { type: "noShot"; matchId: string; roundNumber: number }
+  | {
+      type: "roundResult";
+      matchId: string;
+      roundNumber: number;
+      outcome: RoundOutcome;
+    }
   // Precise foreground GPS is shared only with the accepted duel opponent.
   // sampleAtMs is the GPS fix time in the sender's calibrated clock domain.
   | {
