@@ -3,6 +3,7 @@ import { PaperProvider } from "react-native-paper";
 
 import { createMockDuelChannelPair } from "../../contracts/mocks/mockDuelChannel";
 import { appTheme } from "../../theme/appTheme";
+import { submitMatchAnalytics } from "../backend/matchAnalytics";
 import {
   subscribeMatchResultStatus,
   submitMatchResult
@@ -14,6 +15,11 @@ import type { PitchCalibration } from "./pitchMonitor";
 import type { RoundShots } from "./roundShots";
 
 const REMATCH_ID = "22222222-2222-4222-8222-222222222222";
+
+jest.mock("../backend/matchAnalytics", () => ({
+  submitMatchAnalytics: jest.fn(async () => "written"),
+  subscribeAnalyticsStatus: jest.fn(() => () => undefined)
+}));
 
 jest.mock("../qr/utils/qr.tokens", () => ({
   generateMatchId: () => "22222222-2222-4222-8222-222222222222"
@@ -77,6 +83,12 @@ async function renderDuel() {
   const [channel, opponentChannel] = createMockDuelChannelPair();
   // Stands in for the other phone, which accepts any rematch it is offered.
   opponentChannel.onMessage((message) => {
+    if (message.type === "matchSync" && !message.reply) {
+      void Promise.resolve().then(() =>
+        opponentChannel.send({ ...message, reply: true })
+      );
+      return;
+    }
     if (message.type !== "rematchOffer") return;
     void Promise.resolve().then(() =>
       opponentChannel.send({ type: "rematchAccept", matchId: message.matchId })
@@ -113,7 +125,56 @@ async function finishMatch(view: Awaited<ReturnType<typeof renderDuel>>) {
 }
 
 describe("DuelScreen result saving", () => {
-  beforeEach(() => jest.mocked(submitMatchResult).mockReset());
+  test("saves one analytics document with all local rounds when the match completes", async () => {
+    jest.mocked(submitMatchAnalytics).mockClear();
+    jest
+      .mocked(submitMatchResult)
+      .mockResolvedValue({ status: "written", matchId: "match-1" });
+    const view = await renderDuel();
+    await finishMatch(view);
+    await act(async () => {});
+    expect(submitMatchAnalytics).toHaveBeenCalledTimes(1);
+    expect(submitMatchAnalytics).toHaveBeenCalledWith(
+      expect.objectContaining({
+        matchId: "match-1",
+        playerId: "player-a",
+        calibration: { thetaReady: 0, thetaShoulder: 1 },
+        rounds: [1, 2, 3].map((roundNumber) =>
+          expect.objectContaining({
+            roundNumber,
+            reactionMs: 100,
+            zone: "bodyshot"
+          })
+        )
+      })
+    );
+  });
+  beforeEach(() => {
+    jest.mocked(submitMatchResult).mockReset();
+    jest.mocked(submitMatchAnalytics).mockClear().mockResolvedValue("written");
+  });
+
+  test("shows a failed analytics save and retries without blocking the completed result", async () => {
+    jest
+      .mocked(submitMatchResult)
+      .mockResolvedValue({ status: "written", matchId: "match-1" });
+    jest
+      .mocked(submitMatchAnalytics)
+      .mockRejectedValueOnce(new Error("permission-denied"));
+    const view = await renderDuel();
+    await finishMatch(view);
+    await fireEvent.press(view.getByText("See match result"));
+    expect(view.getByText("Result saved")).toBeTruthy();
+    expect(
+      view.getByText("Could not save sensor data. Please retry.")
+    ).toBeTruthy();
+    await fireEvent.press(view.getByText("Retry saving sensor data"));
+    expect(view.getByText("Sensor data saved")).toBeTruthy();
+    expect(jest.mocked(submitMatchAnalytics).mock.calls[1][0]).toBe(
+      jest.mocked(submitMatchAnalytics).mock.calls[0][0]
+    );
+    await view.unmount();
+  });
 
   test.each(["written", "queued"] as const)(
     "waits for a %s result before showing the summary",
@@ -212,6 +273,13 @@ describe("DuelScreen result saving", () => {
     expect(jest.mocked(submitMatchResult).mock.calls[1][0].matchId).toBe(
       REMATCH_ID
     );
+    expect(submitMatchAnalytics).toHaveBeenCalledTimes(2);
+    expect(jest.mocked(submitMatchAnalytics).mock.calls[1][0]).toMatchObject({
+      matchId: REMATCH_ID,
+      rounds: [1, 2, 3].map((roundNumber) =>
+        expect.objectContaining({ roundNumber })
+      )
+    });
     await view.unmount();
   });
 });

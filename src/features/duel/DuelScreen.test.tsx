@@ -19,6 +19,11 @@ let mockNowMs = 10_000;
 let mockMotionAvailable = true;
 let mockMotionGranted = true;
 
+jest.mock("../backend/matchAnalytics", () => ({
+  submitMatchAnalytics: jest.fn(async () => "written"),
+  subscribeAnalyticsStatus: jest.fn(() => () => undefined)
+}));
+
 jest.mock("../backend/matchResultsService", () => ({
   subscribeMatchResultStatus: jest.fn(() => () => undefined),
   submitMatchResult: jest.fn()

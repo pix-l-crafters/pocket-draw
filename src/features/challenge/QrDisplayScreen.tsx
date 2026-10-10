@@ -405,6 +405,9 @@ export function QrDisplayScreen({
     connectionMode === "hotspot" &&
     Platform.OS === "ios" &&
     (!isValidWifiSsid(manualSsid) || !isValidHotspotPassword(manualPassword));
+  // Only a starting connection is about to show a code. Holding space while
+  // the player types hotspot details, or for an error, leaves an empty block.
+  const awaitingCode = !invite && !setupError && !waitingForIosDetails;
 
   return (
     <KeyboardAvoidingView
@@ -470,45 +473,64 @@ export function QrDisplayScreen({
 
         <CutCornerSurface
           corner="large"
-          style={styles.qrCard}
+          style={[styles.qrCard, awaitingCode && styles.qrCardAwaitingCode]}
         >
-          {invite ? (
-            <View style={styles.qrWrapper}>
-              <QRCode
-                backgroundColor={colors.text}
-                color={colors.background}
-                size={220}
-                value={JSON.stringify(invite)}
+          {/* Centring on the surface itself would only centre its inner View;
+              the QR then stretched to the widest status line and sat left. */}
+          <View style={styles.qrContent}>
+            {invite ? (
+              <View style={styles.qrWrapper}>
+                <QRCode
+                  backgroundColor={colors.text}
+                  color={colors.background}
+                  size={220}
+                  value={JSON.stringify(invite)}
+                />
+              </View>
+            ) : null}
+            {joinFailure && !setupError ? (
+              <StatusTag
+                style={styles.cardStatus}
+                tone="warning"
+              >
+                {`A join attempt failed (${joinFailure}). This is a fresh code.`}
+              </StatusTag>
+            ) : null}
+            {setupError instanceof PermissionDeniedError ? (
+              <PermissionNotice
+                canAskAgain={setupError.canAskAgain}
+                capability={setupError.capability}
+                message="Hosting over your own hotspot needs it. Until then, switch to Shared Wi-Fi and put both phones on the same network."
+                onRetry={retrySetup}
               />
-            </View>
-          ) : null}
-          {joinFailure && !setupError ? (
-            <StatusTag tone="warning">
-              {`A join attempt failed (${joinFailure}). This is a fresh code.`}
-            </StatusTag>
-          ) : null}
-          {setupError instanceof PermissionDeniedError ? (
-            <PermissionNotice
-              canAskAgain={setupError.canAskAgain}
-              capability={setupError.capability}
-              message="Hosting over your own hotspot needs it. Until then, switch to Shared Wi-Fi and put both phones on the same network."
-              onRetry={retrySetup}
-            />
-          ) : setupError ? (
-            <StatusTag tone="warning">{setupError.message}</StatusTag>
-          ) : waitingForIosDetails ? (
-            <StatusTag>Enter your Personal Hotspot details above.</StatusTag>
-          ) : invite ? (
-            <StatusTag tone={secondsLeft <= 10 ? "warning" : "muted"}>
-              {`${invite.connection.mode === "hotspot" ? `${invite.connection.ssid} · ` : ""}${invite.connection.hostIp}:${invite.connection.signalPort} · refreshes in ${secondsLeft}s`}
-            </StatusTag>
-          ) : (
-            <StatusTag>
-              {connectionMode === "hotspot" && Platform.OS === "android"
-                ? "Creating Android hotspot…"
-                : "Starting local connection…"}
-            </StatusTag>
-          )}
+            ) : setupError ? (
+              <StatusTag
+                style={styles.cardStatus}
+                tone="warning"
+              >
+                {setupError.message}
+              </StatusTag>
+            ) : waitingForIosDetails ? (
+              <StatusTag style={styles.cardStatus}>
+                Enter your Personal Hotspot details above.
+              </StatusTag>
+            ) : invite ? (
+              // The countdown gets its own line: a hotspot's SSID wraps the
+              // details anyway, and a mid-line break would reflow every second.
+              <StatusTag
+                style={styles.cardStatus}
+                tone={secondsLeft <= 10 ? "warning" : "muted"}
+              >
+                {`${invite.connection.mode === "hotspot" ? `${invite.connection.ssid} · ` : ""}${invite.connection.hostIp}:${invite.connection.signalPort}\nrefreshes in ${secondsLeft}s`}
+              </StatusTag>
+            ) : (
+              <StatusTag style={styles.cardStatus}>
+                {connectionMode === "hotspot" && Platform.OS === "android"
+                  ? "Creating Android hotspot…"
+                  : "Starting local connection…"}
+              </StatusTag>
+            )}
+          </View>
         </CutCornerSurface>
         <CutCornerButton
           label="Generate New Code"
@@ -523,6 +545,10 @@ export function QrDisplayScreen({
 }
 
 const styles = StyleSheet.create({
+  // Status lines wrap on narrow screens; centring keeps them under the code.
+  cardStatus: {
+    textAlign: "center"
+  },
   container: {
     backgroundColor: colors.background,
     flex: 1
@@ -554,14 +580,23 @@ const styles = StyleSheet.create({
     gap: 10
   },
   qrCard: {
+    paddingHorizontal: 16,
+    paddingVertical: 20
+  },
+  qrCardAwaitingCode: {
+    // Holds the card near its ready size while the connection starts, with
+    // the status line centred in it rather than pinned to the top.
+    justifyContent: "center",
+    minHeight: 310
+  },
+  qrContent: {
     alignItems: "center",
-    gap: 14,
-    minHeight: 310,
-    paddingVertical: 28
+    gap: 14
   },
   qrWrapper: {
     backgroundColor: colors.text,
     borderRadius: 4,
+    // The quiet zone scanners need around the modules; keep it when trimming.
     padding: 16
   }
 });

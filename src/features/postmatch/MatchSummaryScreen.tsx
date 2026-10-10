@@ -22,6 +22,8 @@ type MatchSummaryScreenProps = {
   playerStats?: Record<string, PlayerStats>;
   saveStatus?: "saving" | "written" | "queued" | "error";
   onRetrySave?: () => void;
+  analyticsSaveStatus?: "waiting" | "saving" | "written" | "queued" | "error";
+  onRetryAnalytics?: () => void;
   /** A rematch needs both players, so the offer can be pending or gone. */
   rematchDisabled?: boolean;
   rematchLabel?: string;
@@ -50,6 +52,8 @@ export function MatchSummaryScreen({
   playerStats,
   saveStatus,
   onRetrySave,
+  analyticsSaveStatus,
+  onRetryAnalytics,
   rematchDisabled = false,
   rematchLabel = "Rematch",
   rematchNote
@@ -117,6 +121,27 @@ export function MatchSummaryScreen({
       </View>
 
       <View style={styles.actions}>
+        {analyticsSaveStatus && (
+          <StatusTag>
+            {analyticsSaveStatus === "waiting"
+              ? "Sensor data waiting for opponent confirmation"
+              : analyticsSaveStatus === "written"
+                ? "Sensor data saved"
+                : analyticsSaveStatus === "queued"
+                  ? "Sensor data saved on this device · waiting to sync"
+                  : analyticsSaveStatus === "error"
+                    ? "Could not save sensor data. Please retry."
+                    : "Saving sensor data…"}
+          </StatusTag>
+        )}
+        {(analyticsSaveStatus === "queued" ||
+          analyticsSaveStatus === "error") &&
+          onRetryAnalytics && (
+            <CutCornerButton
+              label="Retry saving sensor data"
+              onPress={onRetryAnalytics}
+            />
+          )}
         {saveStatus ? (
           <StatusTag>
             {saveStatus === "written"

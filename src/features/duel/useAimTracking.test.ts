@@ -13,6 +13,7 @@ import {
 import { AppState, type AppStateStatus } from "react-native";
 
 import type { DuelChannel, DuelMessage } from "../../contracts/duelChannel";
+import type { AimDiagnostics } from "../../contracts/matchAnalytics";
 import { classifyZone, type ShotClassification } from "./pitchZoneClassifier";
 import { useAimTracking } from "./useAimTracking";
 
@@ -83,6 +84,7 @@ const peerPosition = (
 });
 
 async function mount(clockOffsetMs = 0) {
+  const diagnostics: AimDiagnostics[] = [];
   const sent: DuelMessage[] = [];
   const handlers = new Set<(message: DuelMessage) => void>();
   let connected = true;
@@ -101,9 +103,15 @@ async function mount(clockOffsetMs = 0) {
   const view = await renderHook<
     (shot: ShotClassification) => ShotClassification,
     { clockOffsetMs: number }
-  >(({ clockOffsetMs }) => useAimTracking(channel, clockOffsetMs), {
-    initialProps: { clockOffsetMs }
-  });
+  >(
+    ({ clockOffsetMs }) =>
+      useAimTracking(channel, clockOffsetMs, (reading) =>
+        diagnostics.push(reading)
+      ),
+    {
+      initialProps: { clockOffsetMs }
+    }
+  );
   await act(async () => {});
   const capture = view.result.current!;
   const receive = (message: DuelMessage) =>
@@ -122,6 +130,7 @@ async function mount(clockOffsetMs = 0) {
       );
     });
   return {
+    diagnostics,
     view,
     capture,
     sent,
@@ -144,6 +153,34 @@ async function mount(clockOffsetMs = 0) {
 }
 
 describe("useAimTracking", () => {
+  test("captures heading error and GPS uncertainty even when pitch already missed", async () => {
+    const duel = await mount();
+    await duel.trustedReadings();
+    await duel.setHeading(heading(45));
+    expect(duel.capture(classifyZone(0.4))).toEqual({
+      zone: "miss",
+      missReason: "tooLow"
+    });
+    expect(duel.diagnostics.at(-1)).toMatchObject({
+      heading: { value: 45, accuracy: 3, ageMs: 0 },
+      self: { accuracy: 1, ageMs: 0 },
+      opponent: { accuracy: 1, ageMs: 0 },
+      bearingDegrees: 0,
+      headingErrorDegrees: 45,
+      bypassedWithinGpsUncertainty: false,
+      issues: []
+    });
+    await duel.wait(5001);
+    duel.capture(classifyZone(1));
+    expect(duel.diagnostics.at(-1)?.issues).toEqual(
+      expect.arrayContaining([
+        "headingStale",
+        "selfPositionStale",
+        "opponentPositionStale"
+      ])
+    );
+    await duel.view.unmount();
+  });
   beforeEach(() => {
     jest.useFakeTimers();
     jest.setSystemTime(1_000_000);
