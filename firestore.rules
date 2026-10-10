@@ -152,7 +152,13 @@ service cloud.firestore {
       allow create: if isSignedIn()
         && hasValidChallengeRequestFields(request.resource.data)
         && hasValidChallengeRequestValues(request.resource.data);
-      allow update, delete: if false;
+      // The challenger relays the host's decision received over the duel channel.
+      allow update: if isSignedIn()
+        && request.auth.uid == resource.data.challengerId
+        && resource.data.status == 'pending'
+        && request.resource.data.status in ['accepted', 'declined']
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+      allow delete: if false;
     }
 
     match /matches/{matchId} {
