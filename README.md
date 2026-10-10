@@ -96,6 +96,18 @@ The key is read by [app.config.ts](./app.config.ts) at build time and written in
 Metro reloads alone are not enough. EAS builds get the same variable from the project's
 EAS environment variables instead of `.env`.
 
+### Android hotspot pairing
+
+Hotspot invites use a unique IPv4 address added when Pocket Draw starts the
+hotspot, excluding addresses belonging to existing Android networks. If no
+unique address is found, setup fails instead of displaying a misleading QR code.
+An already-running hotspot shared with another app is rejected; stop it before
+hosting from Pocket Draw.
+
+Native hotspot changes require rebuilding and reinstalling the Android app;
+Metro reloads cannot update them. Run `mise run test-hotspot-ip` for the
+device-free address-selection regression check.
+
 ### Build Android locally with mise
 
 Install [mise](https://mise.jdx.dev/getting-started.html), then run:

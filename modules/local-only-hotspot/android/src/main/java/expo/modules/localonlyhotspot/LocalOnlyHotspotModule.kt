@@ -1,6 +1,7 @@
 package expo.modules.localonlyhotspot
 
 import android.content.Context
+import android.net.ConnectivityManager
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Handler
@@ -10,7 +11,6 @@ import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import java.net.Inet4Address
 import java.net.NetworkInterface
-import java.util.Collections
 
 class LocalOnlyHotspotModule : Module() {
   private var reservation: WifiManager.LocalOnlyHotspotReservation? = null
@@ -45,6 +45,11 @@ class LocalOnlyHotspotModule : Module() {
         .getSystemService(Context.WIFI_SERVICE) as WifiManager
 
       try {
+        val connectivityManager = context.applicationContext
+          .getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        // ponytail: a shared hotspot already running before this request is
+        // rejected; supporting it needs platform hotspot-interface identification.
+        val addressesBeforeStart = localIpv4Addresses()
         wifiManager.startLocalOnlyHotspot(
           object : WifiManager.LocalOnlyHotspotCallback() {
             override fun onStarted(hotspotReservation: WifiManager.LocalOnlyHotspotReservation) {
@@ -58,12 +63,16 @@ class LocalOnlyHotspotModule : Module() {
                 return
               }
               val credentials = credentialsFrom(hotspotReservation)
-              val hostIp = findHotspotIpv4()
+              val hostIp = selectHotspotIpv4(
+                addressesBeforeStart,
+                localIpv4Addresses(),
+                connectedIpv4Addresses(connectivityManager)
+              )
               if (credentials == null || hostIp == null) {
                 hotspotReservation.close()
                 promise.reject(
                   "ERR_HOTSPOT_DETAILS",
-                  "Android created a hotspot but its credentials or IPv4 address were unavailable.",
+                  "Android created a hotspot but its credentials or a unique hotspot IPv4 address were unavailable.",
                   null
                 )
                 return
@@ -131,32 +140,35 @@ class LocalOnlyHotspotModule : Module() {
     }
   }
 
-  private fun findHotspotIpv4(): String? {
-    val interfaces = NetworkInterface.getNetworkInterfaces() ?: return null
-    return Collections.list(interfaces)
-      .flatMap { networkInterface ->
-        Collections.list(networkInterface.inetAddresses)
-          .filterIsInstance<Inet4Address>()
-          .filter { address ->
-            networkInterface.isUp &&
-              !networkInterface.isLoopback &&
-              !address.isLoopbackAddress &&
-              address.isSiteLocalAddress
-          }
-          .map { address -> Pair(interfacePriority(networkInterface.name), address.hostAddress) }
+  private fun localIpv4Addresses(): Set<Inet4Address> {
+    val interfaces = NetworkInterface.getNetworkInterfaces() ?: return emptySet()
+    val result = mutableSetOf<Inet4Address>()
+    while (interfaces.hasMoreElements()) {
+      val networkInterface = interfaces.nextElement()
+      if (!networkInterface.isUp || networkInterface.isLoopback) continue
+      val addresses = networkInterface.inetAddresses
+      while (addresses.hasMoreElements()) {
+        val address = addresses.nextElement()
+        if (address is Inet4Address && !address.isLoopbackAddress && address.isSiteLocalAddress) {
+          result.add(address)
+        }
       }
-      .sortedBy { it.first }
-      .firstOrNull()
-      ?.second
+    }
+    return result
   }
 
-  private fun interfacePriority(name: String): Int {
-    val normalized = name.lowercase()
-    return when {
-      normalized.contains("ap") || normalized.contains("soft") -> 0
-      normalized.contains("wlan") || normalized.contains("wifi") -> 1
-      else -> 2
+  // These are one-shot snapshots, not a network-change subscription.
+  @Suppress("DEPRECATION")
+  private fun connectedIpv4Addresses(manager: ConnectivityManager): Set<Inet4Address> {
+    val result = mutableSetOf<Inet4Address>()
+    for (network in manager.allNetworks) {
+      val properties = manager.getLinkProperties(network) ?: continue
+      for (linkAddress in properties.linkAddresses) {
+        val address = linkAddress.address
+        if (address is Inet4Address) result.add(address)
+      }
     }
+    return result
   }
 
   private fun stopHotspot() {

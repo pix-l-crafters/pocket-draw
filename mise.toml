@@ -92,6 +92,19 @@ grep -E "DEVELOPMENT_TEAM|PRODUCT_BUNDLE_IDENTIFIER" "$pbxproj" | sort -u
 [tasks.local-prepare]
 run = ["npm ci", "gh auth login", { task = "ai-setup" }]
 
+[tasks.test-hotspot-ip]
+description = "Check native hotspot IPv4 selection without an Android device"
+run = '''
+set -eu
+build_dir="$(mktemp -d)"
+trap 'rm -rf "$build_dir"' EXIT
+mise exec kotlin@2.1.20 -- kotlinc \
+  modules/local-only-hotspot/android/src/main/java/expo/modules/localonlyhotspot/HotspotIpv4.kt \
+  modules/local-only-hotspot/android/src/test/java/expo/modules/localonlyhotspot/HotspotIpv4Test.kt \
+  -include-runtime -d "$build_dir/check.jar"
+java -jar "$build_dir/check.jar"
+'''
+
 [tasks.treefmt]
 run = "treefmt"
 run_windows = "echo 'Treefmt not supported on Windows'"

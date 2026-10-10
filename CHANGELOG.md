@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file. See [conven
 
 ## [Unreleased]
 
+### Bug Fixes
+
+- **(qr)** identify Android hotspot addresses without advertising preexisting network addresses; reject missing or ambiguous hotspot addresses.
+
 ### Features
 
 - **(duel)** make gameplay instructions optional from calibration.
