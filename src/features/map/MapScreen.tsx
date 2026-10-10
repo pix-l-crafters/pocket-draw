@@ -1,6 +1,6 @@
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Linking, StyleSheet, View } from "react-native";
+import { Linking, Platform, StyleSheet, View } from "react-native";
 import MapView, { type Region } from "react-native-maps";
 import { ActivityIndicator, Surface, Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -103,6 +103,10 @@ export function MapScreen({ currentUser }: MapScreenProps) {
     clusterId: string;
     latitudeDelta: number;
   } | null>(null);
+  // Bumped on iOS whenever the map settles; part of every marker key, so all
+  // markers are re-added. Works around Apple Maps on the New Architecture
+  // silently dropping markers after zoom/pan (react-native-maps#5911).
+  const [markerGeneration, setMarkerGeneration] = useState(0);
   const selectedPlayer =
     visiblePlayers.find((player) => player.uid === selectedPlayerUid) ?? null;
   const selectedPlayerStats = usePlayerStats(selectedPlayer);
@@ -147,10 +151,18 @@ export function MapScreen({ currentUser }: MapScreenProps) {
         ? null
         : current
     );
+    if (Platform.OS === "ios") {
+      setMarkerGeneration((generation) => generation + 1);
+    }
   }, []);
 
   const clearSelectedPlayer = useCallback(() => {
     setSelectedPlayerUid(null);
+    if (Platform.OS === "ios") {
+      // Apple Maps keeps the tapped pin selected (enlarged); re-adding the
+      // markers returns it to normal size.
+      setMarkerGeneration((generation) => generation + 1);
+    }
   }, []);
 
   const handleClusterPress = useCallback(
@@ -209,18 +221,19 @@ export function MapScreen({ currentUser }: MapScreenProps) {
         style={StyleSheet.absoluteFillObject}
       >
         {/* First, so player markers changing around it do not shift it; zIndex
-            still draws it on top. */}
-        {userCoordinate ? (
+            still draws it on top. Markers wait for the map: Apple Maps can drop
+            ones added earlier. */}
+        {isMapReady && userCoordinate ? (
           <UserLocationMarker
-            key="you"
+            key={`${markerGeneration}:you`}
             coordinate={userCoordinate}
           />
         ) : null}
-        {clusters.map((cluster) => {
+        {(isMapReady ? clusters : []).map((cluster) => {
           if (cluster.players.length > 1 && cluster.id === spread?.clusterId) {
             return spreadClusterMembers(cluster, viewport).map((player) => (
               <PlayerMarker
-                key={player.uid}
+                key={`${markerGeneration}:${player.uid}`}
                 coordinate={player.coordinate}
                 name={player.displayName}
                 onPress={() => setSelectedPlayerUid(player.uid)}
@@ -232,7 +245,7 @@ export function MapScreen({ currentUser }: MapScreenProps) {
           if (cluster.players.length > 1) {
             return (
               <ClusterMarker
-                key={cluster.id}
+                key={`${markerGeneration}:${cluster.id}`}
                 coordinate={cluster.coordinate}
                 count={cluster.players.length}
                 onPress={() => handleClusterPress(cluster)}
@@ -244,7 +257,7 @@ export function MapScreen({ currentUser }: MapScreenProps) {
 
           return (
             <PlayerMarker
-              key={cluster.id}
+              key={`${markerGeneration}:${cluster.id}`}
               coordinate={cluster.coordinate}
               name={player.displayName}
               onPress={() => setSelectedPlayerUid(player.uid)}
