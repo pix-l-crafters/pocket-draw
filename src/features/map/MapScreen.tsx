@@ -60,15 +60,18 @@ export function MapScreen({ currentUser }: MapScreenProps) {
     position: userCoordinate,
     enabled: isSharing
   });
-  const nearbyPlayersState = useNearbyPlayers(currentUser?.uid ?? null);
-  const nearbyPlayers =
+  const nearbyPlayersState = useNearbyPlayers(
+    currentUser?.uid ?? null,
+    userCoordinate
+  );
+  const visiblePlayers =
     nearbyPlayersState.status === "ready" ? nearbyPlayersState.players : [];
-  const displayedPlayers = spreadOverlappingPlayerMarkers(nearbyPlayers);
+  const displayedPlayers = spreadOverlappingPlayerMarkers(visiblePlayers);
   const [selectedPlayerUid, setSelectedPlayerUid] = useState<string | null>(
     null
   );
   const selectedPlayer =
-    nearbyPlayers.find((player) => player.uid === selectedPlayerUid) ?? null;
+    visiblePlayers.find((player) => player.uid === selectedPlayerUid) ?? null;
   const selectedPlayerStats = usePlayerStats(selectedPlayer);
 
   useEffect(() => {

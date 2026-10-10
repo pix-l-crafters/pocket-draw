@@ -9,13 +9,13 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { DuelChannel } from "../../contracts/duelChannel";
-import type { Zone } from "../../contracts/roundOutcome";
 import { useForegroundRecheck } from "../../lib/useForegroundRecheck";
 import {
   classifyAimZone,
   isUsableAimPosition,
   type AimPosition
 } from "./aimBearing";
+import type { ShotClassification } from "./pitchZoneClassifier";
 
 type TimedPosition = AimPosition & { accuracy: number; timestamp: number };
 type TimedHeading = { value: number; timestamp: number };
@@ -23,7 +23,7 @@ type TimedHeading = { value: number; timestamp: number };
 export function useAimTracking(
   channel: DuelChannel,
   clockOffsetMs: number
-): (zone: Zone) => Zone {
+): (shot: ShotClassification) => ShotClassification {
   const self = useRef<TimedPosition | null>(null);
   const opponent = useRef<TimedPosition | null>(null);
   const heading = useRef<TimedHeading | null>(null);
@@ -164,7 +164,8 @@ export function useAimTracking(
     };
   }, [channel, trackingAttempt]);
 
-  return useCallback((zone: Zone): Zone => {
+  return useCallback((shot: ShotClassification): ShotClassification => {
+    if (shot.zone === "miss") return shot;
     const now = Date.now();
     const selfPosition = self.current;
     const opponentPosition = opponent.current;
@@ -185,7 +186,7 @@ export function useAimTracking(
       opponentAgeMs < 0 ||
       opponentAgeMs > 5000
     )
-      return "miss";
-    return classifyAimZone(zone, compass.value, selfPosition, opponentPosition);
+      return { zone: "miss", missReason: "trackingUnavailable" };
+    return classifyAimZone(shot, compass.value, selfPosition, opponentPosition);
   }, []);
 }

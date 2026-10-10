@@ -6,7 +6,11 @@
 // ("Zone classification — the feasibility question") for the full analysis
 // this relies on instead of re-deriving it in code.
 
-import type { Zone } from "../../contracts/roundOutcome";
+import type { MissReason, Zone } from "../../contracts/roundOutcome";
+
+export type ShotClassification =
+  | { zone: Exclude<Zone, "miss">; missReason?: never }
+  | { zone: "miss"; missReason?: Exclude<MissReason, "noShot"> };
 
 // ponytail: fractional thresholds are a placeholder pending playtesting
 // (the spec explicitly leaves these open) — tune BODYSHOT_MIN_F/DELTA here.
@@ -30,12 +34,18 @@ export function computeRaiseFraction(
   return (thetaFire - thetaReady) / arc;
 }
 
-export function classifyZone(f: number): Zone {
+export function classifyZone(f: number): ShotClassification {
+  if (!Number.isFinite(f)) {
+    return { zone: "miss", missReason: "trackingUnavailable" };
+  }
   if (f >= BODYSHOT_MIN_F && f <= BODYSHOT_MAX_F) {
-    return "bodyshot";
+    return { zone: "bodyshot" };
   }
   if (f > BODYSHOT_MAX_F && f <= BODYSHOT_MAX_F + HEADSHOT_DELTA_F) {
-    return "headshot";
+    return { zone: "headshot" };
   }
-  return "miss";
+  return {
+    zone: "miss",
+    missReason: f < BODYSHOT_MIN_F ? "tooLow" : "tooHigh"
+  };
 }

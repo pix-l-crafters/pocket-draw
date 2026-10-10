@@ -1,4 +1,5 @@
 import { act, fireEvent, render } from "@testing-library/react-native";
+import { Platform } from "react-native";
 import { PaperProvider } from "react-native-paper";
 
 import { createMockDuelChannelPair } from "../../contracts/mocks/mockDuelChannel";
@@ -13,6 +14,8 @@ const accelerometerListeners: ((reading: Reading) => void)[] = [];
 const mockPitchListeners = new Set<
   (reading: { rotation: { beta: number } }) => void
 >();
+const mockAccelerometerListeners = new Set<(reading: Reading) => void>();
+let mockNowMs = 10_000;
 let mockMotionAvailable = true;
 let mockMotionGranted = true;
 
@@ -26,7 +29,8 @@ jest.mock("expo-sensors", () => ({
     isAvailableAsync: async () => true,
     addListener: (listener: (reading: Reading) => void) => {
       accelerometerListeners.push(listener);
-      return { remove: () => undefined };
+      mockAccelerometerListeners.add(listener);
+      return { remove: () => mockAccelerometerListeners.delete(listener) };
     },
     setUpdateInterval: () => undefined,
     getPermissionsAsync: async () => ({ granted: true, canAskAgain: true }),
@@ -68,13 +72,23 @@ jest.mock("expo-haptics", () => ({
   NotificationFeedbackType: { Success: "success" }
 }));
 
+jest.mock("./volumeFireTrigger", () => ({
+  subscribeVolumeFire: () => () => undefined
+}));
+
 describe("DuelScreen clock calibration", () => {
   beforeEach(() => {
+    Platform.OS = "ios";
+    mockNowMs = 10_000;
+    jest.spyOn(Date, "now").mockImplementation(() => mockNowMs);
     accelerometerListeners.length = 0;
+    mockAccelerometerListeners.clear();
     mockPitchListeners.clear();
     mockMotionAvailable = true;
     mockMotionGranted = true;
   });
+
+  afterEach(() => jest.restoreAllMocks());
 
   it("calibrates before enabling play and disposes its channel listener with the session", async () => {
     const [duelChannel, peerChannel] = createMockDuelChannelPair();
@@ -104,20 +118,30 @@ describe("DuelScreen clock calibration", () => {
     await fireEvent.press(view.getByText("I'm Ready"));
     expect(view.queryByText("STAND APART")).toBeNull();
     await fireEvent.press(view.getByText("Start calibration"));
-    await act(() => {
-      mockPitchListeners.forEach((listener) =>
-        listener({ rotation: { beta: 0 } })
-      );
-    });
-    await fireEvent.press(view.getByText("Capture ready pose"));
+    for (let index = 0; index <= 20; index += 1) {
+      await act(() => {
+        mockPitchListeners.forEach((listener) =>
+          listener({ rotation: { beta: 0 } })
+        );
+        mockAccelerometerListeners.forEach((listener) =>
+          listener({ x: 0, y: 0.9, z: 0 })
+        );
+        mockNowMs += 100;
+      });
+    }
     expect(view.queryByText("STAND APART")).toBeNull();
     expect(view.queryByText("Continue")).toBeNull();
-    await act(() => {
-      mockPitchListeners.forEach((listener) =>
-        listener({ rotation: { beta: 1 } })
-      );
-    });
-    await fireEvent.press(view.getByText("Capture shoulder pose"));
+    for (let index = 0; index <= 20; index += 1) {
+      await act(() => {
+        mockPitchListeners.forEach((listener) =>
+          listener({ rotation: { beta: 1 } })
+        );
+        mockAccelerometerListeners.forEach((listener) =>
+          listener({ x: 0, y: 0, z: 0.95 })
+        );
+        mockNowMs += 100;
+      });
+    }
     expect(view.queryByText("STAND APART")).toBeNull();
     await fireEvent.press(view.getByText("Continue"));
     expect(view.getByText("STAND APART")).toBeTruthy();

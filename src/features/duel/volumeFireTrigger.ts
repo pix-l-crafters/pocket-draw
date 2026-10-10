@@ -9,7 +9,9 @@ declare class VolumeFireModule extends NativeModule {
   ): { remove(): void };
 }
 
-export function subscribeVolumeFire(onFire: () => void): () => void {
+export function subscribeVolumeFire(
+  onFire: (event: { direction: VolumeDirection }) => void
+): () => void {
   const subscription = requireNativeModule<VolumeFireModule>(
     "VolumeFire"
   ).addListener("onVolumeButton", onFire);

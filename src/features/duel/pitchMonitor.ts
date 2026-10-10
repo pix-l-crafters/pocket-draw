@@ -80,10 +80,10 @@ export class PitchMonitor {
     }
   }
 
-  currentTheta(): number | null {
+  currentTheta(maxAgeMs = MAX_SAMPLE_AGE_MS): number | null {
     if (this.latestAtMs === null) return null;
     const ageMs = Date.now() - this.latestAtMs;
-    return ageMs >= 0 && ageMs <= MAX_SAMPLE_AGE_MS ? this.latestTheta : null;
+    return ageMs >= 0 && ageMs <= maxAgeMs ? this.latestTheta : null;
   }
 
   stop(): void {

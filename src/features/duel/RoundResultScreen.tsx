@@ -1,9 +1,6 @@
-// 4.16 — per-round result screen: shows the round's outcome (winner/tie/
-// false-start) and reaction times to both players. Presentational only —
-// whoever assembles the full duel flow (countdown -> fire -> raise -> this)
-// wires it up once that flow exists.
+// Per-round outcome and reaction times; match-level ties are shown separately.
 
-import { StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { CutCornerButton } from "../../components/CutCornerButton";
 import { ScreenHeader } from "../../components/ScreenHeader";
@@ -11,15 +8,21 @@ import { StatTile } from "../../components/StatTile";
 import { StatusTag } from "../../components/StatusTag";
 import type { RoundOutcome } from "../../contracts/roundOutcome";
 import { colors, fonts } from "../../theme/tokens";
+import { RoundIllustration } from "./RoundIllustration";
+import { roundTieDescription } from "./roundTieDescription";
 
 type RoundResultScreenProps = {
   continueDisabled?: boolean;
   continueLabel?: string;
   errorMessage?: string;
   onContinue: () => void;
+  /** `null` means the opponent never fired inside the window. */
+  opponentReactionMs: number | null;
   outcome: RoundOutcome;
   playerNames: Record<string, string>;
   roundNumber: number;
+  /** `null` means this player never fired inside the window. */
+  selfReactionMs: number | null;
 };
 
 function nameFor(playerNames: Record<string, string>, id: string): string {
@@ -45,12 +48,17 @@ export function RoundResultScreen({
   continueLabel = "Next round",
   errorMessage,
   onContinue,
+  opponentReactionMs,
   outcome,
   playerNames,
-  roundNumber
+  roundNumber,
+  selfReactionMs
 }: RoundResultScreenProps) {
   return (
-    <View style={styles.container}>
+    <ScrollView
+      contentContainerStyle={styles.content}
+      style={styles.container}
+    >
       <ScreenHeader
         kicker={`Round ${roundNumber}`}
         title={titleFor(outcome, playerNames)}
@@ -59,7 +67,7 @@ export function RoundResultScreen({
       {outcome.kind === "win" ? (
         <StatusTag tone="success">Result</StatusTag>
       ) : outcome.kind === "tie" ? (
-        <StatusTag tone="warning">Sudden death</StatusTag>
+        <StatusTag tone="warning">{roundTieDescription(outcome)}</StatusTag>
       ) : (
         <StatusTag tone="warning">Round loss</StatusTag>
       )}
@@ -67,15 +75,19 @@ export function RoundResultScreen({
       {outcome.kind !== "falseStart" ? (
         <View style={styles.statsRow}>
           <StatTile
-            label="First shot"
+            label="Your shot"
             tint={colors.accent}
-            unit="ms"
-            value={String(outcome.reactionMs)}
+            unit={selfReactionMs === null ? "" : "ms"}
+            value={selfReactionMs === null ? "No shot" : String(selfReactionMs)}
           />
           <StatTile
-            label="Second shot"
-            unit="ms"
-            value={String(outcome.opponentReactionMs)}
+            label="Their shot"
+            unit={opponentReactionMs === null ? "" : "ms"}
+            value={
+              opponentReactionMs === null
+                ? "No shot"
+                : String(opponentReactionMs)
+            }
           />
         </View>
       ) : (
@@ -97,6 +109,21 @@ export function RoundResultScreen({
         </View>
       )}
 
+      {outcome.kind === "falseStart" && (
+        <RoundIllustration
+          playerName={nameFor(playerNames, outcome.playerId)}
+          reason="falseStart"
+        />
+      )}
+
+      {outcome.misses?.map(({ playerId, reason }) => (
+        <RoundIllustration
+          key={playerId}
+          playerName={nameFor(playerNames, playerId)}
+          reason={reason}
+        />
+      ))}
+
       <View style={styles.continueButton}>
         {errorMessage && (
           <Text
@@ -112,17 +139,20 @@ export function RoundResultScreen({
           onPress={onContinue}
         />
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     backgroundColor: colors.background,
-    flex: 1,
+    flex: 1
+  },
+  content: {
+    flexGrow: 1,
     gap: 20,
     justifyContent: "center",
-    paddingHorizontal: 24
+    padding: 24
   },
   statsRow: {
     flexDirection: "row",

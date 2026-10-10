@@ -3,13 +3,14 @@
 import { act, fireEvent, render, within } from "@testing-library/react-native";
 import type { LocationHeadingObject, LocationObject } from "expo-location";
 import type { DeviceMotionMeasurement } from "expo-sensors";
-import { Platform, View } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 import { PaperProvider } from "react-native-paper";
 
 import type { MatchResult } from "../../contracts/matchResult";
 import { createMockDuelChannelPair } from "../../contracts/mocks/mockDuelChannel";
 import type { RoundOutcome } from "../../contracts/roundOutcome";
 import { appTheme } from "../../theme/appTheme";
+import { colors } from "../../theme/tokens";
 import { submitMatchResult } from "../backend/matchResultsService";
 import { createDuelLink } from "../challenge/session/duelLink";
 import { DuelScreen } from "./DuelScreen";
@@ -49,7 +50,9 @@ const mockPhones: Record<DuelRole, NativePhone> = {
 // Each phone mounts its native watchers in a separate awaited interaction.
 // Keep this owner selected until asynchronous permission checks have settled.
 let mockNativeOwner: DuelRole = "host";
-const mockVolumeListeners = new Set<() => void>();
+const mockVolumeListeners = new Set<
+  (event: { direction: "up" | "down" }) => void
+>();
 const mockPermission = {
   granted: true,
   status: "granted",
@@ -110,7 +113,10 @@ jest.mock("expo", () => {
     requireNativeModule: (name: string) =>
       name === "VolumeFire"
         ? {
-            addListener: (_event: string, listener: () => void) => {
+            addListener: (
+              _event: string,
+              listener: (event: { direction: "up" | "down" }) => void
+            ) => {
               mockVolumeListeners.add(listener);
               return { remove: () => mockVolumeListeners.delete(listener) };
             }
@@ -236,10 +242,25 @@ async function renderPhones() {
     await press(role, "I'm Ready");
     await press(role, "Start calibration");
     expect(mockPhones[role].motion.size).toBe(1);
-    await press(role, "Capture ready pose");
+    for (let index = 0; index <= 20; index += 1) {
+      await act(() => {
+        publishSensors(role);
+        mockPhones[role].tilt.forEach((listener) =>
+          listener({ x: 0, y: -0.9, z: 0 })
+        );
+        jest.advanceTimersByTime(100);
+      });
+    }
     mockPhones[role].pitch = 1;
-    await act(() => publishSensors(role));
-    await press(role, "Capture shoulder pose");
+    for (let index = 0; index <= 20; index += 1) {
+      await act(() => {
+        publishSensors(role);
+        mockPhones[role].tilt.forEach((listener) =>
+          listener({ x: 0, y: 0, z: 0.95 })
+        );
+        jest.advanceTimersByTime(100);
+      });
+    }
     expect(phones[role].queryByText("CONFIRM")).toBeNull();
     await press(role, "Continue");
     // Verify watchers finished mounting before delivering any round readings.
@@ -287,6 +308,7 @@ async function renderPhones() {
   return {
     view,
     phones,
+    hostChannel,
     press,
     calibrate,
     position,
@@ -321,11 +343,12 @@ describe("DuelScreen real two-phone gameplay", () => {
   });
 
   it.each(["tap", "volume", "movement"] as const)(
-    "agrees on a four-round 5–3 match, including a %s false start and the nonoffender's headshot",
+    "cancels repeated %s false starts before finishing the same fourth round",
     async (earlyInput) => {
       const {
         view,
         phones,
+        hostChannel,
         press,
         calibrate,
         position,
@@ -354,7 +377,19 @@ describe("DuelScreen real two-phone gameplay", () => {
 
       // Round 1: independently calibrated bodyshots inside the 100ms window.
       await advance(200);
-      await shoot("host", 0.9);
+      const hostSend = jest.spyOn(hostChannel, "send");
+      mockPhones.host.pitch = 0.9;
+      await act(() => publishSensors("host"));
+      expect(mockVolumeListeners.size).toBe(2);
+      await act(() => {
+        const pressVolume = [...mockVolumeListeners][0];
+        pressVolume({ direction: "up" });
+        pressVolume({ direction: "up" });
+      });
+      await fireEvent.press(phones.host.getByRole("button", { name: "Fire" }));
+      expect(
+        hostSend.mock.calls.filter(([message]) => message.type === "raised")
+      ).toHaveLength(1);
       await advance(50);
       await shoot("guest", 0.9);
       for (const phone of [phones.host, phones.guest]) {
@@ -404,7 +439,7 @@ describe("DuelScreen real two-phone gameplay", () => {
           );
         } else if (earlyInput === "volume") {
           expect(mockVolumeListeners.size).toBe(2);
-          await act(() => [...mockVolumeListeners][1]());
+          await act(() => [...mockVolumeListeners][1]({ direction: "up" }));
         } else {
           await act(() => {
             mockPhones.guest.tilt.forEach((listener) =>
@@ -415,36 +450,47 @@ describe("DuelScreen real two-phone gameplay", () => {
       };
       await advance(100);
       await offend();
+      expect(phones.host.getByText(/Gil false-started/)).toBeTruthy();
+      expect(phones.guest.getByText(/Gil false-started/)).toBeTruthy();
+      expect(
+        StyleSheet.flatten(
+          phones.host.getByText(/Gil false-started/).props.style
+        ).color
+      ).toBe(colors.textMuted60);
+      expect(
+        StyleSheet.flatten(
+          phones.guest.getByText(/Gil false-started/).props.style
+        ).color
+      ).toBe(colors.warning);
       for (const phone of [phones.host, phones.guest]) {
-        expect(
-          phone.getByText(/Gil moved early. Warning 1 of 1. Restarting round/)
-        ).toBeTruthy();
+        expect(phone.getByText("CONFIRM")).toBeTruthy();
         expect(phone.queryByText("Round 4")).toBeNull();
       }
-      await advance(1200);
+      await advance(3200);
       for (const phone of [phones.host, phones.guest]) {
-        expect(phone.getByText("3")).toBeTruthy();
+        expect(phone.queryByText("FIRE!")).toBeNull();
         expect(phone.queryByText("Round 4")).toBeNull();
       }
+      expect(submitMatchResult).not.toHaveBeenCalled();
+      await press("guest", "CONFIRM");
+      await press("host", "CONFIRM");
       await advance(100);
       await offend();
       for (const phone of [phones.host, phones.guest]) {
-        expect(
-          phone.getByText(
-            "FALSE START — the non-offending player can still shoot at FIRE."
-          )
-        ).toBeTruthy();
+        expect(phone.getByText("CONFIRM")).toBeTruthy();
       }
-      await advance(2900);
+      await advance(3200);
+      expect(submitMatchResult).not.toHaveBeenCalled();
+      await press("guest", "CONFIRM");
+      await press("host", "CONFIRM");
+      await advance(3000);
       await advance(300);
       await shoot("host", 1.1);
-      // The offender cannot turn a post-FIRE shot into points.
-      await shoot("guest", 1.1);
-      await advance(2950);
+      await advance(100);
+      await shoot("guest", 0.9);
       for (const phone of [phones.host, phones.guest]) {
         expect(phone.getByText("Round 4")).toBeTruthy();
-        expect(phone.getByText("Gil false start")).toBeTruthy();
-        expect(phone.getByText(/^2\s*pts$/)).toBeTruthy();
+        expect(phone.getByText("Hana wins")).toBeTruthy();
         expect(phone.getByText(/^300\s*ms$/)).toBeTruthy();
       }
 
@@ -472,13 +518,17 @@ describe("DuelScreen real two-phone gameplay", () => {
           winnerPoints: 1,
           loserPoints: 0,
           reactionMs: 200,
-          opponentReactionMs: 400
+          opponentReactionMs: 400,
+          misses: [{ playerId: "host-id", reason: "offTarget" }]
         },
         {
-          kind: "falseStart",
-          playerId: "guest-id",
-          nonOffenderId: "host-id",
-          nonOffenderShot: { reactionMs: 300, zone: "headshot", points: 2 }
+          kind: "win",
+          winnerId: "host-id",
+          winnerZone: "headshot",
+          winnerPoints: 2,
+          loserPoints: 1,
+          reactionMs: 300,
+          opponentReactionMs: 400
         }
       ];
       expect(submitMatchResult).toHaveBeenCalledTimes(2);
@@ -510,15 +560,169 @@ describe("DuelScreen real two-phone gameplay", () => {
           within(phone.getByText("Hana").parent!).getByText("5")
         ).toBeTruthy();
         expect(
-          within(phone.getByText("Gil").parent!).getByText("3")
+          within(phone.getByText("Gil").parent!).getByText("4")
         ).toBeTruthy();
-        expect(phone.getByText("Round 1 — Tie · 200ms")).toBeTruthy();
         expect(phone.getByText("Round 2 — Hana · 200ms")).toBeTruthy();
         expect(phone.getByText("Round 3 — Gil · 200ms")).toBeTruthy();
-        expect(phone.getByText("Round 4 — Gil false start")).toBeTruthy();
+        expect(phone.getByText("Round 4 — Hana · 300ms")).toBeTruthy();
         expect(phone.getByText("Result saved")).toBeTruthy();
       }
       await view.unmount();
     }
   );
+  it.each([
+    {
+      hostPitch: 0.9,
+      hostHeading: 0,
+      guestPitch: 1.1,
+      winner: "Hana",
+      miss: null
+    },
+    {
+      hostPitch: 0.4,
+      hostHeading: 0,
+      guestPitch: 1.1,
+      winner: "Gil",
+      miss: /raised too little/i
+    },
+    {
+      hostPitch: 0.4,
+      hostHeading: 0,
+      guestPitch: 0.4,
+      winner: null,
+      miss: /raised too little/i
+    },
+    {
+      hostPitch: 1.3,
+      hostHeading: 0,
+      guestPitch: 1.1,
+      winner: "Gil",
+      miss: /raised too far|too high/i
+    },
+    {
+      hostPitch: 0.9,
+      hostHeading: 90,
+      guestPitch: 1.1,
+      winner: "Gil",
+      miss: /off.target|aimed outside/i
+    },
+    {
+      hostPitch: 0.9,
+      hostHeading: NaN,
+      guestPitch: 1.1,
+      winner: "Gil",
+      miss: /could not verify|unavailable|unverified/i
+    }
+  ])(
+    "explains the result on both phones with a 2500ms gap: %p",
+    async ({ hostPitch, hostHeading, guestPitch, winner, miss }) => {
+      const { view, phones, calibrate, startRound, shoot } =
+        await renderPhones();
+      await calibrate("host");
+      await calibrate("guest");
+      await startRound();
+      await advance(3000);
+      await advance(200);
+      await shoot("host", hostPitch, hostHeading);
+      await advance(2500);
+      await shoot("guest", guestPitch);
+
+      for (const phone of [phones.host, phones.guest]) {
+        expect(phone.getByText(/^200\s*ms$/)).toBeTruthy();
+        expect(phone.getByText(/^2700\s*ms$/)).toBeTruthy();
+        if (miss) {
+          expect(
+            phone.getByRole("image", {
+              name: new RegExp(`Hana.*(?:${miss.source})`, "i")
+            })
+          ).toBeTruthy();
+        } else {
+          expect(phone.queryByRole("image", { name: /^Hana:/i })).toBeNull();
+        }
+        if (winner) {
+          expect(phone.getByText(`${winner} wins`)).toBeTruthy();
+          expect(phone.queryByText("Tie")).toBeNull();
+        } else {
+          expect(phone.getByText("Tie")).toBeTruthy();
+          expect(phone.getByText(/both.*miss.*0.*points each/i)).toBeTruthy();
+          expect(phone.queryByText(/sudden death/i)).toBeNull();
+          for (const name of ["Hana", "Gil"]) {
+            expect(
+              phone.getByRole("image", {
+                name: new RegExp(`${name}.*raised too little`, "i")
+              })
+            ).toBeTruthy();
+          }
+        }
+      }
+      await view.unmount();
+    }
+  );
+  it("distinguishes a final equal-total draw from the individual round ties", async () => {
+    const { view, phones, calibrate, startRound, shoot, nextRound, press } =
+      await renderPhones();
+    await calibrate("host");
+    await calibrate("guest");
+    for (const [index, { pitch, gap }] of [
+      { pitch: 0.4, gap: 2500 },
+      { pitch: 0.9, gap: 50 },
+      { pitch: 1.1, gap: 100 }
+    ].entries()) {
+      if (index > 0) await nextRound();
+      await startRound();
+      await advance(3000);
+      await advance(200);
+      await shoot("host", pitch);
+      await advance(gap);
+      await shoot("guest", pitch);
+    }
+    // Level total points require one tiebreaker. Neither player fires.
+    await nextRound();
+    await startRound();
+    await advance(3000);
+    await advance(3250);
+    for (const role of ["host", "guest"] as const) {
+      await press(role, "See match result");
+      const phone = phones[role];
+      expect(phone.getByText("Match drawn")).toBeTruthy();
+      expect(phone.getByText(/equal total points.*4 rounds/i)).toBeTruthy();
+      expect(
+        phone.getByText(/Round 1.*both.*miss.*0.*200.*2700/i)
+      ).toBeTruthy();
+      expect(
+        phone.getByText(/Round 2.*bodyshots.*100 ms.*1 point each.*200.*250/i)
+      ).toBeTruthy();
+      expect(
+        phone.getByText(/Round 3.*headshots.*100 ms.*2 points each.*200.*300/i)
+      ).toBeTruthy();
+      expect(phone.getByText(/Round 4.*both.*miss.*0/i)).toBeTruthy();
+      for (const name of ["Hana", "Gil"]) {
+        expect(
+          within(phone.getByText(name).parent!).getByText("3")
+        ).toBeTruthy();
+      }
+    }
+    await view.unmount();
+  });
+  it("explains unfired timeouts without inventing a physical miss", async () => {
+    const { view, phones, calibrate, startRound } = await renderPhones();
+    await calibrate("host");
+    await calibrate("guest");
+    await startRound();
+    await advance(3000);
+    await advance(3250);
+    for (const phone of [phones.host, phones.guest]) {
+      for (const name of ["Hana", "Gil"]) {
+        expect(
+          phone.getByRole("image", {
+            name: new RegExp(`${name}.*(?:no shot|did not fire)`, "i")
+          })
+        ).toBeTruthy();
+      }
+      expect(
+        phone.queryByRole("image", { name: /too little|too far|off.target/i })
+      ).toBeNull();
+    }
+    await view.unmount();
+  });
 });

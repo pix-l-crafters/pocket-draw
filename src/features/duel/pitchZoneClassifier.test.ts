@@ -25,36 +25,51 @@ describe("computeRaiseFraction", () => {
 
 describe("classifyZone", () => {
   it("classifies a fraction well below the bodyshot band as a miss", () => {
-    expect(classifyZone(0.5)).toBe("miss");
+    expect(classifyZone(0.5).zone).toBe("miss");
   });
 
   it("classifies just below the bodyshot lower bound as a miss", () => {
-    expect(classifyZone(0.79)).toBe("miss");
+    expect(classifyZone(0.79).zone).toBe("miss");
   });
 
   it("classifies the bodyshot lower bound as a bodyshot", () => {
-    expect(classifyZone(0.8)).toBe("bodyshot");
+    expect(classifyZone(0.8).zone).toBe("bodyshot");
   });
 
   it("classifies the calibrated shoulder pose (f=1) as a bodyshot", () => {
-    expect(classifyZone(1.0)).toBe("bodyshot");
+    expect(classifyZone(1.0).zone).toBe("bodyshot");
   });
 
   it("classifies just above the shoulder pose as a headshot", () => {
-    expect(classifyZone(1.01)).toBe("headshot");
+    expect(classifyZone(1.01).zone).toBe("headshot");
   });
 
   it("classifies the top of the headshot band as a headshot", () => {
-    expect(classifyZone(1.2)).toBe("headshot");
+    expect(classifyZone(1.2).zone).toBe("headshot");
   });
 
   it("classifies past the headshot band as a miss", () => {
-    expect(classifyZone(1.21)).toBe("miss");
+    expect(classifyZone(1.21).zone).toBe("miss");
   });
 
   it("classifies a negative fraction as a miss", () => {
-    expect(classifyZone(-0.3)).toBe("miss");
+    expect(classifyZone(-0.3).zone).toBe("miss");
   });
+  it.each([
+    [0.4, { zone: "miss", missReason: "tooLow" }],
+    [0.7999, { zone: "miss", missReason: "tooLow" }],
+    [0.8, { zone: "bodyshot" }],
+    [1.2, { zone: "headshot" }],
+    [1.2001, { zone: "miss", missReason: "tooHigh" }],
+    [NaN, { zone: "miss", missReason: "trackingUnavailable" }],
+    [Infinity, { zone: "miss", missReason: "trackingUnavailable" }],
+    [-Infinity, { zone: "miss", missReason: "trackingUnavailable" }]
+  ] as const)(
+    "records the calibrated miss cause at fraction %s",
+    (fraction, expected) => {
+      expect(classifyZone(fraction)).toEqual(expected);
+    }
+  );
 });
 
 describe("ZONE_POINTS", () => {

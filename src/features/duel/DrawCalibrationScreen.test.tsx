@@ -1,39 +1,34 @@
 import { act, fireEvent, render } from "@testing-library/react-native";
-import { AppState, Linking, type AppStateStatus } from "react-native";
+import { AppState, type AppStateStatus } from "react-native";
 import { PaperProvider } from "react-native-paper";
 
 import { appTheme } from "../../theme/appTheme";
 import { DrawCalibrationScreen } from "./DrawCalibrationScreen";
 
-type MotionReading = {
-  acceleration: null;
-  accelerationIncludingGravity: {
-    x: number;
-    y: number;
-    z: number;
-    timestamp: number;
-  };
-  interval: number;
-  orientation: number;
-  rotation: {
-    alpha: number;
-    beta: number;
-    gamma: number;
-    timestamp: number;
-  } | null;
-  rotationRate: null;
-};
-
-const mockMotionListeners = new Set<(reading: MotionReading) => void>();
-const initialAppState = AppState.currentState;
+const mockMotionListeners = new Set<
+  (reading: { rotation: { beta: number } }) => void
+>();
+const mockTiltListeners = new Set<
+  (reading: { x: number; y: number; z: number }) => void
+>();
+const mockVolumeListeners = new Set<
+  (event: { direction: "up" | "down" }) => void
+>();
 const mockImpact = jest.fn(async (_style: string) => undefined);
 const mockSuccess = jest.fn(async (_type: string) => undefined);
 const mockPlay = jest.fn();
 const mockSeek = jest.fn(async (): Promise<void> => undefined);
-let mockAvailable = true;
+const initialAppState = AppState.currentState;
 let mockGranted = true;
-let mockStartupError = false;
-let mockPermissionWait: Promise<void> | null = null;
+
+jest.mock("./volumeFireTrigger", () => ({
+  subscribeVolumeFire: (
+    listener: (event: { direction: "up" | "down" }) => void
+  ) => {
+    mockVolumeListeners.add(listener);
+    return () => mockVolumeListeners.delete(listener);
+  }
+}));
 
 jest.mock("expo-haptics", () => ({
   ImpactFeedbackStyle: { Heavy: "heavy", Light: "light" },
@@ -49,56 +44,69 @@ jest.mock("expo-audio", () => ({
 
 jest.mock("expo-sensors", () => ({
   DeviceMotion: {
-    isAvailableAsync: async () => {
-      if (mockStartupError) throw new Error("Motion service failed");
-      return mockAvailable;
-    },
-    getPermissionsAsync: async () => {
-      await mockPermissionWait;
-      return {
-        granted: mockGranted,
-        status: mockGranted ? "granted" : "denied",
-        canAskAgain: false,
-        expires: "never"
-      };
-    },
+    isAvailableAsync: async () => true,
+    getPermissionsAsync: async () => ({
+      granted: mockGranted,
+      canAskAgain: false
+    }),
     requestPermissionsAsync: async () => ({
       granted: mockGranted,
-      status: mockGranted ? "granted" : "denied",
-      canAskAgain: false,
-      expires: "never"
+      canAskAgain: false
     }),
     setUpdateInterval: () => undefined,
-    addListener: (listener: (reading: MotionReading) => void) => {
+    addListener: (
+      listener: (reading: { rotation: { beta: number } }) => void
+    ) => {
       mockMotionListeners.add(listener);
       return { remove: () => mockMotionListeners.delete(listener) };
+    }
+  },
+  Accelerometer: {
+    getPermissionsAsync: async () => ({
+      granted: mockGranted,
+      canAskAgain: false
+    }),
+    requestPermissionsAsync: async () => ({
+      granted: mockGranted,
+      canAskAgain: false
+    }),
+    setUpdateInterval: () => undefined,
+    addListener: (
+      listener: (reading: { x: number; y: number; z: number }) => void
+    ) => {
+      mockTiltListeners.add(listener);
+      return { remove: () => mockTiltListeners.delete(listener) };
     }
   }
 }));
 
-function setPitch(beta: number | null) {
-  return act(() => {
-    const reading: MotionReading = {
-      acceleration: null,
-      accelerationIncludingGravity: { x: 0, y: 0, z: 9.80665, timestamp: 10 },
-      interval: 20,
-      orientation: 0,
-      rotation:
-        beta === null ? null : { alpha: 0, beta, gamma: 0, timestamp: 10 },
-      rotationRate: null
-    };
-    mockMotionListeners.forEach((listener) => listener(reading));
-  });
+async function hold(beta: number, x: number, y: number, z: number, ms = 2_000) {
+  for (let elapsed = 0; elapsed <= ms; elapsed += 100) {
+    await act(() => {
+      mockMotionListeners.forEach((listener) =>
+        listener({ rotation: { beta } })
+      );
+      mockTiltListeners.forEach((listener) => listener({ x, y, z }));
+      jest.advanceTimersByTime(100);
+    });
+  }
 }
 
-async function renderCalibration() {
+async function renderCalibration(
+  clockCalibrationStatus: "calibrating" | "ready" | "failed" = "ready"
+) {
   const onComplete = jest.fn();
+  const onRetryClockCalibration = jest.fn();
   const view = await render(
     <PaperProvider theme={appTheme}>
-      <DrawCalibrationScreen onComplete={onComplete} />
+      <DrawCalibrationScreen
+        clockCalibrationStatus={clockCalibrationStatus}
+        onComplete={onComplete}
+        onRetryClockCalibration={onRetryClockCalibration}
+      />
     </PaperProvider>
   );
-  return { view, onComplete };
+  return { view, onComplete, onRetryClockCalibration };
 }
 
 describe("DrawCalibrationScreen", () => {
@@ -106,10 +114,9 @@ describe("DrawCalibrationScreen", () => {
     jest.useFakeTimers();
     jest.setSystemTime(10_000);
     mockMotionListeners.clear();
-    mockAvailable = true;
+    mockTiltListeners.clear();
+    mockVolumeListeners.clear();
     mockGranted = true;
-    mockStartupError = false;
-    mockPermissionWait = null;
     AppState.currentState = "active";
     mockImpact.mockClear();
     mockSuccess.mockClear();
@@ -124,71 +131,47 @@ describe("DrawCalibrationScreen", () => {
     jest.restoreAllMocks();
   });
 
-  it("requires explicit, distinct ready and shoulder captures before continuing", async () => {
-    const { view, onComplete } = await renderCalibration();
-    expect(view.queryByText("Continue")).toBeNull();
-    await fireEvent.press(view.getByText("Start calibration"));
-    await setPitch(0.2);
-    expect(view.getByText("Capture ready pose")).toBeTruthy();
-    expect(view.queryByText("Continue")).toBeNull();
-
-    await fireEvent.press(view.getByText("Capture ready pose"));
-    await setPitch(1.2);
-    expect(view.getByText("Capture shoulder pose")).toBeTruthy();
-    expect(view.queryByText("Continue")).toBeNull();
-    await fireEvent.press(view.getByText("Capture shoulder pose"));
-
-    expect(view.getByText("Calibration passed")).toBeTruthy();
-    expect(onComplete).not.toHaveBeenCalled();
-    await fireEvent.press(view.getByText("Continue"));
-    expect(onComplete).toHaveBeenCalledWith({
-      thetaReady: 0.2,
-      thetaShoulder: 1.2
-    });
-    expect(mockMotionListeners.size).toBe(0);
-  });
-
-  it("increases shoulder proximity pulses and confirms only accepted captures", async () => {
+  it("gives progressive haptic feedback while approaching the shoulder pose", async () => {
     const { view } = await renderCalibration();
     await fireEvent.press(view.getByText("Start calibration"));
-    await setPitch(0.2);
-    expect(mockImpact).not.toHaveBeenCalled();
-
-    await fireEvent.press(view.getByText("Capture ready pose"));
-    expect(mockSuccess).toHaveBeenCalledTimes(1);
+    await hold(0.2, 0, -0.9, 0);
+    await hold(0.2, 0, 0.9, 0);
+    expect(view.getByText("Shoulder pose")).toBeTruthy();
     expect(mockPlay).toHaveBeenCalledTimes(1);
 
-    await setPitch(0.2);
+    await act(() =>
+      mockMotionListeners.forEach((listener) =>
+        listener({ rotation: { beta: 0.2 } })
+      )
+    );
     await act(() => jest.advanceTimersByTime(300));
-    const farCount = mockImpact.mock.calls.length;
-    expect(farCount).toBeGreaterThan(1);
-
-    await setPitch(0.23);
+    const farPulses = mockImpact.mock.calls.filter(
+      ([style]) => style === "heavy"
+    ).length;
+    await act(() =>
+      mockMotionListeners.forEach((listener) =>
+        listener({ rotation: { beta: 0.23 } })
+      )
+    );
+    const approachingPulses = mockImpact.mock.calls.length;
     await act(() => jest.advanceTimersByTime(300));
-    const approachingCount = mockImpact.mock.calls.length - farCount;
-    await setPitch(0.245);
-    await act(() => jest.advanceTimersByTime(300));
-    const nearCount =
-      mockImpact.mock.calls.length - farCount - approachingCount;
-    expect(nearCount).toBeGreaterThan(approachingCount);
+    expect(mockImpact.mock.calls.length).toBe(approachingPulses);
+    await act(() =>
+      mockMotionListeners.forEach((listener) =>
+        listener({ rotation: { beta: 0.245 } })
+      )
+    );
+    expect(farPulses).toBeGreaterThan(1);
+    expect(mockImpact.mock.calls.length).toBeGreaterThan(approachingPulses);
 
-    await fireEvent.press(view.getByText("Capture shoulder pose"));
-    expect(view.getByText(/The poses are too similar/)).toBeTruthy();
-    expect(mockSuccess).toHaveBeenCalledTimes(1);
-    expect(mockPlay).toHaveBeenCalledTimes(1);
-
-    await setPitch(0.3);
-    await fireEvent.press(view.getByText("Capture shoulder pose"));
-    expect(mockSuccess).toHaveBeenCalledTimes(2);
-    expect(mockPlay).toHaveBeenCalledTimes(2);
-    const countAtPass = mockImpact.mock.calls.length;
+    await hold(1.2, 0, 0, 0.95);
+    const pulseCountAtPass = mockImpact.mock.calls.length;
     await act(() => jest.advanceTimersByTime(1_000));
-    expect(mockImpact).toHaveBeenCalledTimes(countAtPass);
+    expect(mockImpact).toHaveBeenCalledTimes(pulseCountAtPass);
+    expect(mockSuccess).toHaveBeenCalledTimes(2);
     await view.unmount();
-    expect(mockMotionListeners.size).toBe(0);
   });
-
-  it("stops proximity feedback while the app is backgrounded", async () => {
+  it("stops proximity pulses while the app is backgrounded", async () => {
     const appStateListeners: ((state: AppStateStatus) => void)[] = [];
     jest
       .spyOn(AppState, "addEventListener")
@@ -198,218 +181,153 @@ describe("DrawCalibrationScreen", () => {
       });
     const { view } = await renderCalibration();
     await fireEvent.press(view.getByText("Start calibration"));
-    await setPitch(0.2);
-    await fireEvent.press(view.getByText("Capture ready pose"));
-    await setPitch(0.2);
+    await hold(0.2, 0, -0.9, 0);
+    await hold(0.2, 0, 0.9, 0);
+    await act(() =>
+      mockMotionListeners.forEach((listener) =>
+        listener({ rotation: { beta: 0.2 } })
+      )
+    );
     expect(mockImpact).toHaveBeenCalled();
 
     await act(() =>
       appStateListeners.forEach((listener) => listener("background"))
     );
-    const countAtPause = mockImpact.mock.calls.length;
-    await setPitch(0.22);
+    const pulseCountAtPause = mockImpact.mock.calls.length;
     await act(() => jest.advanceTimersByTime(1_000));
-    expect(mockImpact).toHaveBeenCalledTimes(countAtPause);
+    expect(mockImpact).toHaveBeenCalledTimes(pulseCountAtPause);
     await view.unmount();
   });
 
-  it("allows calibration to finish when confirmation audio fails", async () => {
-    mockSeek.mockRejectedValue(new Error("audio unavailable"));
+  it("automatically checks both valid poses after a steady hold", async () => {
     const { view, onComplete } = await renderCalibration();
     await fireEvent.press(view.getByText("Start calibration"));
-    await setPitch(0.2);
-    await fireEvent.press(view.getByText("Capture ready pose"));
-    await setPitch(0.3);
-    await fireEvent.press(view.getByText("Capture shoulder pose"));
+    await hold(0.2, 0, -0.9, 0);
+    expect(view.queryByText("Shoulder pose")).toBeNull();
+    await hold(0.2, 0, 0.9, 0);
+    expect(view.getByText("Shoulder pose")).toBeTruthy();
+    expect(view.getAllByText("✓")).toHaveLength(1);
+    await hold(1.2, 0, 0.9, 0);
+    expect(view.queryByText("Continue")).toBeNull();
+    await hold(1.2, 0, 0, 0.95);
+    expect(view.getByText("Calibration passed")).toBeTruthy();
+    expect(view.getAllByText("✓")).toHaveLength(2);
+    expect(mockSuccess).toHaveBeenCalledTimes(2);
+    expect(view.getByText("Clock: ✓ calibrated")).toBeTruthy();
     await fireEvent.press(view.getByText("Continue"));
-
     expect(onComplete).toHaveBeenCalledWith({
       thetaReady: 0.2,
-      thetaShoulder: 0.3
+      thetaShoulder: 1.2
     });
-    expect(mockSuccess).toHaveBeenCalledTimes(2);
+    expect(mockMotionListeners.size).toBe(0);
+    expect(mockTiltListeners.size).toBe(0);
   });
 
-  it("starts the confirmation sound without waiting for an audio seek", async () => {
-    mockSeek.mockImplementation(() => new Promise<void>(() => undefined));
-    const { view } = await renderCalibration();
-    await fireEvent.press(view.getByText("Start calibration"));
-    await setPitch(0.2);
-    await fireEvent.press(view.getByText("Capture ready pose"));
-
-    expect(mockPlay).toHaveBeenCalledTimes(1);
-    await view.unmount();
-  });
-
-  it("does not start proximity feedback when opened in the background", async () => {
-    const originalState = AppState.currentState;
-    AppState.currentState = "background";
-    try {
-      const { view } = await renderCalibration();
-      await fireEvent.press(view.getByText("Start calibration"));
-      await setPitch(0.2);
-      await fireEvent.press(view.getByText("Capture ready pose"));
-      await setPitch(0.2);
-      await act(() => jest.advanceTimersByTime(500));
-
-      expect(mockImpact).not.toHaveBeenCalled();
-      await view.unmount();
-    } finally {
-      AppState.currentState = originalState;
-    }
-  });
-
-  it.each([
-    null,
-    Number.NaN,
-    Number.POSITIVE_INFINITY,
-    Number.NEGATIVE_INFINITY
-  ])("does not capture a missing or invalid pitch (%s)", async (pitch) => {
+  it("continues calibration on volume-up after both poses pass", async () => {
     const { view, onComplete } = await renderCalibration();
     await fireEvent.press(view.getByText("Start calibration"));
-    await setPitch(pitch);
-    await fireEvent.press(view.getByText("Capture ready pose"));
+    await hold(0.2, 0, -0.9, 0);
+    await hold(0.2, 0, 0.9, 0);
+    await hold(1.2, 0, 0.9, 0);
+    await hold(1.2, 0, 0, 0.95);
 
-    expect(view.getByText("Capture ready pose")).toBeTruthy();
-    expect(view.getByText(/No fresh pitch reading/)).toBeTruthy();
-    expect(view.queryByText("Continue")).toBeNull();
-    expect(onComplete).not.toHaveBeenCalled();
+    expect(view.getByText("Calibration passed")).toBeTruthy();
 
-    await setPitch(0);
-    await fireEvent.press(view.getByText("Capture ready pose"));
-    expect(view.getByText("Capture shoulder pose")).toBeTruthy();
-  });
+    await act(() => {
+      mockVolumeListeners.forEach((listener) => listener({ direction: "up" }));
+    });
 
-  it.each([0.2, 0.21, 0.19])(
-    "rejects a same or near-zero calibrated arc (%s)",
-    async (pitch) => {
-      const { view, onComplete } = await renderCalibration();
-      await fireEvent.press(view.getByText("Start calibration"));
-      await setPitch(0.2);
-      await fireEvent.press(view.getByText("Capture ready pose"));
-      await setPitch(pitch);
-      await fireEvent.press(view.getByText("Capture shoulder pose"));
-
-      expect(view.getByText(/The poses are too similar/)).toBeTruthy();
-      expect(view.getByText("Capture shoulder pose")).toBeTruthy();
-      expect(view.queryByText("Continue")).toBeNull();
-      expect(onComplete).not.toHaveBeenCalled();
-
-      await setPitch(-0.8);
-      await fireEvent.press(view.getByText("Capture shoulder pose"));
-      await fireEvent.press(view.getByText("Continue"));
-      expect(onComplete).toHaveBeenCalledWith({
-        thetaReady: 0.2,
-        thetaShoulder: -0.8
-      });
-    }
-  );
-
-  it("does not reuse the ready reading when shoulder motion is missing", async () => {
-    const { view, onComplete } = await renderCalibration();
-    await fireEvent.press(view.getByText("Start calibration"));
-    await setPitch(0.2);
-    await fireEvent.press(view.getByText("Capture ready pose"));
-    await setPitch(null);
-    await fireEvent.press(view.getByText("Capture shoulder pose"));
-
-    expect(view.getByText(/No fresh pitch reading/)).toBeTruthy();
-    expect(view.getByText("Capture shoulder pose")).toBeTruthy();
-    expect(view.queryByText("Continue")).toBeNull();
-    expect(onComplete).not.toHaveBeenCalled();
-
-    await setPitch(1.2);
-    await fireEvent.press(view.getByText("Capture shoulder pose"));
-    await fireEvent.press(view.getByText("Continue"));
     expect(onComplete).toHaveBeenCalledWith({
       thetaReady: 0.2,
       thetaShoulder: 1.2
     });
   });
 
-  it("refuses a stale pitch and lets the player capture a fresh sample", async () => {
-    const { view } = await renderCalibration();
-    await fireEvent.press(view.getByText("Start calibration"));
-    await setPitch(0.2);
-    await act(() => jest.advanceTimersByTime(2_001));
-    await fireEvent.press(view.getByText("Capture ready pose"));
-    expect(view.getByText("Capture ready pose")).toBeTruthy();
-    expect(view.getByText(/No fresh pitch reading/)).toBeTruthy();
-
-    await setPitch(0.2);
-    await fireEvent.press(view.getByText("Capture ready pose"));
-    expect(view.getByText("Capture shoulder pose")).toBeTruthy();
+  it("shows clock failure and retries on the calibration screen", async () => {
+    const { view, onRetryClockCalibration } = await renderCalibration("failed");
+    expect(view.getByText("Clock: calibration failed")).toBeTruthy();
+    await fireEvent.press(view.getByText("Retry clock"));
+    expect(onRetryClockCalibration).toHaveBeenCalledTimes(1);
   });
 
-  it("recovers denied motion permission through Settings and Check Again", async () => {
+  it("does not confirm a pose from stale motion readings", async () => {
+    const { view } = await renderCalibration();
+    await fireEvent.press(view.getByText("Start calibration"));
+    await act(() => {
+      mockMotionListeners.forEach((listener) =>
+        listener({ rotation: { beta: 0.2 } })
+      );
+      mockTiltListeners.forEach((listener) => listener({ x: 0, y: 0.9, z: 0 }));
+      jest.advanceTimersByTime(351);
+      mockVolumeListeners.forEach((listener) => listener({ direction: "up" }));
+    });
+    expect(view.queryByText("Shoulder pose")).toBeNull();
+    expect(mockImpact).toHaveBeenCalledTimes(1);
+  });
+
+  it("confirms only a fresh valid pose on volume up and gives an error hint otherwise", async () => {
+    const { view, onComplete } = await renderCalibration();
+    expect(mockVolumeListeners.size).toBe(0);
+    await fireEvent.press(view.getByText("Start calibration"));
+    expect(mockVolumeListeners.size).toBe(1);
+    expect(view.getByText(/Hold steady or press volume up/)).toBeTruthy();
+    await act(() => {
+      mockMotionListeners.forEach((listener) =>
+        listener({ rotation: { beta: 0.2 } })
+      );
+      mockTiltListeners.forEach((listener) =>
+        listener({ x: 0, y: -0.9, z: 0 })
+      );
+      mockVolumeListeners.forEach((listener) => listener({ direction: "up" }));
+    });
+    expect(view.getByText(/Point the top edge down first/)).toBeTruthy();
+    expect(mockImpact).toHaveBeenCalledTimes(1);
+    expect(view.queryByText("Shoulder pose")).toBeNull();
+
+    await act(() => {
+      mockTiltListeners.forEach((listener) => listener({ x: 0, y: 0.9, z: 0 }));
+      mockVolumeListeners.forEach((listener) =>
+        listener({ direction: "down" })
+      );
+    });
+    expect(view.queryByText("Shoulder pose")).toBeNull();
+    await act(() =>
+      mockVolumeListeners.forEach((listener) => listener({ direction: "up" }))
+    );
+    expect(view.getByText("Shoulder pose")).toBeTruthy();
+    expect(view.getAllByText("✓")).toHaveLength(1);
+
+    await act(() => {
+      mockTiltListeners.forEach((listener) =>
+        listener({ x: 0.95, y: 0, z: 0 })
+      );
+      mockVolumeListeners.forEach((listener) => listener({ direction: "up" }));
+    });
+    expect(view.getByText(/raise the phone from ready first/)).toBeTruthy();
+    await act(() => {
+      mockMotionListeners.forEach((listener) =>
+        listener({ rotation: { beta: 1.2 } })
+      );
+      mockVolumeListeners.forEach((listener) => listener({ direction: "up" }));
+    });
+    expect(view.getByText("Calibration passed")).toBeTruthy();
+    expect(mockVolumeListeners.size).toBe(1);
+    await act(() => {
+      mockVolumeListeners.forEach((listener) =>
+        listener({ direction: "down" })
+      );
+    });
+    expect(mockSuccess).toHaveBeenCalledTimes(2);
+    expect(onComplete).not.toHaveBeenCalled();
+    expect(view.getByTestId("ready-pose-illustration")).toBeTruthy();
+    expect(view.getByTestId("shoulder-pose-illustration")).toBeTruthy();
+  });
+
+  it("keeps motion permission recovery available", async () => {
     mockGranted = false;
-    const openSettings = jest
-      .spyOn(Linking, "openSettings")
-      .mockResolvedValue(undefined);
     const { view } = await renderCalibration();
     await fireEvent.press(view.getByText("Start calibration"));
     expect(view.getByText("Motion access needed")).toBeTruthy();
     expect(view.queryByText("Continue")).toBeNull();
-    await fireEvent.press(view.getByText("Open Settings"));
-    expect(openSettings).toHaveBeenCalledTimes(1);
-
-    mockGranted = true;
-    await fireEvent.press(view.getByText("Check Again"));
-    expect(view.getByText("Capture ready pose")).toBeTruthy();
-  });
-
-  it("rechecks denied motion permission when returning from Settings", async () => {
-    let foreground: ((state: AppStateStatus) => void) | undefined;
-    jest
-      .spyOn(AppState, "addEventListener")
-      .mockImplementation((_event, listener) => {
-        foreground = listener;
-        return { remove: () => undefined };
-      });
-    mockGranted = false;
-    const { view } = await renderCalibration();
-    await fireEvent.press(view.getByText("Start calibration"));
-    expect(view.getByText("Motion access needed")).toBeTruthy();
-
-    mockGranted = true;
-    await act(() => foreground?.("active"));
-    expect(view.getByText("Capture ready pose")).toBeTruthy();
-  });
-
-  it.each(["unavailable", "error"])(
-    "lets the player retry a motion startup %s",
-    async (failure) => {
-      mockAvailable = failure !== "unavailable";
-      mockStartupError = failure === "error";
-      const { view } = await renderCalibration();
-      await fireEvent.press(view.getByText("Start calibration"));
-      expect(view.getByText("Retry")).toBeTruthy();
-      expect(view.queryByText("Continue")).toBeNull();
-
-      mockAvailable = true;
-      mockStartupError = false;
-      await fireEvent.press(view.getByText("Retry"));
-      expect(view.getByText("Capture ready pose")).toBeTruthy();
-    }
-  );
-
-  it("does not subscribe if unmounted while motion permission is pending", async () => {
-    let resolvePermission!: () => void;
-    mockPermissionWait = new Promise<void>((resolve) => {
-      resolvePermission = resolve;
-    });
-    const { view, onComplete } = await renderCalibration();
-    let pendingStart!: Promise<void>;
-    await act(() => {
-      pendingStart = fireEvent.press(view.getByText("Start calibration"));
-    });
-    await view.unmount();
-    await act(async () => {
-      resolvePermission();
-      await pendingStart;
-    });
-
-    expect(mockMotionListeners.size).toBe(0);
-    expect(onComplete).not.toHaveBeenCalled();
   });
 });

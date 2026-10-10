@@ -12,7 +12,7 @@ type GameInstructionsScreenProps = {
 // Condensed from docs/product-design/Gameplay-v2.md for a full-screen,
 // pre-match read rather than the full rules document.
 const STEPS = [
-  "After I'm Ready, start calibration: capture your ready pose with arm down, then your shoulder pose with arm raised. Continue when accepted. Rematches reuse calibration; denied/unavailable motion has retry and Settings recovery.",
+  "After I'm Ready, start calibration: hold the ready pose with arm down, then the shoulder pose with arm raised. Hold steady or press volume up to confirm each pose. Volume up also confirms pre-round prompts and continues after calibration. Rematches reuse calibration; denied/unavailable motion has retry and Settings recovery.",
   "Motion, compass, and precise foreground GPS power the duel. Precise GPS goes only to your accepted peer, not Firestore or the public map; public locations stay rounded.",
   "Aim toward your opponent within about 30 degrees. Facing away, stale/unavailable readings, or overlapping GPS uncertainty means miss. Pitch approximates height, not exact centimeters.",
   "Hold ready through the 3-second countdown. At the buzz, draw and tap or use a supported volume control: bodyshot 1, headshot 2, miss 0.",

@@ -17,6 +17,14 @@ Order both players' shots by reaction time.
 
 This resolves the earlier open question about how the tie window interacts with the fallthrough rule: outside the window, only the faster shot's accuracy is ever eligible to decide the round on its own; inside it, both shots' accuracy is compared directly.
 
+Round results explain equal scoring: two misses mean 0 points each, even with
+a large reaction-time gap; equal bodyshots or headshots within 100 ms mean
+1 or 2 points each. A tied round does not itself trigger sudden death.
+The match summary preserves each tie's reason and both ordered reaction times,
+and distinguishes a final draw as equal total points after the tiebreaker.
+For two-phone reports, record both reaction times, both shot zones, and whether
+the tie appeared on the round result or the final match summary.
+
 `falseStart` remains a timing violation and its own enriched `RoundOutcome` kind. Early countdown tap, volume input, or movement disqualifies the offender. The countdown still reaches the normal FIRE cue; the non-offender can fire and receives their actual calibrated, aim-gated zone score (0/1/2), with shot timing retained. There is no flat bonus. Inputs outside countdown/FIRE are ignored.
 
 Reaction time is still captured for every shot regardless of outcome — it gates who's evaluated first above, and separately feeds the leaderboard's average-reaction-time stat (Phase 4, item 26).
@@ -27,6 +35,44 @@ Reaction time is still captured for every shot regardless of outcome — it gate
 v2's differentiated zone scoring (1 or 2 points) breaks that equivalence, so this had to be decided explicitly: **the match winner (and whether the tiebreaker round triggers) is the sum of each player's round points across the match, not a count of rounds won.**
 
 `roundLoop.ts` accumulates each round's actual zone points (0/1/2), including independent tie-window scores and the non-offender's false-start shot. `matchWinnerId`/`isMatchDecided` compare summed points, not round-win counts.
+
+### Recorded miss explanations
+
+Round results show a player-labeled diagram, explanation, and correction hint
+for each recorded miss. Causes are captured when firing, not inferred from
+zero points: a slower hit suppressed by a faster hit is not a physical miss.
+
+- `tooLow` / `tooHigh`: pitch fell below or above the existing calibrated hit
+  bands. These describe the raise fraction, not measured physical height.
+- `offTarget`: fresh, reliable compass and separated GPS fixes verified that
+  aim was outside the opponent's cone. The diagram is schematic; no exact
+  physical direction or bullet trajectory is reconstructed.
+- `trackingUnavailable`: motion or aim could not be verified, including stale,
+  unreliable, ambiguous, or overlapping position readings.
+- `noShot`: the player did not fire before the FIRE window ended.
+
+Known pitch misses retain their cause even when aim tracking is unavailable.
+The `raised` message carries the fired miss reason; `RoundOutcome.misses`
+retains player IDs and reasons in deterministic ID order through match history
+and reconnect comparison. False-start offenders are excluded. Older fired
+misses without diagnostics receive no guessed illustration.
+
+Raise-correction arrows and the off-target marker animate once for 650 ms on
+the native driver; essential diagrams and text remain visible. Tracking
+failures and no-shot diagrams stay static. Motion begins only after reading
+the reduced-motion preference; enabling it cancels and settles the animation.
+The result screen scrolls to keep both miss cards and the continue action
+reachable with large text.
+
+### False-start illustration
+
+False-start round results show a dedicated, player-labeled countdown/phone
+activity diagram for the offender, alongside any recorded non-offender miss.
+The explanation covers early movement or fire input and reminds the offender
+to stay still through the countdown and fire only after FIRE; they score 0.
+It does not identify an exact input or countdown instant that was not retained.
+This timing-violation schematic is static, remains distinct from miss causes,
+and reuses the same `RoundIllustration` card and scrollable result layout.
 
 ## Zone classification — the feasibility question
 
