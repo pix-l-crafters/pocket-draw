@@ -12,6 +12,7 @@ import type {
 import type { MatchResult } from "../../contracts/matchResult";
 import type { RoundOutcome } from "../../contracts/roundOutcome";
 import { useMatchAnalytics } from "../../hooks/useMatchAnalytics";
+import { colors } from "../../theme/tokens";
 import {
   subscribeMatchResultStatus,
   submitMatchResult
@@ -27,6 +28,7 @@ import {
   DuelConnectionScreen,
   type DuelConnectionState
 } from "./DuelConnectionScreen";
+import { DuelExitButton } from "./DuelExitButton";
 import { FalseStartCoordinator } from "./falseStartCoordinator";
 import type { DuelRole } from "./fireSignalCoordinator";
 import { GameInstructionsScreen } from "./GameInstructionsScreen";
@@ -570,14 +572,11 @@ export function DuelScreen({
     );
   }
 
-  const exitControl = onExit && (
+  const exitControl = onExit ? (
     <View style={styles.exitRow}>
-      <CutCornerButton
-        label="Exit"
-        onPress={exit}
-      />
+      <DuelExitButton onPress={exit} />
     </View>
-  );
+  ) : null;
 
   if (!calibration) {
     return (
@@ -665,6 +664,7 @@ export function DuelScreen({
 
   return (
     <View style={styles.container}>
+      {exitControl}
       {/* Keyed on the match, round and resume: a fresh PreRound is the round
           reset. */}
       <PreRound
@@ -686,7 +686,6 @@ export function DuelScreen({
         peerReady={peerReady}
         role={role}
       />
-      {exitControl}
     </View>
   );
 }
@@ -700,8 +699,9 @@ const styles = StyleSheet.create({
     paddingBottom: 12
   },
   exitRow: {
-    position: "absolute",
-    right: 16,
-    top: 16
+    alignItems: "flex-end",
+    backgroundColor: colors.background,
+    paddingHorizontal: 24,
+    paddingTop: 8
   }
 });
