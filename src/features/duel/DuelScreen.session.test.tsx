@@ -22,6 +22,11 @@ import type { DuelRole } from "./fireSignalCoordinator";
 import type { PitchCalibration } from "./pitchMonitor";
 import type { RoundShots } from "./roundShots";
 
+jest.mock("expo-audio", () => ({
+  setAudioModeAsync: async () => undefined,
+  useAudioPlayer: () => ({ seekTo: () => undefined, play: () => undefined })
+}));
+
 const FIRST_MATCH = "11111111-1111-4111-8111-111111111111";
 const REMATCH = "22222222-2222-4222-8222-222222222222";
 const LATER_REMATCH = "33333333-3333-4333-8333-333333333333";

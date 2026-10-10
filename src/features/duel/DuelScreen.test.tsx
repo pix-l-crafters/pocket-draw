@@ -67,7 +67,24 @@ jest.mock("expo-sensors", () => ({
 
 jest.mock("expo-audio", () => ({
   setAudioModeAsync: async () => undefined,
-  useAudioPlayer: () => ({ seekTo: () => undefined, play: () => undefined })
+  useAudioPlayer: () => {
+    let onStatus: ((status: { didJustFinish: boolean }) => void) | undefined;
+    return {
+      seekTo: () => undefined,
+      pause: () => undefined,
+      play: () => {
+        void Promise.resolve().then(() => onStatus?.({ didJustFinish: true }));
+      },
+      addListener: (_event: string, listener: typeof onStatus) => {
+        onStatus = listener;
+        return {
+          remove: () => {
+            onStatus = undefined;
+          }
+        };
+      }
+    };
+  }
 }));
 
 jest.mock("expo-haptics", () => ({

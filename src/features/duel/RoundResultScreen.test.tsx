@@ -1,7 +1,33 @@
 import { render } from "@testing-library/react-native";
 
 import type { MissReason, RoundOutcome } from "../../contracts/roundOutcome";
+import { DUEL_CUES } from "./countdownAudio";
+
+jest.mock("./countdownAudio", () => ({
+  DUEL_CUES: {
+    gameBegin: 1,
+    countdown3: 2,
+    countdown2: 3,
+    countdown1: 4,
+    fire: 5,
+    gunshot: 6,
+    headshot: 7,
+    bodyshot: 8,
+    miss: 9,
+    falseStart: 10
+  }
+}));
 import { RoundResultScreen } from "./RoundResultScreen";
+
+const mockResultPlayers = new Map<unknown, jest.Mock>();
+jest.mock("expo-audio", () => ({
+  setAudioModeAsync: jest.fn(async () => undefined),
+  useAudioPlayer: (source: unknown) => {
+    if (!mockResultPlayers.has(source))
+      mockResultPlayers.set(source, jest.fn());
+    return { seekTo: jest.fn(), play: mockResultPlayers.get(source) };
+  }
+}));
 
 const playerNames = { hana: "Hana", gil: "Gil" };
 const missTie: RoundOutcome = {
@@ -11,6 +37,73 @@ const missTie: RoundOutcome = {
   reactionMs: 200,
   opponentReactionMs: 2700
 };
+
+it.each([
+  ["headshot", DUEL_CUES.headshot],
+  ["bodyshot", DUEL_CUES.bodyshot],
+  ["miss", DUEL_CUES.miss]
+] as const)("plays the local %s zone cue on a tie", async (zone, source) => {
+  mockResultPlayers.clear();
+  await render(
+    <RoundResultScreen
+      onContinue={() => undefined}
+      opponentReactionMs={200}
+      outcome={{
+        kind: "tie",
+        zone,
+        pointsEach: 0,
+        reactionMs: 200,
+        opponentReactionMs: 200
+      }}
+      playerNames={playerNames}
+      roundNumber={1}
+      selfReactionMs={200}
+      selfZone={zone}
+      audioMuted={false}
+    />
+  );
+  expect(mockResultPlayers.get(source)).toHaveBeenCalledTimes(1);
+});
+
+it("plays only the false-start cue for a false-start result", async () => {
+  mockResultPlayers.clear();
+  await render(
+    <RoundResultScreen
+      onContinue={() => undefined}
+      opponentReactionMs={null}
+      outcome={{
+        kind: "falseStart",
+        playerId: "hana",
+        nonOffenderId: "gil",
+        nonOffenderShot: null
+      }}
+      playerNames={playerNames}
+      roundNumber={1}
+      selfReactionMs={null}
+      selfZone="miss"
+      audioMuted={false}
+    />
+  );
+  expect(mockResultPlayers.get(DUEL_CUES.falseStart)).toHaveBeenCalledTimes(1);
+  expect(mockResultPlayers.get(DUEL_CUES.miss)).toBeUndefined();
+});
+
+it("keeps the result silent when duel audio is muted", async () => {
+  mockResultPlayers.clear();
+  await render(
+    <RoundResultScreen
+      audioMuted
+      onContinue={() => undefined}
+      opponentReactionMs={null}
+      outcome={missTie}
+      playerNames={playerNames}
+      roundNumber={1}
+      selfReactionMs={null}
+      selfZone="miss"
+    />
+  );
+  expect(mockResultPlayers.get(DUEL_CUES.miss)).not.toHaveBeenCalled();
+});
 
 it("associates miss explanations and correction hints with each player", async () => {
   const view = await render(
