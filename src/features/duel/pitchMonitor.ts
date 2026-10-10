@@ -58,6 +58,8 @@ export class PitchMonitor {
   private generation = 0;
   private starting: Promise<PitchMonitorStartResult> | null = null;
 
+  constructor(private readonly onPitch?: (theta: number | null) => void) {}
+
   start(): Promise<PitchMonitorStartResult> {
     if (this.subscription) {
       return Promise.resolve("started");
@@ -108,6 +110,7 @@ export class PitchMonitor {
           interval: finite(reading.interval),
           orientation: finite(reading.orientation)
         };
+        this.onPitch?.(this.latestTheta);
       });
       if (generation !== this.generation) {
         subscription.remove();
