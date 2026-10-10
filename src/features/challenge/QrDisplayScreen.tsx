@@ -472,43 +472,47 @@ export function QrDisplayScreen({
           corner="large"
           style={styles.qrCard}
         >
-          {invite ? (
-            <View style={styles.qrWrapper}>
-              <QRCode
-                backgroundColor={colors.text}
-                color={colors.background}
-                size={220}
-                value={JSON.stringify(invite)}
+          {/* Centring on the surface itself would only centre its inner View;
+              the QR then stretched to the widest status line and sat left. */}
+          <View style={styles.qrContent}>
+            {invite ? (
+              <View style={styles.qrWrapper}>
+                <QRCode
+                  backgroundColor={colors.text}
+                  color={colors.background}
+                  size={220}
+                  value={JSON.stringify(invite)}
+                />
+              </View>
+            ) : null}
+            {joinFailure && !setupError ? (
+              <StatusTag tone="warning">
+                {`A join attempt failed (${joinFailure}). This is a fresh code.`}
+              </StatusTag>
+            ) : null}
+            {setupError instanceof PermissionDeniedError ? (
+              <PermissionNotice
+                canAskAgain={setupError.canAskAgain}
+                capability={setupError.capability}
+                message="Hosting over your own hotspot needs it. Until then, switch to Shared Wi-Fi and put both phones on the same network."
+                onRetry={retrySetup}
               />
-            </View>
-          ) : null}
-          {joinFailure && !setupError ? (
-            <StatusTag tone="warning">
-              {`A join attempt failed (${joinFailure}). This is a fresh code.`}
-            </StatusTag>
-          ) : null}
-          {setupError instanceof PermissionDeniedError ? (
-            <PermissionNotice
-              canAskAgain={setupError.canAskAgain}
-              capability={setupError.capability}
-              message="Hosting over your own hotspot needs it. Until then, switch to Shared Wi-Fi and put both phones on the same network."
-              onRetry={retrySetup}
-            />
-          ) : setupError ? (
-            <StatusTag tone="warning">{setupError.message}</StatusTag>
-          ) : waitingForIosDetails ? (
-            <StatusTag>Enter your Personal Hotspot details above.</StatusTag>
-          ) : invite ? (
-            <StatusTag tone={secondsLeft <= 10 ? "warning" : "muted"}>
-              {`${invite.connection.mode === "hotspot" ? `${invite.connection.ssid} · ` : ""}${invite.connection.hostIp}:${invite.connection.signalPort} · refreshes in ${secondsLeft}s`}
-            </StatusTag>
-          ) : (
-            <StatusTag>
-              {connectionMode === "hotspot" && Platform.OS === "android"
-                ? "Creating Android hotspot…"
-                : "Starting local connection…"}
-            </StatusTag>
-          )}
+            ) : setupError ? (
+              <StatusTag tone="warning">{setupError.message}</StatusTag>
+            ) : waitingForIosDetails ? (
+              <StatusTag>Enter your Personal Hotspot details above.</StatusTag>
+            ) : invite ? (
+              <StatusTag tone={secondsLeft <= 10 ? "warning" : "muted"}>
+                {`${invite.connection.mode === "hotspot" ? `${invite.connection.ssid} · ` : ""}${invite.connection.hostIp}:${invite.connection.signalPort} · refreshes in ${secondsLeft}s`}
+              </StatusTag>
+            ) : (
+              <StatusTag>
+                {connectionMode === "hotspot" && Platform.OS === "android"
+                  ? "Creating Android hotspot…"
+                  : "Starting local connection…"}
+              </StatusTag>
+            )}
+          </View>
         </CutCornerSurface>
         <CutCornerButton
           label="Generate New Code"
@@ -554,14 +558,21 @@ const styles = StyleSheet.create({
     gap: 10
   },
   qrCard: {
-    alignItems: "center",
-    gap: 14,
+    // Holds the card near its ready size while the connection starts, with
+    // the status line centred in it rather than pinned to the top.
+    justifyContent: "center",
     minHeight: 310,
-    paddingVertical: 28
+    paddingHorizontal: 16,
+    paddingVertical: 20
+  },
+  qrContent: {
+    alignItems: "center",
+    gap: 14
   },
   qrWrapper: {
     backgroundColor: colors.text,
     borderRadius: 4,
+    // The quiet zone scanners need around the modules; keep it when trimming.
     padding: 16
   }
 });
