@@ -13,6 +13,9 @@ export const LOCATION_WATCH_DISTANCE_M = 10;
  */
 export const PRESENCE_MIN_MOVE_METRES = 10;
 
+/** Markers closer than this on screen (points) are merged into one cluster. */
+export const CLUSTER_RADIUS_PT = 44;
+
 /**
  * Presence is re-published on this interval even when the player has not moved,
  * so `lastSeen` stays fresh and other clients can tell who is still online.
