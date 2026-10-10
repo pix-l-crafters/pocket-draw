@@ -710,6 +710,8 @@ export function DuelScreen({
         audioMuted={audioMuted}
         key={`${matchId}:${loop.rounds.length}:${resumeCount}`}
         channel={channel}
+        matchId={matchId}
+        roundNumber={loop.rounds.length + 1}
         calibration={calibration}
         selfPlayerId={self.id}
         falseStarts={falseStarts}
