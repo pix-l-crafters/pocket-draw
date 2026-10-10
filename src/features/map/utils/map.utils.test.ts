@@ -1,5 +1,6 @@
 import type { NearbyPlayer } from "../types/map.types";
 import {
+  coarsenCoordinates,
   distanceBetweenCoordinatesMetres,
   spreadOverlappingPlayerMarkers
 } from "./map.utils";
@@ -25,6 +26,14 @@ const samePlacePlayers: NearbyPlayer[] = [
   }
 ];
 
+describe("coarsenCoordinates", () => {
+  test("keeps four decimal places in shared coordinates", () => {
+    expect(
+      coarsenCoordinates({ latitude: -37.800123, longitude: 144.900456 })
+    ).toEqual({ latitude: -37.8001, longitude: 144.9005 });
+  });
+});
+
 describe("spreadOverlappingPlayerMarkers", () => {
   test("moves a single player away from You at the same coordinate", () => {
     const position = { latitude: -37.8, longitude: 144.9 };
@@ -43,7 +52,7 @@ describe("spreadOverlappingPlayerMarkers", () => {
   });
 
   test("matches rounded GPS coordinates but spreads from the exact You position", () => {
-    const position = { latitude: -37.8004, longitude: 144.9004 };
+    const position = { latitude: -37.80004, longitude: 144.90004 };
     const displayed = spreadOverlappingPlayerMarkers(
       [samePlacePlayers[0]],
       position
@@ -87,7 +96,7 @@ describe("spreadOverlappingPlayerMarkers", () => {
   });
 
   test("preserves source player data and the exact You coordinate", () => {
-    const position = { latitude: -37.8004, longitude: 144.9004 };
+    const position = { latitude: -37.80004, longitude: 144.90004 };
     const originalPosition = { ...position };
     const originalPlayers = JSON.stringify(samePlacePlayers);
     const displayed = spreadOverlappingPlayerMarkers(

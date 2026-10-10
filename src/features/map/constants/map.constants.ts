@@ -1,10 +1,17 @@
-export const PUBLIC_LOCATION_DECIMAL_PLACES = 3;
+/** Four decimal places is a ~11 m × 9 m cell (see docs/adr/0002). */
+export const PUBLIC_LOCATION_DECIMAL_PLACES = 4;
 
 /** Inclusive radius for the nearby count, using published player locations. */
 export const NEARBY_RADIUS_METRES = 500;
 
 /** Minimum movement (metres) before the OS reports a new position. */
 export const LOCATION_WATCH_DISTANCE_M = 10;
+
+/**
+ * Minimum movement (metres) from the last published position before presence
+ * moves, so GPS jitter near a cell edge does not flip between cells.
+ */
+export const PRESENCE_MIN_MOVE_METRES = 10;
 
 /**
  * Presence is re-published on this interval even when the player has not moved,

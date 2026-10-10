@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   PRESENCE_HEARTBEAT_MS,
   PRESENCE_MAX_PUBLISH_RETRIES,
+  PRESENCE_MIN_MOVE_METRES,
   PRESENCE_RETRY_BASE_DELAY_MS
 } from "../constants/map.constants";
 import { presenceRepository } from "../services/presenceRepository";
@@ -11,7 +12,10 @@ import type {
   CurrentUser,
   PresencePublishState
 } from "../types/map.types";
-import { coarsenCoordinate } from "../utils/map.utils";
+import {
+  coarsenCoordinate,
+  distanceBetweenCoordinatesMetres
+} from "../utils/map.utils";
 
 type UsePresencePublisherInput = {
   currentUser: CurrentUser | null;
@@ -39,14 +43,25 @@ export function usePresencePublisher({
   const [retrySequence, setRetrySequence] = useState(0);
   const removedWhileDisabledRef = useRef(false);
 
+  const anchorRef = useRef<Coordinates | null>(null);
+
   const uid = currentUser?.uid ?? null;
   const displayName = currentUser?.displayName ?? null;
-  // Publishing is keyed on the coarsened cell, so small GPS jitter within the
-  // same ~110 m cell does not trigger a write; a heartbeat keeps it fresh.
-  const coarseLatitude = position ? coarsenCoordinate(position.latitude) : null;
-  const coarseLongitude = position
-    ? coarsenCoordinate(position.longitude)
-    : null;
+  // Publishing is keyed on the coarsened cell of an anchor that only moves once
+  // the player is PRESENCE_MIN_MOVE_METRES away, so GPS jitter across a ~11 m
+  // cell edge does not trigger writes; a heartbeat keeps it fresh.
+  if (
+    position &&
+    (anchorRef.current === null ||
+      distanceBetweenCoordinatesMetres(anchorRef.current, position) >=
+        PRESENCE_MIN_MOVE_METRES)
+  ) {
+    anchorRef.current = position;
+  }
+
+  const anchor = position ? anchorRef.current : null;
+  const coarseLatitude = anchor ? coarsenCoordinate(anchor.latitude) : null;
+  const coarseLongitude = anchor ? coarsenCoordinate(anchor.longitude) : null;
 
   useEffect(() => {
     if (enabled === null) {

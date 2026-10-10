@@ -10,7 +10,7 @@ import { AppState, type AppStateStatus } from "react-native";
 import { useForegroundLocation } from "./useForegroundLocation";
 
 jest.mock("expo-location", () => ({
-  Accuracy: { Balanced: 3 },
+  Accuracy: { High: 4 },
   getCurrentPositionAsync: jest.fn(),
   getForegroundPermissionsAsync: jest.fn(),
   hasServicesEnabledAsync: jest.fn(),
