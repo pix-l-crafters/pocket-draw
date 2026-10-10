@@ -9,6 +9,7 @@ import { CutCornerSurface } from "../../components/CutCornerSurface";
 import { PermissionNotice } from "../../components/PermissionNotice";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { StatusTag } from "../../components/StatusTag";
+import type { CalibrationPoseSnapshot } from "../../contracts/matchAnalytics";
 import { useForegroundRecheck } from "../../lib/useForegroundRecheck";
 import { colors, fonts } from "../../theme/tokens";
 import { isTopEdgeDown, isTopEdgeForward, PoseHold } from "./calibrationPose";
@@ -89,6 +90,7 @@ export function DrawCalibrationScreen({
   const holdRef = useRef(new PoseHold());
   const stageRef = useRef<"ready" | "shoulder" | "passed">("ready");
   const thetaReadyRef = useRef<number | null>(null);
+  const readyPoseRef = useRef<CalibrationPoseSnapshot | null>(null);
   const calibrationRef = useRef<PitchCalibration | null>(null);
   const appActiveRef = useRef(AppState.currentState === "active");
 
@@ -116,7 +118,7 @@ export function DrawCalibrationScreen({
   );
 
   const completePose = useCallback(
-    (theta: number) => {
+    (theta: number, confirmation: "hold" | "volume" = "hold") => {
       const stage = stageRef.current;
       if (stage === "passed") return;
       holdRef.current.reset();
@@ -134,14 +136,25 @@ export function DrawCalibrationScreen({
       } catch {
         // Audio is supplementary; a failed sound must not block calibration.
       }
+      const snapshot: CalibrationPoseSnapshot = {
+        capturedAtMs: Date.now(),
+        confirmation,
+        accelerometer: latestTiltRef.current
+          ? { ...latestTiltRef.current }
+          : null,
+        motion: pitchMonitorRef.current?.snapshot() ?? null
+      };
       if (stage === "ready") {
         thetaReadyRef.current = theta;
+        readyPoseRef.current = snapshot;
         stageRef.current = "shoulder";
         setStatus("shoulder");
       } else {
         calibrationRef.current = {
           thetaReady: thetaReadyRef.current!,
-          thetaShoulder: theta
+          thetaShoulder: theta,
+          readyPose: readyPoseRef.current!,
+          shoulderPose: snapshot
         };
         stageRef.current = "passed";
         proximityFeedback.stop();
@@ -174,6 +187,7 @@ export function DrawCalibrationScreen({
     holdRef.current.reset();
     stageRef.current = "ready";
     thetaReadyRef.current = null;
+    readyPoseRef.current = null;
     calibrationRef.current = null;
     setPoseHint(null);
     setStatus("starting");
@@ -266,7 +280,7 @@ export function DrawCalibrationScreen({
         void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         return;
       }
-      completePose(theta);
+      completePose(theta, "volume");
     });
   }, [status, completePose, handleContinue, matchesPose]);
 

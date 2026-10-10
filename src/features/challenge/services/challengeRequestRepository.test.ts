@@ -1,8 +1,10 @@
 import {
   addDoc,
   collection,
+  doc,
   serverTimestamp,
-  Timestamp
+  Timestamp,
+  updateDoc
 } from "firebase/firestore";
 
 import { challengeRequestRepository } from "./challengeRequestRepository";
@@ -13,6 +15,8 @@ const FIXTURE_PASSPHRASE = "draw-4821";
 jest.mock("firebase/firestore", () => ({
   addDoc: jest.fn(),
   collection: jest.fn(),
+  doc: jest.fn(),
+  updateDoc: jest.fn(),
   serverTimestamp: jest.fn(),
   Timestamp: {
     fromMillis: jest.fn()
@@ -24,6 +28,41 @@ jest.mock("../../../lib/firebase", () => ({
 }));
 
 describe("challengeRequestRepository", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  test.each(["", " ", "another/request"])(
+    "rejects invalid request ID %p",
+    async (id) => {
+      await expect(
+        challengeRequestRepository.updateStatus(id, "accepted")
+      ).rejects.toThrow("A valid challenge request ID is required.");
+      expect(updateDoc).not.toHaveBeenCalled();
+    }
+  );
+
+  test("propagates a failed status save", async () => {
+    const error = new Error("Write denied");
+    jest.mocked(updateDoc).mockRejectedValueOnce(error);
+    await expect(
+      challengeRequestRepository.updateStatus("request-123", "declined")
+    ).rejects.toBe(error);
+  });
+
+  test.each(["accepted", "declined"] as const)(
+    "saves %s on the specific request document",
+    async (status) => {
+      const reference = { id: "request-123" };
+      jest.mocked(doc).mockReturnValue(reference as never);
+      await challengeRequestRepository.updateStatus("request-123", status);
+      expect(doc).toHaveBeenCalledWith(
+        { name: "test-database" },
+        "challengeRequests",
+        "request-123"
+      );
+      expect(updateDoc).toHaveBeenCalledWith(reference, { status });
+    }
+  );
+
   test("creates a pending challenge and returns its request ID", async () => {
     const collectionReference = { name: "challengeRequests" };
     const createdAt = { type: "server-timestamp" };

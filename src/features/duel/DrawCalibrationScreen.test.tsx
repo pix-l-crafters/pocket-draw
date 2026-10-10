@@ -215,10 +215,22 @@ describe("DrawCalibrationScreen", () => {
     expect(mockSuccess).toHaveBeenCalledTimes(2);
     expect(view.getByText("Clock: ✓ calibrated")).toBeTruthy();
     await fireEvent.press(view.getByText("Continue"));
-    expect(onComplete).toHaveBeenCalledWith({
-      thetaReady: 0.2,
-      thetaShoulder: 1.2
-    });
+    expect(onComplete).toHaveBeenCalledWith(
+      expect.objectContaining({
+        thetaReady: 0.2,
+        thetaShoulder: 1.2,
+        readyPose: expect.objectContaining({
+          confirmation: "hold",
+          motion: expect.objectContaining({
+            rotation: expect.objectContaining({ beta: 0.2 })
+          })
+        }),
+        shoulderPose: expect.objectContaining({
+          confirmation: "hold",
+          accelerometer: expect.objectContaining({ y: 0 })
+        })
+      })
+    );
     expect(mockMotionListeners.size).toBe(0);
     expect(mockTiltListeners.size).toBe(0);
   });
@@ -237,10 +249,12 @@ describe("DrawCalibrationScreen", () => {
       mockVolumeListeners.forEach((listener) => listener({ direction: "up" }));
     });
 
-    expect(onComplete).toHaveBeenCalledWith({
-      thetaReady: 0.2,
-      thetaShoulder: 1.2
-    });
+    expect(onComplete).toHaveBeenCalledWith(
+      expect.objectContaining({
+        thetaReady: 0.2,
+        thetaShoulder: 1.2
+      })
+    );
   });
 
   it("shows clock failure and retries on the calibration screen", async () => {
@@ -319,6 +333,15 @@ describe("DrawCalibrationScreen", () => {
     });
     expect(mockSuccess).toHaveBeenCalledTimes(2);
     expect(onComplete).not.toHaveBeenCalled();
+    await act(() =>
+      mockVolumeListeners.forEach((listener) => listener({ direction: "up" }))
+    );
+    expect(onComplete).toHaveBeenCalledWith(
+      expect.objectContaining({
+        readyPose: expect.objectContaining({ confirmation: "volume" }),
+        shoulderPose: expect.objectContaining({ confirmation: "volume" })
+      })
+    );
     expect(view.getByTestId("ready-pose-illustration")).toBeTruthy();
     expect(view.getByTestId("shoulder-pose-illustration")).toBeTruthy();
   });

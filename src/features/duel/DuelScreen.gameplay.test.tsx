@@ -135,6 +135,11 @@ jest.mock("expo-haptics", () => ({
   ImpactFeedbackStyle: { Medium: "medium", Heavy: "heavy" },
   NotificationFeedbackType: { Success: "success" }
 }));
+jest.mock("../backend/matchAnalytics", () => ({
+  submitMatchAnalytics: jest.fn(async () => "written"),
+  subscribeAnalyticsStatus: jest.fn(() => () => undefined)
+}));
+
 jest.mock("../backend/matchResultsService", () => ({
   subscribeMatchResultStatus: jest.fn(() => () => undefined),
   submitMatchResult: jest.fn(async (result: MatchResult) => ({
