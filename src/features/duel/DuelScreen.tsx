@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Modal, Platform, StyleSheet, View } from "react-native";
+import { Modal, Platform, StyleSheet, Text, View } from "react-native";
 import { IconButton } from "react-native-paper";
 
 import { CutCornerButton } from "../../components/CutCornerButton";
@@ -160,6 +160,17 @@ export function DuelScreen({
 
   const [roundResult, setRoundResult] = useState<RoundOutcome | null>(null);
   const [roundShots, setRoundShots] = useState<RoundShots | null>(null);
+  const [waitingForRoundResult, setWaitingForRoundResult] = useState(false);
+  const pendingGuestShotsRef = useRef<{
+    matchId: string;
+    roundNumber: number;
+    shots: RoundShots;
+  } | null>(null);
+  const hostRoundResultRef = useRef<{
+    matchId: string;
+    roundNumber: number;
+    outcome: RoundOutcome;
+  } | null>(null);
   // Lives above PreRound on purpose: the opponent can finish their ritual
   // while this device is still on the previous round's result screen, and a
   // latch scoped to one round would drop that message.
@@ -203,6 +214,10 @@ export function DuelScreen({
       setMatchId(nextMatchId);
       setLoop(fresh);
       setRoundResult(null);
+      setRoundShots(null);
+      pendingGuestShotsRef.current = null;
+      hostRoundResultRef.current = null;
+      setWaitingForRoundResult(false);
       analyticsRoundsRef.current = [];
       pendingShotRef.current = null;
       setConfirmedAnalyticsHistory(null);
@@ -374,6 +389,9 @@ export function DuelScreen({
           resumed.rounds.length
         );
         pendingShotRef.current = null;
+        pendingGuestShotsRef.current = null;
+        hostRoundResultRef.current = null;
+        setWaitingForRoundResult(false);
         falseStarts.syncPeerWarningCount(message.warningCounts?.[opponent.id]);
         if (resumed !== loopRef.current) {
           setConfirmedAnalyticsHistory(null);
@@ -428,11 +446,44 @@ export function DuelScreen({
     onExit?.();
   };
 
+  const applyGuestRoundResult = useCallback(() => {
+    const pending = pendingGuestShotsRef.current;
+    const result = hostRoundResultRef.current;
+    if (
+      !pending ||
+      !result ||
+      pending.matchId !== result.matchId ||
+      pending.roundNumber !== result.roundNumber ||
+      pending.matchId !== matchIdRef.current ||
+      pending.roundNumber !== loopRef.current.rounds.length + 1
+    )
+      return;
+    pendingGuestShotsRef.current = null;
+    hostRoundResultRef.current = null;
+    setLoop((state) => applyRoundOutcome(state, result.outcome));
+    setRoundShots(pending.shots);
+    setRoundResult(result.outcome);
+    setWaitingForRoundResult(false);
+  }, []);
+
+  useEffect(
+    () =>
+      channel.onMessage((message) => {
+        if (
+          role !== "guest" ||
+          message.type !== "roundResult" ||
+          message.matchId !== matchIdRef.current ||
+          message.roundNumber !== loopRef.current.rounds.length + 1
+        )
+          return;
+        hostRoundResultRef.current = message;
+        applyGuestRoundResult();
+      }),
+    [channel, role, applyGuestRoundResult]
+  );
+
   const handleRoundShots = useCallback(
     (shots: RoundShots) => {
-      // Both devices judge the same captured shot zones and reaction times,
-      // so they reach the same outcome without either side being the scorer.
-      const outcome = judgeRoundShots(self, opponent, shots);
       const roundNumber = loopRef.current.rounds.length + 1;
       analyticsRoundsRef.current = [
         ...analyticsRoundsRef.current.slice(0, roundNumber - 1),
@@ -451,11 +502,28 @@ export function DuelScreen({
         }
       ];
       pendingShotRef.current = null;
+      if (role === "guest") {
+        pendingGuestShotsRef.current = {
+          matchId: matchIdRef.current,
+          roundNumber,
+          shots
+        };
+        setWaitingForRoundResult(true);
+        applyGuestRoundResult();
+        return;
+      }
+      const outcome = judgeRoundShots(self, opponent, shots);
       setLoop((state) => applyRoundOutcome(state, outcome));
       setRoundShots(shots);
       setRoundResult(outcome);
+      safeSend({
+        type: "roundResult",
+        matchId: matchIdRef.current,
+        roundNumber,
+        outcome
+      });
     },
-    [opponent, self]
+    [applyGuestRoundResult, opponent, role, safeSend, self]
   );
 
   const consumePeerReady = useCallback(() => setPeerReady(false), []);
@@ -737,6 +805,11 @@ export function DuelScreen({
         }
         role={role}
       />
+      {waitingForRoundResult && (
+        <View style={styles.syncingResult}>
+          <Text style={styles.syncingResultText}>SYNCING RESULT</Text>
+        </View>
+      )}
       {helpModal}
     </View>
   );
@@ -766,5 +839,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     paddingHorizontal: 24,
     paddingTop: 8
+  },
+  syncingResult: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    backgroundColor: colors.background,
+    justifyContent: "center"
+  },
+  syncingResultText: {
+    color: colors.text,
+    fontSize: 24
   }
 });

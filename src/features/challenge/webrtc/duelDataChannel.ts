@@ -21,6 +21,10 @@ const FIRED_MISS_REASONS: ReadonlySet<unknown> = new Set<
   "opponentLocationUnavailable",
   "trackingUnavailable"
 ]);
+const MISS_REASONS: ReadonlySet<unknown> = new Set([
+  ...FIRED_MISS_REASONS,
+  "noShot"
+]);
 
 export interface RtcDataChannelLike {
   readyState: string;
@@ -47,6 +51,62 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.length > 0;
 }
 
+function isZone(value: unknown): boolean {
+  return value === "miss" || value === "bodyshot" || value === "headshot";
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isRoundOutcome(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  if (
+    value.misses !== undefined &&
+    (!Array.isArray(value.misses) ||
+      !value.misses.every(
+        (miss: unknown) =>
+          isRecord(miss) &&
+          isNonEmptyString(miss.playerId) &&
+          MISS_REASONS.has(miss.reason)
+      ))
+  )
+    return false;
+  if (value.kind === "win") {
+    return (
+      isNonEmptyString(value.winnerId) &&
+      isZone(value.winnerZone) &&
+      isZone(value.loserZone) &&
+      isFiniteNumber(value.winnerPoints) &&
+      isFiniteNumber(value.loserPoints) &&
+      isFiniteNumber(value.reactionMs) &&
+      isFiniteNumber(value.opponentReactionMs)
+    );
+  }
+  if (value.kind === "tie") {
+    return (
+      isZone(value.zone) &&
+      isFiniteNumber(value.pointsEach) &&
+      isFiniteNumber(value.reactionMs) &&
+      isFiniteNumber(value.opponentReactionMs)
+    );
+  }
+  if (value.kind === "falseStart") {
+    return (
+      isNonEmptyString(value.playerId) &&
+      isNonEmptyString(value.nonOffenderId) &&
+      (value.nonOffenderShot === null ||
+        (isRecord(value.nonOffenderShot) &&
+          isFiniteNumber(value.nonOffenderShot.reactionMs) &&
+          isZone(value.nonOffenderShot.zone) &&
+          (value.nonOffenderShot.points === 0 ||
+            value.nonOffenderShot.points === 1 ||
+            value.nonOffenderShot.points === 2)))
+    );
+  }
+  return false;
+}
+
 export function isDuelMessage(value: unknown): value is DuelMessage {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     return false;
@@ -62,12 +122,14 @@ export function isDuelMessage(value: unknown): value is DuelMessage {
     case "rematchAccept":
       return hasValidMatchId(message);
     case "noShot":
+    case "roundResult":
       return (
         hasValidMatchId(message) &&
         isFiniteNumber(message.roundNumber) &&
         Number.isInteger(message.roundNumber) &&
         message.roundNumber >= 1 &&
-        message.roundNumber <= MAX_ROUND_COUNT
+        message.roundNumber <= MAX_ROUND_COUNT &&
+        (message.type === "noShot" || isRoundOutcome(message.outcome))
       );
     case "matchSync":
       return (

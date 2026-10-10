@@ -1,8 +1,13 @@
+jest.mock("@react-native-async-storage/async-storage", () =>
+  require("@react-native-async-storage/async-storage/jest/async-storage-mock")
+);
+
 // Guards cross-platform phone positioning and the fixed countdown-to-FIRE flow.
 
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { act, fireEvent, render } from "@testing-library/react-native";
 import * as Haptics from "expo-haptics";
-import { Platform, StyleSheet } from "react-native";
+import { Platform, Share, StyleSheet } from "react-native";
 import { PaperProvider } from "react-native-paper";
 
 import type { DuelChannel, DuelMessage } from "../../contracts/duelChannel";
@@ -12,6 +17,7 @@ import { DUEL_CUES } from "./countdownAudio";
 import { FalseStartCoordinator } from "./falseStartCoordinator";
 import type { DuelRole } from "./fireSignalCoordinator";
 import { COUNTDOWN_DURATION_MS, PreRound } from "./PreRound";
+import { shareLatestSensorRecording } from "./sensorRecording";
 
 jest.mock("./countdownAudio", () => ({
   DUEL_CUES: {
@@ -286,7 +292,86 @@ describe("PreRound countdown and draw", () => {
   });
 
   afterEach(() => {
+    jest.restoreAllMocks();
     jest.useRealTimers();
+  });
+
+  it("exports an ordered local round sequence containing countdown, cue and both input sources", async () => {
+    const { completeRitual, view, wait, pressVolume, deliver, shots } =
+      await renderPreRound("host");
+    await completeRitual();
+    await wait(COUNTDOWN_DURATION_MS);
+    await pressVolume("up");
+    await fireEvent.press(view.getByLabelText("Fire"));
+    await wait(4000);
+    expect(shots).toHaveLength(0);
+    await deliver({
+      type: "noShot",
+      matchId: "0f9ee81d-68f0-47cb-8977-702fae0d1865",
+      roundNumber: 1
+    });
+    expect(shots).toHaveLength(1);
+    const share = jest
+      .spyOn(Share, "share")
+      .mockResolvedValue({ action: Share.sharedAction });
+    await shareLatestSensorRecording();
+    const json = JSON.parse(share.mock.calls[0][0].message!);
+    expect(json.events.map((e: any) => e.name)).toEqual([
+      "roundStart",
+      "countdownStart",
+      "fireCue",
+      "fireInput",
+      "fireInput",
+      "roundEnd",
+      "sessionEnd"
+    ]);
+    expect(
+      json.events
+        .filter((e: any) => e.name === "fireInput")
+        .map((e: any) => e.data.source)
+    ).toEqual(["volume", "button"]);
+    expect(json.samples.some((s: any) => s.source === "deviceMotion")).toBe(
+      true
+    );
+    expect(
+      json.samples.some((s: any) => s.source === "falseStartAccelerometer")
+    ).toBe(true);
+    expect(json.metadata.calibration).toEqual({
+      thetaReady: 0,
+      thetaShoulder: 1
+    });
+    expect(json.metadata.requestedIntervalsMs).toEqual({
+      deviceMotion: 20,
+      accelerometer: 150
+    });
+  });
+
+  it("reports the round even if local recording persistence fails", async () => {
+    jest.spyOn(AsyncStorage, "setItem").mockRejectedValue(new Error("full"));
+    const { completeRitual, shots, wait, deliver } =
+      await renderPreRound("host");
+    await completeRitual();
+    await wait(COUNTDOWN_DURATION_MS);
+    await wait(4000);
+    expect(shots).toHaveLength(0);
+    await deliver({
+      type: "noShot",
+      matchId: "0f9ee81d-68f0-47cb-8977-702fae0d1865",
+      roundNumber: 1
+    });
+    expect(shots).toHaveLength(1);
+    expect(shots[0].selfReactionMs).toBeNull();
+  });
+
+  it("does not expose recording sharing in production", async () => {
+    const original = __DEV__;
+    try {
+      (globalThis as any).__DEV__ = false;
+      const { view } = await renderPreRound("host");
+      expect(view.queryByText("Share latest sensor JSON")).toBeNull();
+    } finally {
+      (globalThis as any).__DEV__ = original;
+    }
   });
 
   it.each([

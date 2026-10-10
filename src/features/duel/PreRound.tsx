@@ -19,21 +19,32 @@ import type {
 import type { MissReason, Zone } from "../../contracts/roundOutcome";
 import { useForegroundRecheck } from "../../lib/useForegroundRecheck";
 import { colors, fonts } from "../../theme/tokens";
+import { AIM_TOLERANCE_DEGREES } from "./aimBearing";
 import { isTopEdgeDown } from "./calibrationPose";
 import { DUEL_CUES } from "./countdownAudio";
 import { FalseStartCoordinator } from "./falseStartCoordinator";
 import { FireSignalCoordinator, type DuelRole } from "./fireSignalCoordinator";
+import { FALSE_START_SPEC } from "./gestureSpec";
 import {
+  SENSOR_UPDATE_INTERVAL_MS,
   PitchMonitor,
   type PitchCalibration,
   type PitchMonitorStartResult
 } from "./pitchMonitor";
+import {
+  BODYSHOT_MIN_F,
+  BODYSHOT_MAX_F,
+  HEADSHOT_DELTA_F
+} from "./pitchZoneClassifier";
 import { classifyZone, computeRaiseFraction } from "./pitchZoneClassifier";
 import { ReactionTimer } from "./reactionTimer";
 import { FIRE_WINDOW_MS, type RoundShots } from "./roundShots";
+import { SensorRecording } from "./sensorRecording";
+import { SensorRecordingShare } from "./SensorRecordingShare";
 import { useAimTracking, type AimMissReason } from "./useAimTracking";
 import { subscribeVolumeFire } from "./volumeFireTrigger";
 
+const ACCELEROMETER_INTERVAL_MS = 150;
 const COUNTDOWN_VALUES = [3, 2, 1] as const;
 const COUNTDOWN_TICK_MS = 1000;
 /** Fixed 3-2-1 countdown: one second per tick, FIRE on zero. Never random. */
@@ -126,7 +137,32 @@ export function PreRound({
       latestAimRef.current = diagnostics;
     }
   );
-  const pitchMonitor = useMemo(() => new PitchMonitor(), []);
+  const initialCalibrationRef = useRef(calibration);
+  const recording = useMemo(() => new SensorRecording(), []);
+  const pitchMonitor = useMemo(
+    () => new PitchMonitor(undefined, recording),
+    [recording]
+  );
+  useEffect(() => {
+    recording.start("round", {
+      calibration: initialCalibrationRef.current,
+      requestedIntervalsMs: {
+        deviceMotion: SENSOR_UPDATE_INTERVAL_MS,
+        accelerometer: ACCELEROMETER_INTERVAL_MS
+      },
+      thresholds: {
+        bodyshotMinF: BODYSHOT_MIN_F,
+        bodyshotMaxF: BODYSHOT_MAX_F,
+        headshotMaxF: BODYSHOT_MAX_F + HEADSHOT_DELTA_F,
+        aimToleranceDegrees: AIM_TOLERANCE_DEGREES,
+        falseStart: FALSE_START_SPEC,
+        fireWindowMs: FIRE_WINDOW_MS
+      }
+    });
+    return () => {
+      void recording.finish("unmounted");
+    };
+  }, [recording]);
   const [pitchStatus, setPitchStatus] = useState<
     PitchMonitorStartResult | "starting"
   >("starting");
@@ -134,6 +170,12 @@ export function PreRound({
   const [falseStartPlayer, setFalseStartPlayer] = useState<
     "self" | "opponent" | null
   >(null);
+  const selfViolationRef = useRef<{
+    atMs: number;
+    kind: "warning" | "falseStart";
+  } | null>(null);
+  const clockOffsetRef = useRef(clockOffsetMs);
+  clockOffsetRef.current = clockOffsetMs;
   const attemptRef = useRef(0);
   const cancelledAttemptRef = useRef(-1);
   const [selfZone, setSelfZone] = useState<Zone>("miss");
@@ -165,7 +207,25 @@ export function PreRound({
 
   useEffect(() => {
     const unsubscribe = falseStarts.onOutcome((outcome) => {
+      if (
+        role === "host" &&
+        phaseRef.current === "fire" &&
+        outcome.playerId !== selfPlayerId
+      ) {
+        if (outcome.atMs - clockOffsetRef.current < firedAtRef.current) {
+          setFalseStartPlayer("opponent");
+        } else {
+          falseStarts.discardViolation(outcome.playerId);
+        }
+        return;
+      }
       if (phaseRef.current !== "countdown") return;
+      if (outcome.playerId === selfPlayerId)
+        selfViolationRef.current = { atMs: outcome.atMs, kind: outcome.kind };
+      recording.mark("falseStart", {
+        attempt: attemptRef.current,
+        local: outcome.playerId === selfPlayerId
+      });
       cancelledAttemptRef.current = attemptRef.current;
       phaseRef.current = "position";
       timersRef.current.forEach(clearTimeout);
@@ -186,7 +246,7 @@ export function PreRound({
       unsubscribe();
       falseStarts.endRound();
     };
-  }, [falseStarts, selfPlayerId]);
+  }, [falseStarts, selfPlayerId, role, recording]);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [topEdgeDown, setTopEdgeDown] = useState(false);
   const [motionDenied, setMotionDenied] = useState(false);
@@ -288,6 +348,19 @@ export function PreRound({
   useEffect(
     () =>
       fireCoordinator.onFire((signal) => {
+        if (
+          role === "guest" &&
+          selfViolationRef.current !== null &&
+          selfViolationRef.current.atMs >= signal.atMs
+        ) {
+          falseStarts.discardViolation(
+            selfPlayerId,
+            selfViolationRef.current.kind
+          );
+          selfViolationRef.current = null;
+          setFalseStartPlayer(null);
+        }
+        recording.mark("fireCue", { scheduledApplicationAtMs: signal.atMs });
         firedAtRef.current = signal.atMs;
         reactionTimerRef.current.start(signal.atMs);
         falseStarts.markFire(signal.atMs);
@@ -298,7 +371,7 @@ export function PreRound({
           Haptics.NotificationFeedbackType.Success
         );
       }),
-    [fireCoordinator, falseStarts]
+    [fireCoordinator, falseStarts, role, selfPlayerId, recording]
   );
 
   const recheckMotion = useCallback(() => {
@@ -320,9 +393,11 @@ export function PreRound({
       if (!mounted) return;
       setMotionDenied(!permission.granted);
       if (!permission.granted) return;
-      Accelerometer.setUpdateInterval(150);
-      subscription = Accelerometer.addListener(({ x, y, z }) => {
+      Accelerometer.setUpdateInterval(ACCELEROMETER_INTERVAL_MS);
+      subscription = Accelerometer.addListener((reading) => {
         if (!mounted) return;
+        const { x, y, z } = reading;
+        recording.sample("falseStartAccelerometer", reading);
         setTopEdgeDown(isTopEdgeDown(x, y, z));
         if (phaseRef.current === "countdown") {
           try {
@@ -340,7 +415,7 @@ export function PreRound({
       mounted = false;
       subscription?.remove();
     };
-  }, [motionAttempt, falseStarts]);
+  }, [motionAttempt, falseStarts, recording]);
 
   useEffect(() => {
     // Duel cues must be audible even with the iOS silent switch on —
@@ -359,9 +434,11 @@ export function PreRound({
             phaseRef.current !== "waiting"
           )
             return;
+          recording.mark("countdownStart", { attempt: message.attempt ?? 0 });
           attemptRef.current = message.attempt ?? 0;
           falseStarts.arm(attemptRef.current);
           setFalseStartPlayer(null);
+          selfViolationRef.current = null;
         } else if (
           (message.attempt ?? 0) !== attemptRef.current ||
           phaseRef.current !== "countdown"
@@ -394,7 +471,7 @@ export function PreRound({
         setOpponentShotResolved(true);
       }
     });
-  }, [channel, falseStarts, matchId, roundNumber]);
+  }, [channel, falseStarts, matchId, roundNumber, recording]);
 
   // Close only our capture window. A peer packet can arrive arbitrarily later;
   // wait for their captured shot or explicit no-shot instead of guessing.
@@ -428,6 +505,12 @@ export function PreRound({
     const report = () => {
       if (reportedRef.current) return;
       reportedRef.current = true;
+      recording.mark("roundEnd", {
+        selfReactionMs,
+        selfZone,
+        falseStartPlayer
+      });
+      void recording.finish("completed");
       setPhase("done");
       onRoundShots({
         selfReactionMs,
@@ -452,10 +535,12 @@ export function PreRound({
     selfMissReason,
     opponentMissReason,
     opponentShotResolved,
-    windowClosed
+    windowClosed,
+    recording
   ]);
 
-  const handleFire = () => {
+  const handleFire = (source: "button" | "volume" = "button") => {
+    recording.mark("fireInput", { source, phase: phaseRef.current });
     if (phase !== "fire") {
       if (phase === "countdown") {
         try {
@@ -529,6 +614,7 @@ export function PreRound({
       })
     )
       return;
+    recording.mark("countdownStart", { attempt: attemptRef.current });
     onCountdownStart();
     setFalseStartPlayer(null);
     setPhase("countdown");
@@ -635,7 +721,7 @@ export function PreRound({
         }
         return;
       }
-      handleFireRef.current();
+      handleFireRef.current("volume");
     });
   }, [phase]);
 
@@ -762,6 +848,10 @@ export function PreRound({
           />
         )}
       </View>
+      {__DEV__ &&
+        (phase === "position" || phase === "waiting" || phase === "done") && (
+          <SensorRecordingShare />
+        )}
       <View style={styles.actions}>
         {!motionDenied &&
           pitchStatus !== "started" &&
@@ -801,7 +891,7 @@ export function PreRound({
           accessibilityRole="button"
           accessibilityState={{ disabled: windowClosed }}
           disabled={windowClosed}
-          onPress={handleFire}
+          onPress={() => handleFire("button")}
           style={[
             styles.fireOverlay,
             phase === "fire" && styles.fireOverlayActive

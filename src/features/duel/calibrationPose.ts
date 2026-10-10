@@ -1,5 +1,8 @@
 import { Platform } from "react-native";
 
+export const TOP_EDGE_DOWN_Y_G = 0.75;
+export const POSE_AXIS_TOLERANCE_G = 0.35;
+
 /** Keep calibration's ready check identical to the pre-round ready check. */
 export function isTopEdgeDown(
   x: number,
@@ -8,18 +11,23 @@ export function isTopEdgeDown(
   os = Platform.OS
 ): boolean {
   const topEdgePointsDown =
-    (os === "ios" && y > 0.75) || (os === "android" && y < -0.75);
-  return topEdgePointsDown && Math.abs(x) < 0.35 && Math.abs(z) < 0.35;
+    (os === "ios" && y > TOP_EDGE_DOWN_Y_G) ||
+    (os === "android" && y < -TOP_EDGE_DOWN_Y_G);
+  return (
+    topEdgePointsDown &&
+    Math.abs(x) < POSE_AXIS_TOLERANCE_G &&
+    Math.abs(z) < POSE_AXIS_TOLERANCE_G
+  );
 }
 
 /** The top edge is level, regardless of phone roll. */
 export function isTopEdgeForward(_x: number, y: number, _z: number): boolean {
-  return Math.abs(y) < 0.35;
+  return Math.abs(y) < POSE_AXIS_TOLERANCE_G;
 }
 
-const HOLD_MS = 2_000;
-const MAX_SAMPLE_GAP_MS = 500;
-const MAX_PITCH_DRIFT_RAD = 0.12;
+export const HOLD_MS = 2_000;
+export const MAX_SAMPLE_GAP_MS = 500;
+export const MAX_PITCH_DRIFT_RAD = 0.12;
 
 export class PoseHold {
   private sinceMs: number | null = null;
