@@ -5,7 +5,25 @@ import {
 import type { Coordinates, NearbyPlayer } from "../types/map.types";
 
 const METRES_PER_LATITUDE_DEGREE = 111_320;
+const EARTH_RADIUS_METRES = 6_371_000;
 const OVERLAPPING_MARKER_SEPARATION_METRES = 40;
+
+/** Great-circle distance using the original, unshifted map coordinates. */
+export function distanceBetweenCoordinatesMetres(
+  from: Coordinates,
+  to: Coordinates
+): number {
+  const radians = Math.PI / 180;
+  const latitudeDifference = (to.latitude - from.latitude) * radians;
+  const longitudeDifference = (to.longitude - from.longitude) * radians;
+  const haversine =
+    Math.sin(latitudeDifference / 2) ** 2 +
+    Math.cos(from.latitude * radians) *
+      Math.cos(to.latitude * radians) *
+      Math.sin(longitudeDifference / 2) ** 2;
+
+  return 2 * EARTH_RADIUS_METRES * Math.asin(Math.sqrt(Math.min(1, haversine)));
+}
 
 function assertCoordinateInRange(
   value: number,

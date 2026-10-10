@@ -1,11 +1,18 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
+  NEARBY_RADIUS_METRES,
   PRESENCE_HEARTBEAT_MS,
   PRESENCE_STALE_AFTER_MS
 } from "../constants/map.constants";
 import { presenceRepository } from "../services/presenceRepository";
-import type { NearbyPlayer, NearbyPlayersState } from "../types/map.types";
+import type {
+  Coordinates,
+  NearbyPlayer,
+  NearbyPlayersState,
+  VisiblePlayersState
+} from "../types/map.types";
+import { distanceBetweenCoordinatesMetres } from "../utils/map.utils";
 
 function getSubscriptionErrorMessage(error: unknown) {
   if (error instanceof Error && error.message) {
@@ -20,34 +27,31 @@ function isRecent(player: NearbyPlayer, now: number) {
 }
 
 /**
- * Subscribes to every visible player's presence and returns the ones worth
- * drawing on the map: not the current user, and refreshed recently enough.
- * Staleness is re-checked on a timer so players who stop sending heartbeats
- * drop off even without a new snapshot.
+ * Keeps fresh visible players for the map and derives the nearby subset from
+ * the current location. Movement recalculates distance without subscribing
+ * again. The timer only expires resolved presence; it preserves loading and
+ * errors.
  */
 export function useNearbyPlayers(
-  currentUserId: string | null
+  currentUserId: string | null,
+  position: Coordinates | null
 ): NearbyPlayersState {
-  const [state, setState] = useState<NearbyPlayersState>({ status: "loading" });
-  const rawPlayersRef = useRef<NearbyPlayer[]>([]);
+  const [state, setState] = useState<VisiblePlayersState>({
+    status: "loading"
+  });
 
   useEffect(() => {
     setState({ status: "loading" });
-    rawPlayersRef.current = [];
-
-    const applyFilter = () => {
-      const now = Date.now();
-      const players = rawPlayersRef.current.filter(
-        (player) => player.uid !== currentUserId && isRecent(player, now)
-      );
-
-      setState({ status: "ready", players });
-    };
 
     const unsubscribe = presenceRepository.subscribeToVisiblePresence({
       onData: (players) => {
-        rawPlayersRef.current = players;
-        applyFilter();
+        const now = Date.now();
+        setState({
+          status: "ready",
+          players: players.filter(
+            (player) => player.uid !== currentUserId && isRecent(player, now)
+          )
+        });
       },
       onError: (error) => {
         setState({
@@ -57,7 +61,17 @@ export function useNearbyPlayers(
       }
     });
 
-    const staleTimer = setInterval(applyFilter, PRESENCE_HEARTBEAT_MS);
+    const staleTimer = setInterval(() => {
+      const now = Date.now();
+      setState((current) =>
+        current.status === "ready"
+          ? {
+              ...current,
+              players: current.players.filter((player) => isRecent(player, now))
+            }
+          : current
+      );
+    }, PRESENCE_HEARTBEAT_MS);
 
     return () => {
       unsubscribe();
@@ -65,5 +79,15 @@ export function useNearbyPlayers(
     };
   }, [currentUserId]);
 
-  return state;
+  return {
+    ...state,
+    nearbyPlayers:
+      state.status === "ready" && position
+        ? state.players.filter(
+            (player) =>
+              distanceBetweenCoordinatesMetres(position, player.coordinate) <=
+              NEARBY_RADIUS_METRES
+          )
+        : null
+  };
 }
