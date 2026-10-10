@@ -607,58 +607,27 @@ describe("PreRound countdown and draw", () => {
     ]);
   });
 
-  it.each(["tap", "volume", "movement"] as const)(
-    "warns on the first early %s, then disqualifies the second",
-    async (input) => {
-      const {
-        completeRitual,
-        deliver,
-        pressVolume,
-        setReading,
-        shots,
-        view,
-        wait
-      } = await renderPreRound("host");
-      await completeRitual();
-      await wait(500);
-      if (input === "tap") await fireEvent.press(view.getByLabelText("Fire"));
-      else if (input === "volume") await pressVolume("up");
-      else await setReading({ x: 1, y: -1, z: 0 });
-      expect(
-        view.getByText(/moved early. Warning 1 of 1. Restarting round/)
-      ).toBeTruthy();
-      expect(Haptics.notificationAsync).toHaveBeenCalledWith("warning");
-      expect(shots).toHaveLength(0);
-      await wait(1200);
-      expect(view.getByText("3")).toBeTruthy();
-      await fireEvent.press(view.getByLabelText("Fire"));
-      await wait(COUNTDOWN_DURATION_MS);
-      await wait(200);
-      await fireEvent.press(view.getByLabelText("Fire"));
-      await deliver({
-        type: "raised",
-        atMs: 1,
-        reactionMs: 350,
-        zone: "headshot"
-      });
-      await wait(10_000);
-      expect(
-        judgeRoundShots(
-          { id: "host", name: "Host" },
-          { id: "guest", name: "Guest" },
-          shots[0]
-        )
-      ).toEqual({
-        kind: "falseStart",
-        playerId: "host",
-        nonOffenderId: "guest",
-        nonOffenderShot: { reactionMs: 350, zone: "headshot", points: 2 }
-      });
-      expect(shots[0].selfReactionMs).toBeNull();
-    }
-  );
+  it("cancels a first false start and a retry without recording a round", async () => {
+    const { completeRitual, sent, shots, view, wait } =
+      await renderPreRound("host");
+    await completeRitual();
+    await fireEvent.press(view.getByLabelText("Fire"));
+    expect(view.getByText(/You false-started/)).toBeTruthy();
+    expect(view.getByText("CONFIRM")).toBeTruthy();
+    await wait(COUNTDOWN_DURATION_MS + 1200);
+    expect(sent.filter((message) => message.type === "fire")).toHaveLength(0);
+    expect(shots).toHaveLength(0);
 
-  it("shows a peer warning, follows the restarted countdown, and does not record a round", async () => {
+    await fireEvent.press(view.getByText("CONFIRM"));
+    await fireEvent.press(view.getByLabelText("Fire"));
+    expect(view.getByText(/You false-started/)).toBeTruthy();
+    expect(view.getByText("CONFIRM")).toBeTruthy();
+    await wait(COUNTDOWN_DURATION_MS + 1200);
+    expect(sent.filter((message) => message.type === "fire")).toHaveLength(0);
+    expect(shots).toHaveLength(0);
+  });
+
+  it("shows a neutral peer notice and waits for readiness before retry", async () => {
     const { completeRitual, deliver, shots, view } =
       await renderPreRound("guest");
     await completeRitual();
@@ -669,59 +638,46 @@ describe("PreRound countdown and draw", () => {
       attempt: 0,
       count: 1
     });
-    expect(
-      view.getByText(/Opponent moved early. Warning 1 of 1. Restarting round/)
-    ).toBeTruthy();
+    expect(view.getByText(/Opponent false-started/)).toBeTruthy();
+    expect(view.getByText("CONFIRM")).toBeTruthy();
     expect(Haptics.notificationAsync).not.toHaveBeenCalledWith("warning");
     await deliver({ type: "countdown", value: 2 });
-    expect(view.getByText("WARNING")).toBeTruthy();
+    expect(view.queryByText("2")).toBeNull();
+    await deliver({ type: "countdown", value: 3, attempt: 1 });
+    expect(view.queryByText("3")).toBeNull();
+    await fireEvent.press(view.getByText("CONFIRM"));
     await deliver({ type: "countdown", value: 3, attempt: 1 });
     expect(view.getByText("3")).toBeTruthy();
     expect(shots).toHaveLength(0);
   });
 
-  it("does not fire the abandoned countdown after a last-second warning", async () => {
+  it("does not fire the abandoned countdown after a last-second false start", async () => {
     const { completeRitual, sent, shots, view, wait } =
       await renderPreRound("host");
     await completeRitual();
     await wait(COUNTDOWN_DURATION_MS - 100);
     await fireEvent.press(view.getByLabelText("Fire"));
     await wait(100);
-    expect(view.getByText("WARNING")).toBeTruthy();
+    expect(view.getByText(/You false-started/)).toBeTruthy();
     expect(sent.filter((message) => message.type === "fire")).toHaveLength(0);
     expect(shots).toHaveLength(0);
     await wait(1100);
-    expect(view.getByText("3")).toBeTruthy();
+    expect(view.getByText("CONFIRM")).toBeTruthy();
     await wait(COUNTDOWN_DURATION_MS);
-    expect(view.getByText("FIRE!")).toBeTruthy();
-    expect(sent.filter((message) => message.type === "fire")).toHaveLength(1);
+    expect(view.queryByText("FIRE!")).toBeNull();
+    expect(sent.filter((message) => message.type === "fire")).toHaveLength(0);
   });
 
-  it("scores a local headshot after the peer false-starts", async () => {
+  it("does not capture a shot after the peer false-starts", async () => {
     const { completeRitual, deliver, shots, view, wait } =
       await renderPreRound("host");
     await completeRitual();
     await deliver({ type: "falseStart", atMs: Date.now() });
     await wait(COUNTDOWN_DURATION_MS + 200);
-    await act(() =>
-      mockPitchListeners.forEach((listener) =>
-        listener({ rotation: { beta: 1.1 } })
-      )
-    );
-    await fireEvent.press(view.getByLabelText("Fire"));
+    expect(view.getByText(/Opponent false-started/)).toBeTruthy();
+    expect(view.queryByLabelText("Fire")).toBeNull();
     await wait(10_000);
-    expect(
-      judgeRoundShots(
-        { id: "host", name: "Host" },
-        { id: "guest", name: "Guest" },
-        shots[0]
-      )
-    ).toEqual({
-      kind: "falseStart",
-      playerId: "guest",
-      nonOffenderId: "host",
-      nonOffenderShot: { reactionMs: 200, zone: "headshot", points: 2 }
-    });
+    expect(shots).toHaveLength(0);
   });
 
   it("scores a player who never fires as no shot at all", async () => {
