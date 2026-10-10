@@ -97,7 +97,7 @@ export function useForegroundLocation() {
         }
 
         const location = await getCurrentPositionAsync({
-          accuracy: Accuracy.Balanced
+          accuracy: Accuracy.High
         });
 
         if (!isCurrentRequest()) {
@@ -114,7 +114,7 @@ export function useForegroundLocation() {
 
         const subscription = await watchPositionAsync(
           {
-            accuracy: Accuracy.Balanced,
+            accuracy: Accuracy.High,
             distanceInterval: LOCATION_WATCH_DISTANCE_M
           },
           (update) => {

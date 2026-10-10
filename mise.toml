@@ -52,6 +52,43 @@ run = "npx eas-cli@latest build --platform ios --profile production --local"
 alias = "fmt"
 run = [{ task = "treefmt" }, "hk fix --all"]
 
+[tasks.ios-device]
+description = "Build a Release app and install it on a connected iPhone"
+# Uses xcodebuild + devicectl directly: `expo run:ios` needs Simulator.app even
+# for physical devices, and newer Xcode releases no longer bundle it.
+run = '''
+xcodebuild -workspace ios/PocketDraw.xcworkspace -scheme PocketDraw \
+  -configuration Release -destination "id=${usage_udid}" \
+  -derivedDataPath ios/build -allowProvisioningUpdates build
+xcrun devicectl device install app --device "${usage_udid}" \
+  ios/build/Build/Products/Release-iphoneos/PocketDraw.app
+'''
+usage = 'arg "<udid>" help="iPhone UDID from: xcrun devicectl list devices"'
+
+[tasks.ios-prebuild]
+depends_post = ["ios-signing"]
+description = "Generate the iOS project with Expo (append --clean to regenerate it)"
+run = "npx expo prebuild --platform ios --no-install"
+
+[tasks.ios-signing]
+description = "Apply local iOS signing overrides (IOS_DEVELOPMENT_TEAM, IOS_BUNDLE_IDENTIFIER, IOS_PERSONAL_TEAM) from mise.local.toml"
+run = '''
+pbxproj=$(ls ios/*.xcodeproj/project.pbxproj)
+if [ -n "${IOS_DEVELOPMENT_TEAM:-}" ]; then
+  sed -i '' -E "s/DEVELOPMENT_TEAM = [^;]+;/DEVELOPMENT_TEAM = ${IOS_DEVELOPMENT_TEAM};/" "$pbxproj"
+fi
+if [ -n "${IOS_BUNDLE_IDENTIFIER:-}" ]; then
+  sed -i '' -E "s/PRODUCT_BUNDLE_IDENTIFIER = \"?com\.pix-l-crafters\.pocketdraw\"?;/PRODUCT_BUNDLE_IDENTIFIER = \"${IOS_BUNDLE_IDENTIFIER}\";/" "$pbxproj"
+fi
+# Free personal teams cannot sign the hotspot entitlements the duel uses.
+if [ "${IOS_PERSONAL_TEAM:-}" = "1" ]; then
+  for key in com.apple.developer.networking.HotspotConfiguration com.apple.developer.networking.wifi-info; do
+    /usr/libexec/PlistBuddy -c "Delete :${key}" ios/PocketDraw/PocketDraw.entitlements 2>/dev/null || true
+  done
+fi
+grep -E "DEVELOPMENT_TEAM|PRODUCT_BUNDLE_IDENTIFIER" "$pbxproj" | sort -u
+'''
+
 [tasks.local-prepare]
 run = ["npm ci", "gh auth login", { task = "ai-setup" }]
 

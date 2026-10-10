@@ -168,7 +168,7 @@ is adjustable in `AIM_TOLERANCE_DEGREES`, currently ±30°. Heading expires afte
 fail closed to miss, as do positions whose separation does not exceed their
 combined GPS uncertainty radius. Facing away therefore misses regardless of pitch.
 
-Public map presence is rounded to about 110 m and removed on map exit: it does
+Public map presence is rounded to about 10 m (ADR 0002) and removed on map exit: it does
 **not** supply a usable close-range opponent bearing. Precise
 latitude/longitude/accuracy is intentionally exchanged only with the accepted
 peer over `DuelChannel` (`aimPosition`), never written as precise GPS to Firestore.
