@@ -66,7 +66,10 @@ export function MapScreen({ currentUser }: MapScreenProps) {
   );
   const visiblePlayers =
     nearbyPlayersState.status === "ready" ? nearbyPlayersState.players : [];
-  const displayedPlayers = spreadOverlappingPlayerMarkers(visiblePlayers);
+  const displayedPlayers = spreadOverlappingPlayerMarkers(
+    visiblePlayers,
+    userCoordinate
+  );
   const [selectedPlayerUid, setSelectedPlayerUid] = useState<string | null>(
     null
   );

@@ -63,10 +63,12 @@ function coordinateKey({ latitude, longitude }: Coordinates) {
 
 /**
  * Gives players sharing one privacy-coarsened location separate display pins.
+ * Players sharing the user's rounded location spread around their fixed pin.
  * The offset is visual only; published presence coordinates remain unchanged.
  */
 export function spreadOverlappingPlayerMarkers(
-  players: NearbyPlayer[]
+  players: NearbyPlayer[],
+  userCoordinate: Coordinates | null = null
 ): NearbyPlayer[] {
   const groups = new Map<string, NearbyPlayer[]>();
 
@@ -78,19 +80,32 @@ export function spreadOverlappingPlayerMarkers(
   });
 
   const displayCoordinateByUid = new Map<string, Coordinates>();
+  const userKey = userCoordinate
+    ? coordinateKey(coarsenCoordinates(userCoordinate))
+    : null;
 
-  groups.forEach((group) => {
-    if (group.length === 1) {
+  groups.forEach((group, key) => {
+    const includesUser = key === userKey;
+    if (group.length === 1 && !includesUser) {
       return;
     }
 
     const sortedGroup = [...group].sort((left, right) =>
       left.uid.localeCompare(right.uid)
     );
-    const latitude = sortedGroup[0].coordinate.latitude;
-    const radiusMetres =
-      OVERLAPPING_MARKER_SEPARATION_METRES /
-      (2 * Math.sin(Math.PI / sortedGroup.length));
+    const center =
+      includesUser && userCoordinate
+        ? userCoordinate
+        : sortedGroup[0].coordinate;
+    const latitude = center.latitude;
+    const playerRadiusMetres =
+      sortedGroup.length === 1
+        ? OVERLAPPING_MARKER_SEPARATION_METRES
+        : OVERLAPPING_MARKER_SEPARATION_METRES /
+          (2 * Math.sin(Math.PI / sortedGroup.length));
+    const radiusMetres = includesUser
+      ? Math.max(OVERLAPPING_MARKER_SEPARATION_METRES, playerRadiusMetres)
+      : playerRadiusMetres;
     const latitudeRadius = radiusMetres / METRES_PER_LATITUDE_DEGREE;
     const longitudeRadius =
       radiusMetres /
@@ -101,9 +116,8 @@ export function spreadOverlappingPlayerMarkers(
       const angle = (2 * Math.PI * index) / sortedGroup.length - Math.PI / 2;
 
       displayCoordinateByUid.set(player.uid, {
-        latitude: player.coordinate.latitude + latitudeRadius * Math.sin(angle),
-        longitude:
-          player.coordinate.longitude + longitudeRadius * Math.cos(angle)
+        latitude: center.latitude + latitudeRadius * Math.sin(angle),
+        longitude: center.longitude + longitudeRadius * Math.cos(angle)
       });
     });
   });
