@@ -1,5 +1,8 @@
 export const PUBLIC_LOCATION_DECIMAL_PLACES = 3;
 
+/** Inclusive radius for the nearby count, using published player locations. */
+export const NEARBY_RADIUS_METRES = 500;
+
 /** Minimum movement (metres) before the OS reports a new position. */
 export const LOCATION_WATCH_DISTANCE_M = 10;
 
