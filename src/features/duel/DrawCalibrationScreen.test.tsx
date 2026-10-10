@@ -25,10 +25,27 @@ type MotionReading = {
 };
 
 const mockMotionListeners = new Set<(reading: MotionReading) => void>();
+const initialAppState = AppState.currentState;
+const mockImpact = jest.fn(async (_style: string) => undefined);
+const mockSuccess = jest.fn(async (_type: string) => undefined);
+const mockPlay = jest.fn();
+const mockSeek = jest.fn(async (): Promise<void> => undefined);
 let mockAvailable = true;
 let mockGranted = true;
 let mockStartupError = false;
 let mockPermissionWait: Promise<void> | null = null;
+
+jest.mock("expo-haptics", () => ({
+  ImpactFeedbackStyle: { Heavy: "heavy", Light: "light" },
+  NotificationFeedbackType: { Success: "success" },
+  impactAsync: (style: string) => mockImpact(style),
+  notificationAsync: (type: string) => mockSuccess(type)
+}));
+
+jest.mock("expo-audio", () => ({
+  setAudioModeAsync: async () => undefined,
+  useAudioPlayer: () => ({ seekTo: mockSeek, play: mockPlay })
+}));
 
 jest.mock("expo-sensors", () => ({
   DeviceMotion: {
@@ -93,9 +110,16 @@ describe("DrawCalibrationScreen", () => {
     mockGranted = true;
     mockStartupError = false;
     mockPermissionWait = null;
+    AppState.currentState = "active";
+    mockImpact.mockClear();
+    mockSuccess.mockClear();
+    mockPlay.mockClear();
+    mockSeek.mockReset();
+    mockSeek.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
+    AppState.currentState = initialAppState;
     jest.useRealTimers();
     jest.restoreAllMocks();
   });
@@ -122,6 +146,117 @@ describe("DrawCalibrationScreen", () => {
       thetaShoulder: 1.2
     });
     expect(mockMotionListeners.size).toBe(0);
+  });
+
+  it("increases shoulder proximity pulses and confirms only accepted captures", async () => {
+    const { view } = await renderCalibration();
+    await fireEvent.press(view.getByText("Start calibration"));
+    await setPitch(0.2);
+    expect(mockImpact).not.toHaveBeenCalled();
+
+    await fireEvent.press(view.getByText("Capture ready pose"));
+    expect(mockSuccess).toHaveBeenCalledTimes(1);
+    expect(mockPlay).toHaveBeenCalledTimes(1);
+
+    await setPitch(0.2);
+    await act(() => jest.advanceTimersByTime(300));
+    const farCount = mockImpact.mock.calls.length;
+    expect(farCount).toBeGreaterThan(1);
+
+    await setPitch(0.23);
+    await act(() => jest.advanceTimersByTime(300));
+    const approachingCount = mockImpact.mock.calls.length - farCount;
+    await setPitch(0.245);
+    await act(() => jest.advanceTimersByTime(300));
+    const nearCount =
+      mockImpact.mock.calls.length - farCount - approachingCount;
+    expect(nearCount).toBeGreaterThan(approachingCount);
+
+    await fireEvent.press(view.getByText("Capture shoulder pose"));
+    expect(view.getByText(/The poses are too similar/)).toBeTruthy();
+    expect(mockSuccess).toHaveBeenCalledTimes(1);
+    expect(mockPlay).toHaveBeenCalledTimes(1);
+
+    await setPitch(0.3);
+    await fireEvent.press(view.getByText("Capture shoulder pose"));
+    expect(mockSuccess).toHaveBeenCalledTimes(2);
+    expect(mockPlay).toHaveBeenCalledTimes(2);
+    const countAtPass = mockImpact.mock.calls.length;
+    await act(() => jest.advanceTimersByTime(1_000));
+    expect(mockImpact).toHaveBeenCalledTimes(countAtPass);
+    await view.unmount();
+    expect(mockMotionListeners.size).toBe(0);
+  });
+
+  it("stops proximity feedback while the app is backgrounded", async () => {
+    const appStateListeners: ((state: AppStateStatus) => void)[] = [];
+    jest
+      .spyOn(AppState, "addEventListener")
+      .mockImplementation((_event, listener) => {
+        appStateListeners.push(listener);
+        return { remove: () => undefined };
+      });
+    const { view } = await renderCalibration();
+    await fireEvent.press(view.getByText("Start calibration"));
+    await setPitch(0.2);
+    await fireEvent.press(view.getByText("Capture ready pose"));
+    await setPitch(0.2);
+    expect(mockImpact).toHaveBeenCalled();
+
+    await act(() =>
+      appStateListeners.forEach((listener) => listener("background"))
+    );
+    const countAtPause = mockImpact.mock.calls.length;
+    await setPitch(0.22);
+    await act(() => jest.advanceTimersByTime(1_000));
+    expect(mockImpact).toHaveBeenCalledTimes(countAtPause);
+    await view.unmount();
+  });
+
+  it("allows calibration to finish when confirmation audio fails", async () => {
+    mockSeek.mockRejectedValue(new Error("audio unavailable"));
+    const { view, onComplete } = await renderCalibration();
+    await fireEvent.press(view.getByText("Start calibration"));
+    await setPitch(0.2);
+    await fireEvent.press(view.getByText("Capture ready pose"));
+    await setPitch(0.3);
+    await fireEvent.press(view.getByText("Capture shoulder pose"));
+    await fireEvent.press(view.getByText("Continue"));
+
+    expect(onComplete).toHaveBeenCalledWith({
+      thetaReady: 0.2,
+      thetaShoulder: 0.3
+    });
+    expect(mockSuccess).toHaveBeenCalledTimes(2);
+  });
+
+  it("starts the confirmation sound without waiting for an audio seek", async () => {
+    mockSeek.mockImplementation(() => new Promise<void>(() => undefined));
+    const { view } = await renderCalibration();
+    await fireEvent.press(view.getByText("Start calibration"));
+    await setPitch(0.2);
+    await fireEvent.press(view.getByText("Capture ready pose"));
+
+    expect(mockPlay).toHaveBeenCalledTimes(1);
+    await view.unmount();
+  });
+
+  it("does not start proximity feedback when opened in the background", async () => {
+    const originalState = AppState.currentState;
+    AppState.currentState = "background";
+    try {
+      const { view } = await renderCalibration();
+      await fireEvent.press(view.getByText("Start calibration"));
+      await setPitch(0.2);
+      await fireEvent.press(view.getByText("Capture ready pose"));
+      await setPitch(0.2);
+      await act(() => jest.advanceTimersByTime(500));
+
+      expect(mockImpact).not.toHaveBeenCalled();
+      await view.unmount();
+    } finally {
+      AppState.currentState = originalState;
+    }
   });
 
   it.each([
