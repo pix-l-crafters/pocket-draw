@@ -1,6 +1,6 @@
-amends "package://github.com/jdx/hk/releases/download/v2.3.0/hk@2.3.0#/Config.pkl"
+amends "package://github.com/jdx/hk/releases/download/v2.5.0/hk@2.5.0#/Config.pkl"
 
-import "package://github.com/jdx/hk/releases/download/v2.3.0/hk@2.3.0#/Builtins.pkl"
+import "package://github.com/jdx/hk/releases/download/v2.5.0/hk@2.5.0#/Builtins.pkl"
 
 local linters = new Mapping<String, Step> {
   ["betterleaks"] = Builtins.betterleaks
@@ -44,7 +44,7 @@ local linters = new Mapping<String, Step> {
     types = List("markdown")
   }
   ["tombi"] = Builtins.tombi
-  ["tombi-format"] = Builtins.tombi_format
+  ["tombi-format"] = (Builtins.tombi_format) { depends = List("toml-sort") }
   ["toml-sort"] {
     fix = "toml-sort --in-place --sort-table-keys --sort-inline-tables {{files}}"
     check = "toml-sort --check --sort-table-keys --sort-inline-tables {{files}}"

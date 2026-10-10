@@ -258,7 +258,7 @@ url_api = "https://api.github.com/repos/cocogitto/cocogitto/releases/assets/3666
 
 [[tools.cspell]]
 version = "10.3.6"
-aube = { path = ".mise/locks/cspell/10.3.6", digest = "sha256:cd103a0178131bdbcdeaf1c6012cfcd3240d9bb1da1fdf054c06feea5d651e96" }
+aube = { path = ".mise/locks/cspell/10.3.6", digest = "sha256:7a5e551ee1f7b266578081017cbd67f2765f3ddf0ca343d4d45c582e2e23f633" }
 backend = "npm:cspell"
 specifiers = ["latest"]
 
@@ -689,15 +689,9 @@ url = "https://registry.npmjs.org/npm/-/npm-12.2.0.tgz"
 [tools.npm."platforms.macos-x64"]
 url = "https://registry.npmjs.org/npm/-/npm-12.2.0.tgz"
 
-[[tools."npm:sort-package-json"]]
-version = "4.0.0"
-aube = { path = ".mise/locks/npm-sort-package-json/4.0.0", digest = "sha256:2de77ad8c040659272b1d6208b2f675fb5216614eb08c1e6b481d7fd9576eb29" }
-backend = "npm:sort-package-json"
-specifiers = ["latest"]
-
 [[tools.oxfmt]]
 version = "0.72.0"
-aube = { path = ".mise/locks/oxfmt/0.72.0", digest = "sha256:8cff19be82a82e83efe243f08fd8bf1a2a2f635f10384d070d7956209ddd9b44" }
+aube = { path = ".mise/locks/oxfmt/0.72.0", digest = "sha256:97a234b5e91436bb1aa7148a43770ee1627907425357e7981554ffbf4658091e" }
 backend = "npm:oxfmt"
 specifiers = ["latest"]
 
