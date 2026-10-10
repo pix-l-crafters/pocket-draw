@@ -2,7 +2,15 @@ import { setAudioModeAsync, useAudioPlayer } from "expo-audio";
 import * as Haptics from "expo-haptics";
 import { Accelerometer } from "expo-sensors";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AppState, Platform, StyleSheet, Text, View } from "react-native";
+import {
+  AppState,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View
+} from "react-native";
 
 import { CutCornerButton } from "../../components/CutCornerButton";
 import { CutCornerSurface } from "../../components/CutCornerSurface";
@@ -20,6 +28,7 @@ import { subscribeVolumeFire } from "./volumeFireTrigger";
 
 const MIN_CALIBRATION_ARC_RAD = 0.05;
 const MAX_CONFIRM_SAMPLE_AGE_MS = 350;
+const MIN_POSE_TEXT_WIDTH = 140;
 
 type TiltReading = { x: number; y: number; z: number; atMs: number };
 
@@ -68,6 +77,8 @@ export function DrawCalibrationScreen({
   clockCalibrationStatus,
   onRetryClockCalibration
 }: DrawCalibrationScreenProps) {
+  const { fontScale } = useWindowDimensions();
+  const poseTextLayout = { flexBasis: MIN_POSE_TEXT_WIDTH * fontScale };
   const confirmationAudio = useAudioPlayer(
     require("../../../assets/audio/pose-confirmation.wav")
   );
@@ -301,7 +312,11 @@ export function DrawCalibrationScreen({
             : "Retry";
 
   return (
-    <View style={styles.screen}>
+    <ScrollView
+      contentContainerStyle={styles.content}
+      style={styles.screen}
+      testID="draw-calibration-scroll"
+    >
       <ScreenHeader
         kicker="Draw calibration"
         subtitle="Hold each guided pose for two seconds or press volume up. Press volume up to continue."
@@ -310,27 +325,31 @@ export function DrawCalibrationScreen({
 
       <CutCornerSurface style={styles.instructionCard}>
         <View style={styles.stepRow}>
-          <Text style={styles.stepNumber}>
-            {status === "shoulder" || status === "passed" ? "✓" : "01"}
-          </Text>
-          <PoseIllustration
-            active={status === "ready"}
-            pose="ready"
-          />
-          <Text style={styles.stepText}>
+          <View style={styles.stepVisual}>
+            <Text style={styles.stepNumber}>
+              {status === "shoulder" || status === "passed" ? "✓" : "01"}
+            </Text>
+            <PoseIllustration
+              active={status === "ready"}
+              pose="ready"
+            />
+          </View>
+          <Text style={[styles.stepText, poseTextLayout]}>
             Phone down at your side, top edge toward the ground.
           </Text>
         </View>
         <View style={styles.divider} />
         <View style={styles.stepRow}>
-          <Text style={styles.stepNumber}>
-            {status === "passed" ? "✓" : "02"}
-          </Text>
-          <PoseIllustration
-            active={status === "shoulder"}
-            pose="shoulder"
-          />
-          <Text style={styles.stepText}>
+          <View style={styles.stepVisual}>
+            <Text style={styles.stepNumber}>
+              {status === "passed" ? "✓" : "02"}
+            </Text>
+            <PoseIllustration
+              active={status === "shoulder"}
+              pose="shoulder"
+            />
+          </View>
+          <Text style={[styles.stepText, poseTextLayout]}>
             Phone at shoulder height, top edge pointing forward.
           </Text>
         </View>
@@ -385,14 +404,17 @@ export function DrawCalibrationScreen({
           />
         ) : null}
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
     backgroundColor: colors.background,
-    flex: 1,
+    flex: 1
+  },
+  content: {
+    flexGrow: 1,
     padding: 24
   },
   instructionCard: {
@@ -400,6 +422,12 @@ const styles = StyleSheet.create({
     padding: 20
   },
   stepRow: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 16
+  },
+  stepVisual: {
     alignItems: "flex-start",
     flexDirection: "row",
     gap: 16
@@ -412,7 +440,9 @@ const styles = StyleSheet.create({
   },
   stepText: {
     color: colors.text,
-    flex: 1,
+    flexGrow: 1,
+    // Cap width instead of shrinking so Yoga keeps the basis when wrapping.
+    maxWidth: "100%",
     fontFamily: fonts.body,
     fontSize: 16,
     lineHeight: 22

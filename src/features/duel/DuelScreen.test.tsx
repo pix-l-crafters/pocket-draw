@@ -106,12 +106,13 @@ describe("DuelScreen clock calibration", () => {
       },
       reconnect: () => Promise.reject(new Error("unused"))
     });
+    const onExit = jest.fn();
     const view = await render(
       <PaperProvider theme={appTheme}>
         <DuelScreen
           link={link}
           matchId="match"
-          onExit={() => undefined}
+          onExit={onExit}
           opponent={{ id: "host", name: "Host" }}
           role="guest"
           self={{ id: "guest", name: "Guest" }}
@@ -119,7 +120,8 @@ describe("DuelScreen clock calibration", () => {
       </PaperProvider>
     );
 
-    expect(view.getByText("Exit")).toBeTruthy();
+    expect(view.getByRole("button", { name: "Exit duel" })).toBeTruthy();
+    expect(view.queryByText("Exit")).toBeNull();
     await fireEvent.press(view.getByText("I'm Ready"));
     expect(view.queryByText("STAND APART")).toBeNull();
     await fireEvent.press(view.getByText("Start calibration"));
@@ -151,7 +153,9 @@ describe("DuelScreen clock calibration", () => {
     await fireEvent.press(view.getByText("Continue"));
     expect(view.getByText("STAND APART")).toBeTruthy();
     expect(view.queryByText("CALIBRATING CLOCKS")).toBeNull();
-    expect(view.getByText("Exit")).toBeTruthy();
+    await fireEvent.press(view.getByRole("button", { name: "Exit duel" }));
+    expect(link.status()).toBe("closed");
+    expect(onExit).toHaveBeenCalledTimes(1);
 
     await view.unmount();
     let pongReceived = false;
@@ -161,6 +165,39 @@ describe("DuelScreen clock calibration", () => {
     peerChannel.send({ type: "clockPing", t0: Date.now() });
     expect(pongReceived).toBe(false);
     peer.dispose();
+  });
+
+  it("lets the player close the duel while reading instructions", async () => {
+    const [duelChannel] = createMockDuelChannelPair();
+    const disconnect = jest.fn();
+    const link = createDuelLink({
+      connection: {
+        channel: duelChannel,
+        onDrop: () => undefined,
+        disconnect
+      },
+      reconnect: () => Promise.reject(new Error("unused"))
+    });
+    const onExit = jest.fn();
+    const view = await render(
+      <PaperProvider theme={appTheme}>
+        <DuelScreen
+          link={link}
+          matchId="match"
+          onExit={onExit}
+          opponent={{ id: "host", name: "Host" }}
+          role="guest"
+          self={{ id: "guest", name: "Guest" }}
+        />
+      </PaperProvider>
+    );
+    expect(view.getByText("How to play")).toBeTruthy();
+    expect(view.queryByText("Exit")).toBeNull();
+    await fireEvent.press(view.getByRole("button", { name: "Exit duel" }));
+    expect(link.status()).toBe("closed");
+    expect(link.channel.isConnected()).toBe(false);
+    expect(disconnect).toHaveBeenCalledTimes(1);
+    expect(onExit).toHaveBeenCalledTimes(1);
   });
 
   it.each([
@@ -214,7 +251,7 @@ describe("DuelScreen clock calibration", () => {
       expect(link.status()).toBe("live");
       expect(onExit).not.toHaveBeenCalled();
 
-      await fireEvent.press(view.getByText("Exit"));
+      await fireEvent.press(view.getByRole("button", { name: "Exit duel" }));
       expect(link.status()).toBe("closed");
       expect(link.channel.isConnected()).toBe(false);
       expect(onExit).toHaveBeenCalledTimes(1);

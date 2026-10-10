@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Platform, StyleSheet, View } from "react-native";
 
-import { CutCornerButton } from "../../components/CutCornerButton";
 import type { DuelMessage } from "../../contracts/duelChannel";
 import type { DuelLink } from "../../contracts/duelLink";
 import type {
@@ -12,6 +11,7 @@ import type {
 import type { MatchResult } from "../../contracts/matchResult";
 import type { RoundOutcome } from "../../contracts/roundOutcome";
 import { useMatchAnalytics } from "../../hooks/useMatchAnalytics";
+import { colors } from "../../theme/tokens";
 import {
   subscribeMatchResultStatus,
   submitMatchResult
@@ -27,6 +27,7 @@ import {
   DuelConnectionScreen,
   type DuelConnectionState
 } from "./DuelConnectionScreen";
+import { DuelExitButton } from "./DuelExitButton";
 import { FalseStartCoordinator } from "./falseStartCoordinator";
 import type { DuelRole } from "./fireSignalCoordinator";
 import { GameInstructionsScreen } from "./GameInstructionsScreen";
@@ -570,18 +571,16 @@ export function DuelScreen({
     );
   }
 
-  const exitControl = onExit && (
+  const exitControl = onExit ? (
     <View style={styles.exitRow}>
-      <CutCornerButton
-        label="Exit"
-        onPress={exit}
-      />
+      <DuelExitButton onPress={exit} />
     </View>
-  );
+  ) : null;
 
   if (!instructionsSeen || !calibration) {
     return (
       <View style={styles.container}>
+        {exitControl}
         {!instructionsSeen ? (
           <GameInstructionsScreen
             onContinue={() => setInstructionsSeen(true)}
@@ -593,7 +592,6 @@ export function DuelScreen({
             onRetryClockCalibration={runClockCalibration}
           />
         )}
-        {exitControl}
       </View>
     );
   }
@@ -658,6 +656,7 @@ export function DuelScreen({
 
   return (
     <View style={styles.container}>
+      {exitControl}
       {/* Keyed on the match, round and resume: a fresh PreRound is the round
           reset. */}
       <PreRound
@@ -679,7 +678,6 @@ export function DuelScreen({
         peerReady={peerReady}
         role={role}
       />
-      {exitControl}
     </View>
   );
 }
@@ -689,8 +687,9 @@ const styles = StyleSheet.create({
     flex: 1
   },
   exitRow: {
-    position: "absolute",
-    right: 16,
-    top: 16
+    alignItems: "flex-end",
+    backgroundColor: colors.background,
+    paddingHorizontal: 24,
+    paddingTop: 8
   }
 });
