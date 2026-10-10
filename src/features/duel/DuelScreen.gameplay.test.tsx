@@ -3,13 +3,14 @@
 import { act, fireEvent, render, within } from "@testing-library/react-native";
 import type { LocationHeadingObject, LocationObject } from "expo-location";
 import type { DeviceMotionMeasurement } from "expo-sensors";
-import { Platform, View } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 import { PaperProvider } from "react-native-paper";
 
 import type { MatchResult } from "../../contracts/matchResult";
 import { createMockDuelChannelPair } from "../../contracts/mocks/mockDuelChannel";
 import type { RoundOutcome } from "../../contracts/roundOutcome";
 import { appTheme } from "../../theme/appTheme";
+import { colors } from "../../theme/tokens";
 import { submitMatchResult } from "../backend/matchResultsService";
 import { createDuelLink } from "../challenge/session/duelLink";
 import { DuelScreen } from "./DuelScreen";
@@ -134,6 +135,11 @@ jest.mock("expo-haptics", () => ({
   ImpactFeedbackStyle: { Medium: "medium", Heavy: "heavy" },
   NotificationFeedbackType: { Success: "success" }
 }));
+jest.mock("../backend/matchAnalytics", () => ({
+  submitMatchAnalytics: jest.fn(async () => "written"),
+  subscribeAnalyticsStatus: jest.fn(() => () => undefined)
+}));
+
 jest.mock("../backend/matchResultsService", () => ({
   subscribeMatchResultStatus: jest.fn(() => () => undefined),
   submitMatchResult: jest.fn(async (result: MatchResult) => ({
@@ -342,7 +348,7 @@ describe("DuelScreen real two-phone gameplay", () => {
   });
 
   it.each(["tap", "volume", "movement"] as const)(
-    "agrees on a four-round 5–3 match, including a %s false start and the nonoffender's headshot",
+    "cancels repeated %s false starts before finishing the same fourth round",
     async (earlyInput) => {
       const {
         view,
@@ -449,36 +455,47 @@ describe("DuelScreen real two-phone gameplay", () => {
       };
       await advance(100);
       await offend();
+      expect(phones.host.getByText(/Gil false-started/)).toBeTruthy();
+      expect(phones.guest.getByText(/Gil false-started/)).toBeTruthy();
+      expect(
+        StyleSheet.flatten(
+          phones.host.getByText(/Gil false-started/).props.style
+        ).color
+      ).toBe(colors.textMuted60);
+      expect(
+        StyleSheet.flatten(
+          phones.guest.getByText(/Gil false-started/).props.style
+        ).color
+      ).toBe(colors.warning);
       for (const phone of [phones.host, phones.guest]) {
-        expect(
-          phone.getByText(/Gil moved early. Warning 1 of 1. Restarting round/)
-        ).toBeTruthy();
+        expect(phone.getByText("CONFIRM")).toBeTruthy();
         expect(phone.queryByText("Round 4")).toBeNull();
       }
-      await advance(1200);
+      await advance(3200);
       for (const phone of [phones.host, phones.guest]) {
-        expect(phone.getByText("3")).toBeTruthy();
+        expect(phone.queryByText("FIRE!")).toBeNull();
         expect(phone.queryByText("Round 4")).toBeNull();
       }
+      expect(submitMatchResult).not.toHaveBeenCalled();
+      await press("guest", "CONFIRM");
+      await press("host", "CONFIRM");
       await advance(100);
       await offend();
       for (const phone of [phones.host, phones.guest]) {
-        expect(
-          phone.getByText(
-            "FALSE START — the non-offending player can still shoot at FIRE."
-          )
-        ).toBeTruthy();
+        expect(phone.getByText("CONFIRM")).toBeTruthy();
       }
-      await advance(2900);
+      await advance(3200);
+      expect(submitMatchResult).not.toHaveBeenCalled();
+      await press("guest", "CONFIRM");
+      await press("host", "CONFIRM");
+      await advance(3000);
       await advance(300);
       await shoot("host", 1.1);
-      // The offender cannot turn a post-FIRE shot into points.
-      await shoot("guest", 1.1);
-      await advance(2950);
+      await advance(100);
+      await shoot("guest", 0.9);
       for (const phone of [phones.host, phones.guest]) {
         expect(phone.getByText("Round 4")).toBeTruthy();
-        expect(phone.getByText("Gil false start")).toBeTruthy();
-        expect(phone.getByText(/^2\s*pts$/)).toBeTruthy();
+        expect(phone.getByText("Hana wins")).toBeTruthy();
         expect(phone.getByText(/^300\s*ms$/)).toBeTruthy();
       }
 
@@ -510,10 +527,13 @@ describe("DuelScreen real two-phone gameplay", () => {
           misses: [{ playerId: "host-id", reason: "offTarget" }]
         },
         {
-          kind: "falseStart",
-          playerId: "guest-id",
-          nonOffenderId: "host-id",
-          nonOffenderShot: { reactionMs: 300, zone: "headshot", points: 2 }
+          kind: "win",
+          winnerId: "host-id",
+          winnerZone: "headshot",
+          winnerPoints: 2,
+          loserPoints: 1,
+          reactionMs: 300,
+          opponentReactionMs: 400
         }
       ];
       expect(submitMatchResult).toHaveBeenCalledTimes(2);
@@ -545,11 +565,11 @@ describe("DuelScreen real two-phone gameplay", () => {
           within(phone.getByText("Hana").parent!).getByText("5")
         ).toBeTruthy();
         expect(
-          within(phone.getByText("Gil").parent!).getByText("3")
+          within(phone.getByText("Gil").parent!).getByText("4")
         ).toBeTruthy();
         expect(phone.getByText("Round 2 — Hana · 200ms")).toBeTruthy();
         expect(phone.getByText("Round 3 — Gil · 200ms")).toBeTruthy();
-        expect(phone.getByText("Round 4 — Gil false start")).toBeTruthy();
+        expect(phone.getByText("Round 4 — Hana · 300ms")).toBeTruthy();
         expect(phone.getByText("Result saved")).toBeTruthy();
       }
       await view.unmount();
