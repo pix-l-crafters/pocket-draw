@@ -77,8 +77,8 @@ which builds with Xcode 26, and install that build on the registered iPhone.
 >
 > The tunnel carries the Expo development bundle. Duels still use a direct
 > phone-to-phone connection, so university Wi-Fi client isolation can also block
-> pairing. Use a network that allows devices to reach each other or the app's
-> hotspot mode for a two-phone duel.
+> pairing. Use a network that allows devices to reach each other for a two-phone
+> duel. The Hotspot button is hidden; its implementation remains in the codebase.
 
 ### 5. View it on an Android phone
 

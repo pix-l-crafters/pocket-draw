@@ -428,10 +428,7 @@ export function QrDisplayScreen({
           title="Your QR Code"
         />
         <SegmentedButtons
-          buttons={[
-            { value: "existingWifi", label: "Shared Wi-Fi" },
-            { value: "hotspot", label: "Hotspot" }
-          ]}
+          buttons={[{ value: "existingWifi", label: "Shared Wi-Fi" }]}
           onValueChange={changeConnectionMode}
           value={connectionMode}
         />
