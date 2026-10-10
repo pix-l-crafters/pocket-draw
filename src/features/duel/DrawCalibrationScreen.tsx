@@ -1,7 +1,8 @@
+import { setAudioModeAsync, useAudioPlayer } from "expo-audio";
 import * as Haptics from "expo-haptics";
 import { Accelerometer } from "expo-sensors";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Platform, StyleSheet, Text, View } from "react-native";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AppState, Platform, StyleSheet, Text, View } from "react-native";
 
 import { CutCornerButton } from "../../components/CutCornerButton";
 import { CutCornerSurface } from "../../components/CutCornerSurface";
@@ -14,6 +15,7 @@ import { colors, fonts } from "../../theme/tokens";
 import { isTopEdgeDown, isTopEdgeForward, PoseHold } from "./calibrationPose";
 import { PitchMonitor, type PitchCalibration } from "./pitchMonitor";
 import { PoseIllustration } from "./PoseIllustration";
+import { PoseProximityFeedback } from "./poseProximityFeedback";
 import { subscribeVolumeFire } from "./volumeFireTrigger";
 
 const MIN_CALIBRATION_ARC_RAD = 0.05;
@@ -66,6 +68,20 @@ export function DrawCalibrationScreen({
   clockCalibrationStatus,
   onRetryClockCalibration
 }: DrawCalibrationScreenProps) {
+  const confirmationAudio = useAudioPlayer(
+    require("../../../assets/audio/pose-confirmation.wav")
+  );
+  const proximityFeedback = useMemo(
+    () =>
+      new PoseProximityFeedback((band) => {
+        void Haptics.impactAsync(
+          band === "far"
+            ? Haptics.ImpactFeedbackStyle.Heavy
+            : Haptics.ImpactFeedbackStyle.Light
+        ).catch(() => undefined);
+      }),
+    []
+  );
   const [status, setStatus] = useState<CalibrationStatus>("idle");
   const [poseHint, setPoseHint] = useState<string | null>(null);
   const pitchMonitorRef = useRef<PitchMonitor | null>(null);
@@ -76,6 +92,19 @@ export function DrawCalibrationScreen({
   const thetaReadyRef = useRef<number | null>(null);
   const readyPoseRef = useRef<CalibrationPoseSnapshot | null>(null);
   const calibrationRef = useRef<PitchCalibration | null>(null);
+  const appActiveRef = useRef(AppState.currentState === "active");
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (state) => {
+      appActiveRef.current = state === "active";
+      if (!appActiveRef.current) proximityFeedback.stop();
+    });
+    return () => subscription.remove();
+  }, [proximityFeedback]);
+
+  useEffect(() => {
+    void setAudioModeAsync({ playsInSilentMode: true }).catch(() => undefined);
+  }, []);
 
   const matchesPose = useCallback(
     (stage: "ready" | "shoulder", tilt: TiltReading, theta: number | null) =>
@@ -94,7 +123,19 @@ export function DrawCalibrationScreen({
       if (stage === "passed") return;
       holdRef.current.reset();
       setPoseHint(null);
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      void Haptics.notificationAsync(
+        Haptics.NotificationFeedbackType.Success
+      ).catch(() => undefined);
+      try {
+        void confirmationAudio.seekTo(0).catch(() => undefined);
+      } catch {
+        // A failed seek still allows the short cue to play.
+      }
+      try {
+        confirmationAudio.play();
+      } catch {
+        // Audio is supplementary; a failed sound must not block calibration.
+      }
       const snapshot: CalibrationPoseSnapshot = {
         capturedAtMs: Date.now(),
         confirmation,
@@ -116,27 +157,30 @@ export function DrawCalibrationScreen({
           shoulderPose: snapshot
         };
         stageRef.current = "passed";
+        proximityFeedback.stop();
         accelerometerRef.current?.remove();
         accelerometerRef.current = null;
         pitchMonitorRef.current?.stop();
         setStatus("passed");
       }
     },
-    []
+    [confirmationAudio, proximityFeedback]
   );
 
   useEffect(
     () => () => {
       pitchMonitorRef.current?.stop();
       pitchMonitorRef.current = null;
+      proximityFeedback.dispose();
       accelerometerRef.current?.remove();
       accelerometerRef.current = null;
     },
-    []
+    [proximityFeedback]
   );
 
   const startCalibration = useCallback(async () => {
     pitchMonitorRef.current?.stop();
+    proximityFeedback.stop();
     accelerometerRef.current?.remove();
     accelerometerRef.current = null;
     latestTiltRef.current = null;
@@ -148,7 +192,15 @@ export function DrawCalibrationScreen({
     setPoseHint(null);
     setStatus("starting");
 
-    const pitchMonitor = new PitchMonitor();
+    const pitchMonitor = new PitchMonitor((theta) => {
+      const thetaReady = thetaReadyRef.current;
+      if (thetaReady !== null && appActiveRef.current) {
+        proximityFeedback.update(
+          theta === null ? null : Math.abs(theta - thetaReady),
+          MIN_CALIBRATION_ARC_RAD
+        );
+      }
+    });
     pitchMonitorRef.current = pitchMonitor;
     const result = await pitchMonitor.start();
     if (pitchMonitorRef.current !== pitchMonitor || result === "cancelled") {
@@ -188,7 +240,7 @@ export function DrawCalibrationScreen({
         setStatus("error");
       }
     }
-  }, [completePose, matchesPose]);
+  }, [completePose, matchesPose, proximityFeedback]);
   const handleContinue = useCallback(() => {
     if (status === "passed" && calibrationRef.current) {
       onComplete(calibrationRef.current);
