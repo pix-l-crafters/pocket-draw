@@ -23,12 +23,12 @@ export function DuelExitButton({ onPress }: { onPress: () => void }) {
         >
           <Path
             d="M1 1H47V47H9L1 39Z"
-            fill={pressed ? colors.backgroundAlt : colors.surface}
-            stroke={pressed ? colors.textMuted60 : colors.borderStrong}
+            fill={pressed ? colors.accentPressed : colors.accent}
+            stroke={pressed ? colors.accentPressed : colors.accent}
           />
           <Path
             d="M14 14L34 34M34 14L14 34"
-            stroke={pressed ? colors.text : colors.textMuted60}
+            stroke={colors.background}
             strokeLinecap="round"
             strokeWidth={2}
           />
