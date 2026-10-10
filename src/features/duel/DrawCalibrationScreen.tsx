@@ -20,14 +20,35 @@ import { StatusTag } from "../../components/StatusTag";
 import type { CalibrationPoseSnapshot } from "../../contracts/matchAnalytics";
 import { useForegroundRecheck } from "../../lib/useForegroundRecheck";
 import { colors, fonts } from "../../theme/tokens";
-import { isTopEdgeDown, isTopEdgeForward, PoseHold } from "./calibrationPose";
-import { PitchMonitor, type PitchCalibration } from "./pitchMonitor";
+import {
+  CALIBRATION_WINDOW_MS,
+  MIN_CALIBRATION_READINGS,
+  CalibrationMedian
+} from "./calibrationMedian";
+import {
+  HOLD_MS,
+  MAX_SAMPLE_GAP_MS,
+  MAX_PITCH_DRIFT_RAD,
+  TOP_EDGE_DOWN_Y_G,
+  POSE_AXIS_TOLERANCE_G,
+  isTopEdgeDown,
+  isTopEdgeForward,
+  PoseHold
+} from "./calibrationPose";
+import {
+  SENSOR_UPDATE_INTERVAL_MS,
+  PitchMonitor,
+  type PitchCalibration
+} from "./pitchMonitor";
 import { PoseIllustration } from "./PoseIllustration";
 import { PoseProximityFeedback } from "./poseProximityFeedback";
+import { SensorRecording } from "./sensorRecording";
+import { SensorRecordingShare } from "./SensorRecordingShare";
 import { subscribeVolumeFire } from "./volumeFireTrigger";
 
 const MIN_CALIBRATION_ARC_RAD = 0.05;
-const MAX_CONFIRM_SAMPLE_AGE_MS = 350;
+const MAX_CONFIRM_SAMPLE_AGE_MS = CALIBRATION_WINDOW_MS;
+const ACCELEROMETER_INTERVAL_MS = 100;
 const MIN_POSE_TEXT_WIDTH = 140;
 
 type TiltReading = { x: number; y: number; z: number; atMs: number };
@@ -101,6 +122,8 @@ export function DrawCalibrationScreen({
   const accelerometerRef = useRef<{ remove(): void } | null>(null);
   const latestTiltRef = useRef<TiltReading | null>(null);
   const holdRef = useRef(new PoseHold());
+  const medianRef = useRef(new CalibrationMedian());
+  const recording = useMemo(() => new SensorRecording(), []);
   const stageRef = useRef<"ready" | "shoulder" | "passed">("shoulder");
   const thetaShoulderRef = useRef<number | null>(null);
   const shoulderPoseRef = useRef<CalibrationPoseSnapshot | null>(null);
@@ -112,7 +135,12 @@ export function DrawCalibrationScreen({
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (state) => {
       appActiveRef.current = state === "active";
-      if (!appActiveRef.current) proximityFeedback.stop();
+      if (!appActiveRef.current) {
+        proximityFeedback.stop();
+        medianRef.current.clear();
+        holdRef.current.reset();
+        latestTiltRef.current = null;
+      }
     });
     return () => subscription.remove();
   }, [proximityFeedback]);
@@ -134,9 +162,39 @@ export function DrawCalibrationScreen({
   );
 
   const completePose = useCallback(
-    (theta: number, confirmation: "hold" | "volume" = "hold") => {
-      if (pausedRef.current || stageRef.current === "passed") return;
+    (confirmation: "hold" | "volume" = "hold") => {
+      if (
+        pausedRef.current ||
+        !appActiveRef.current ||
+        stageRef.current === "passed"
+      )
+        return;
       const stage = stageRef.current;
+      const estimate = medianRef.current.estimate(Date.now());
+      if (!estimate) {
+        setPoseHint("Hold the pose briefly so we can capture a few readings.");
+        return;
+      }
+      const theta = estimate.pitch;
+      if (
+        stage === "ready" &&
+        Math.abs(theta - thetaShoulderRef.current!) < MIN_CALIBRATION_ARC_RAD
+      ) {
+        setPoseHint(
+          "Point the top edge down and lower the phone from shoulder height first."
+        );
+        return;
+      }
+      recording.mark("poseConfirmation", {
+        pose: stage,
+        confirmation,
+        latestOriginalPitch:
+          pitchMonitorRef.current?.snapshot()?.rotation?.beta ?? null,
+        medianPitch: theta,
+        contributingReadings: estimate.count,
+        spanMs: estimate.spanMs
+      });
+      medianRef.current.clear();
       holdRef.current.reset();
       setPoseHint(null);
       void Haptics.notificationAsync(
@@ -164,6 +222,7 @@ export function DrawCalibrationScreen({
         thetaShoulderRef.current = theta;
         shoulderPoseRef.current = snapshot;
         stageRef.current = "ready";
+        recording.mark("poseChange", { pose: "ready" });
         setStatus("ready");
       } else {
         calibrationRef.current = {
@@ -173,6 +232,9 @@ export function DrawCalibrationScreen({
           shoulderPose: shoulderPoseRef.current!
         };
         stageRef.current = "passed";
+        void recording.finish("completed", {
+          calibration: calibrationRef.current
+        });
         proximityFeedback.stop();
         accelerometerRef.current?.remove();
         accelerometerRef.current = null;
@@ -180,22 +242,44 @@ export function DrawCalibrationScreen({
         setStatus("passed");
       }
     },
-    [confirmationAudio, proximityFeedback]
+    [confirmationAudio, proximityFeedback, recording]
   );
 
   useEffect(
     () => () => {
       pitchMonitorRef.current?.stop();
       pitchMonitorRef.current = null;
+      medianRef.current.clear();
+      void recording.finish("unmounted");
       proximityFeedback.dispose();
       accelerometerRef.current?.remove();
       accelerometerRef.current = null;
     },
-    [proximityFeedback]
+    [proximityFeedback, recording]
   );
 
   const startCalibration = useCallback(async () => {
     pitchMonitorRef.current?.stop();
+    medianRef.current.clear();
+    void recording.finish("restarted");
+    recording.start("calibration", {
+      requestedIntervalsMs: {
+        deviceMotion: SENSOR_UPDATE_INTERVAL_MS,
+        accelerometer: ACCELEROMETER_INTERVAL_MS
+      },
+      thresholds: {
+        minCalibrationArcRad: MIN_CALIBRATION_ARC_RAD,
+        sampleFreshnessMs: MAX_CONFIRM_SAMPLE_AGE_MS,
+        medianWindowMs: CALIBRATION_WINDOW_MS,
+        minMedianReadings: MIN_CALIBRATION_READINGS,
+        holdMs: HOLD_MS,
+        maxHoldSampleGapMs: MAX_SAMPLE_GAP_MS,
+        maxHoldPitchDriftRad: MAX_PITCH_DRIFT_RAD,
+        topEdgeDownY: TOP_EDGE_DOWN_Y_G,
+        poseAxisToleranceG: POSE_AXIS_TOLERANCE_G
+      }
+    });
+    recording.mark("poseChange", { pose: "shoulder" });
     proximityFeedback.stop();
     accelerometerRef.current?.remove();
     accelerometerRef.current = null;
@@ -209,20 +293,41 @@ export function DrawCalibrationScreen({
     setStatus("starting");
 
     const pitchMonitor = new PitchMonitor((theta) => {
+      const stage = stageRef.current;
+      const tilt = latestTiltRef.current;
+      const now = Date.now();
+      const age = tilt ? now - tilt.atMs : Infinity;
+      const valid =
+        !pausedRef.current &&
+        appActiveRef.current &&
+        stage !== "passed" &&
+        !!tilt &&
+        [tilt.x, tilt.y, tilt.z].every(Number.isFinite) &&
+        age >= 0 &&
+        age <= MAX_CONFIRM_SAMPLE_AGE_MS &&
+        matchesPose(stage, tilt, theta);
+      medianRef.current.sample(theta, now, valid);
+      if (!valid) holdRef.current.reset();
       const thetaShoulder = thetaShoulderRef.current;
-      if (thetaShoulder !== null && appActiveRef.current) {
+      if (
+        thetaShoulder !== null &&
+        appActiveRef.current &&
+        !pausedRef.current
+      ) {
         proximityFeedback.update(
           theta === null ? null : Math.abs(theta - thetaShoulder),
           MIN_CALIBRATION_ARC_RAD
         );
       }
-    });
+    }, recording);
     pitchMonitorRef.current = pitchMonitor;
     const result = await pitchMonitor.start();
     if (pitchMonitorRef.current !== pitchMonitor || result === "cancelled") {
       return;
     }
     if (result !== "started") {
+      medianRef.current.clear();
+      void recording.finish(result);
       setStatus(result);
       return;
     }
@@ -234,30 +339,42 @@ export function DrawCalibrationScreen({
       if (pitchMonitorRef.current !== pitchMonitor) return;
       if (!permission.granted) {
         pitchMonitor.stop();
+        medianRef.current.clear();
+        void recording.finish("motionStopped");
         setStatus("permissionDenied");
         return;
       }
-      Accelerometer.setUpdateInterval(100);
-      accelerometerRef.current = Accelerometer.addListener(({ x, y, z }) => {
-        if (pausedRef.current) return;
+      Accelerometer.setUpdateInterval(ACCELEROMETER_INTERVAL_MS);
+      accelerometerRef.current = Accelerometer.addListener((reading) => {
+        if (
+          pitchMonitorRef.current !== pitchMonitor ||
+          stageRef.current === "passed"
+        )
+          return;
+        const { x, y, z } = reading;
+        recording.sample("calibrationAccelerometer", reading);
+        if (pausedRef.current || !appActiveRef.current) return;
         const stage = stageRef.current;
-        if (stage === "passed") return;
         const tilt = { x, y, z, atMs: Date.now() };
         latestTiltRef.current = tilt;
         const theta = pitchMonitor.currentTheta(MAX_CONFIRM_SAMPLE_AGE_MS);
-        const valid = matchesPose(stage, tilt, theta);
+        const valid =
+          [x, y, z].every(Number.isFinite) && matchesPose(stage, tilt, theta);
+        if (!valid) medianRef.current.clear();
         if (!holdRef.current.sample(valid, theta, tilt.atMs) || theta === null)
           return;
-        completePose(theta);
+        completePose();
       });
       setStatus("shoulder");
     } catch {
       if (pitchMonitorRef.current === pitchMonitor) {
         pitchMonitor.stop();
+        medianRef.current.clear();
+        void recording.finish("motionStopped");
         setStatus("error");
       }
     }
-  }, [completePose, matchesPose, proximityFeedback]);
+  }, [completePose, matchesPose, proximityFeedback, recording]);
   const handleContinue = useCallback(() => {
     if (status === "passed" && calibrationRef.current) {
       onComplete(calibrationRef.current);
@@ -266,6 +383,8 @@ export function DrawCalibrationScreen({
 
   useEffect(() => {
     if (paused) {
+      medianRef.current.clear();
+      latestTiltRef.current = null;
       holdRef.current.reset();
       return undefined;
     }
@@ -275,7 +394,8 @@ export function DrawCalibrationScreen({
     )
       return undefined;
     return subscribeVolumeFire(({ direction }) => {
-      if (pausedRef.current || direction !== "up") return;
+      if (pausedRef.current || !appActiveRef.current || direction !== "up")
+        return;
       const stage = stageRef.current;
       if (stage === "passed") {
         handleContinue();
@@ -290,9 +410,11 @@ export function DrawCalibrationScreen({
         !tilt ||
         ageMs < 0 ||
         ageMs > MAX_CONFIRM_SAMPLE_AGE_MS ||
+        ![tilt.x, tilt.y, tilt.z].every(Number.isFinite) ||
         !matchesPose(stage, tilt, theta) ||
         theta === null
       ) {
+        medianRef.current.clear();
         setPoseHint(
           stage === "shoulder"
             ? "Point the top edge forward at shoulder height first."
@@ -301,7 +423,7 @@ export function DrawCalibrationScreen({
         void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         return;
       }
-      completePose(theta, "volume");
+      completePose("volume");
     });
   }, [status, completePose, handleContinue, matchesPose, paused]);
 
@@ -398,6 +520,7 @@ export function DrawCalibrationScreen({
         )}
       </View>
 
+      {__DEV__ && <SensorRecordingShare />}
       <View style={styles.actions}>
         {status === "permissionDenied" ? (
           <PermissionNotice
