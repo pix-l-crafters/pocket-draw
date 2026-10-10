@@ -59,6 +59,19 @@ it("does not invent explanations for historical rounds without diagnostics", asy
 it.each<{ reason: MissReason; explanation: RegExp }>([
   { reason: "offTarget", explanation: /aimed outside the opponent's cone/i },
   {
+    reason: "tiltUnavailable",
+    explanation: /couldn't read the phone's tilt/i
+  },
+  { reason: "compassUnavailable", explanation: /compass not ready/i },
+  {
+    reason: "locationUnavailable",
+    explanation: /location signal too weak/i
+  },
+  {
+    reason: "opponentLocationUnavailable",
+    explanation: /couldn't get the opponent's location/i
+  },
+  {
     reason: "trackingUnavailable",
     explanation: /tracking could not verify the shot/i
   },
