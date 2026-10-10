@@ -13,6 +13,7 @@ import { PaperProvider } from "react-native-paper";
 
 import type { DuelMessage } from "../../contracts/duelChannel";
 import { appTheme } from "../../theme/appTheme";
+import { submitMatchAnalytics } from "../backend/matchAnalytics";
 import { createDuelLink } from "../challenge/session/duelLink";
 import type { DuelTransportConnection } from "../challenge/session/duelSessionTransport";
 import { generateMatchId } from "../qr/utils/qr.tokens";
@@ -21,6 +22,11 @@ import type { DuelRole } from "./fireSignalCoordinator";
 import type { PitchCalibration } from "./pitchMonitor";
 import type { RoundShots } from "./roundShots";
 
+jest.mock("expo-audio", () => ({
+  setAudioModeAsync: async () => undefined,
+  useAudioPlayer: () => ({ seekTo: () => undefined, play: () => undefined })
+}));
+
 const FIRST_MATCH = "11111111-1111-4111-8111-111111111111";
 const REMATCH = "22222222-2222-4222-8222-222222222222";
 const LATER_REMATCH = "33333333-3333-4333-8333-333333333333";
@@ -28,6 +34,11 @@ const LATER_REMATCH = "33333333-3333-4333-8333-333333333333";
 jest.mock("../qr/utils/qr.tokens", () => ({ generateMatchId: jest.fn() }));
 
 // Saving is covered by DuelScreen.completion.test; here every save succeeds.
+jest.mock("../backend/matchAnalytics", () => ({
+  submitMatchAnalytics: jest.fn(async () => "written"),
+  subscribeAnalyticsStatus: jest.fn(() => () => undefined)
+}));
+
 jest.mock("../backend/matchResultsService", () => ({
   subscribeMatchResultStatus: jest.fn(() => () => undefined),
   submitMatchResult: async (result: { matchId: string }) => ({
@@ -236,7 +247,7 @@ async function renderPhones(network = testNetwork()) {
   const host = within(view.getByTestId("host"));
   const guest = within(view.getByTestId("guest"));
   for (const phone of [host, guest]) {
-    await fireEvent.press(phone.getByText("I'm Ready"));
+    await fireEvent.press(phone.getByText("CONTINUE TO CALIBRATION"));
     await fireEvent.press(phone.getByText("Complete calibration"));
   }
   return { host, guest, network, onExit };
@@ -327,8 +338,33 @@ describe("DuelScreen session flows", () => {
     for (const phone of [host, guest]) {
       await fireEvent.press(phone.getByText("Finish round"));
       expect(phone.getByText("Round 2")).toBeTruthy();
-      expect(phone.getByText("Hana wins")).toBeTruthy();
+      expect(phone.getByText("Hana — BODYSHOT (1 pt)")).toBeTruthy();
     }
+  });
+
+  it("does not save a discarded final round before matching peer completion", async () => {
+    jest.mocked(submitMatchAnalytics).mockClear();
+    const { host, guest, network } = await renderPhones();
+    await playRound([host, guest]);
+    await playRound([host, guest]);
+    await fireEvent.press(host.getByText("Finish round"));
+    await act(async () => {});
+    expect(submitMatchAnalytics).not.toHaveBeenCalled();
+
+    await network.drop();
+    await network.heal();
+    await waitFor(() => {
+      expect(host.getByText("Finish round")).toBeTruthy();
+      expect(guest.getByText("Finish round")).toBeTruthy();
+    });
+    await fireEvent.press(host.getByText("Finish round"));
+    expect(submitMatchAnalytics).not.toHaveBeenCalled();
+    await fireEvent.press(guest.getByText("Finish round"));
+    await waitFor(() => expect(submitMatchAnalytics).toHaveBeenCalledTimes(2));
+    for (const [payload] of jest.mocked(submitMatchAnalytics).mock.calls)
+      expect(payload.rounds.map((round) => round.roundNumber)).toEqual([
+        1, 2, 3
+      ]);
   });
 
   it("offers a retry or a way out when reconnecting fails, instead of freezing", async () => {

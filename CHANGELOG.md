@@ -8,7 +8,45 @@ All notable changes to this project will be documented in this file. See [conven
 
 ### Features
 
-- **(duel)** support volume-up confirmation during draw calibration and pre-round setup; extend pre-round actions to the bottom edge.
+- **(duel)** make gameplay instructions optional from calibration.
+
+---
+
+## [0.5.0](https://github.com/pix-l-crafters/pocket-draw/compare/v0.4.0..v0.5.0) - 2026-10-10
+
+### Bug Fixes
+
+- **(duel)** restore Android volume fire callback when replaced - ([b2101e6](https://github.com/pix-l-crafters/pocket-draw/commit/b2101e651f30c8710626aac45b9ff25c634bf85a)) - Mobark Bacran
+- **(duel)** guide and auto-confirm calibration poses - ([0c10ebf](https://github.com/pix-l-crafters/pocket-draw/commit/0c10ebf1d9522d3372e3ae596f72bbdb9e0981cd)) - Mobark Bacran
+- **(duel)** confirm calibration with volume up - ([877cbb7](https://github.com/pix-l-crafters/pocket-draw/commit/877cbb7e9276c862dc3014fa30278f5c5a5c2157)) - Mobark Bacran
+- **(duel)** register iOS volume presses at bounds - ([789e972](https://github.com/pix-l-crafters/pocket-draw/commit/789e972935947b291582141d79e095c09da1e53d)) - Mobark Bacran
+- **(duel)** keep iOS volume observer as fallback - ([e7cf7fd](https://github.com/pix-l-crafters/pocket-draw/commit/e7cf7fda9cb3aa8fa7c3c4c3f9642ea158abe7aa)) - Mobark Bacran
+- **(duel)** explain round ties and final match draws - ([ea11ed5](https://github.com/pix-l-crafters/pocket-draw/commit/ea11ed52b9482f2079a69ceff6389f701178e263)) - MRDGH2821
+- **(duel)** score calibrated shots at close range - ([75ae8f8](https://github.com/pix-l-crafters/pocket-draw/commit/75ae8f8ec5aa2795f096c7c0932492c449bf2075)) - Mobark Bacran
+- **(duel)** label round result times as your shot and their shot - ([5797913](https://github.com/pix-l-crafters/pocket-draw/commit/5797913173c58899360d2d29c0935bfd64eecac4)) - Mobark Bacran
+
+### Documentation
+
+- **(duel)** document recorded miss explanations - ([7c57157](https://github.com/pix-l-crafters/pocket-draw/commit/7c571575a79b15daee897f38f71e752b8c6e0704)) - MRDGH2821
+
+### Features
+
+- **(duel)** support pre-round volume confirmation - ([ea9e935](https://github.com/pix-l-crafters/pocket-draw/commit/ea9e935bdd87729e504069d7f4aa44c544333525)) - MRDGH2821
+- **(duel)** continue draw calibration with volume up - ([fd77b08](https://github.com/pix-l-crafters/pocket-draw/commit/fd77b0897546610948861f76da364a650d5cfdcd)) - MRDGH2821
+- **(duel)** capture and preserve shot miss causes - ([6e6129b](https://github.com/pix-l-crafters/pocket-draw/commit/6e6129b5b8def9bf0abb7532d7a981d0563c9079)) - MRDGH2821
+- **(duel)** animate recorded miss illustrations - ([871cc93](https://github.com/pix-l-crafters/pocket-draw/commit/871cc939d7374beac002f69595095e87213ac560)) - MRDGH2821
+- **(duel)** illustrate false-start penalties - ([ac59b24](https://github.com/pix-l-crafters/pocket-draw/commit/ac59b249e734992a538aa122a0d5c6e3896f508b)) - MRDGH2821
+- **(duel)** distinguish FIRE from countdown visually - ([cd3d238](https://github.com/pix-l-crafters/pocket-draw/commit/cd3d238465ea64f44f7a95c5308cf5fba3c3ebb9)) - Mobark Bacran
+
+### Miscellaneous Chores
+
+- **(duel)** merge latest dev updates - ([38f65ab](https://github.com/pix-l-crafters/pocket-draw/commit/38f65abcdf8dbdbd1cc36d4e1227789e773273ef)) - MRDGH2821
+- merge pull request #117 from pix-l-crafters/mobark/fix/calibration-pose-guidance - ([c2ecfee](https://github.com/pix-l-crafters/pocket-draw/commit/c2ecfeee167fa0670c422437d587654cec186d7d)) - Mobark Bacran
+- merge pull request #121 from pix-l-crafters/MRDGH2821/feat/animated-miss-explanations - ([bd45561](https://github.com/pix-l-crafters/pocket-draw/commit/bd45561339acb034cbd4ae9d49e944ea8033247f)) - Mihir Rabade
+- merge pull request #124 from pix-l-crafters/mihir/feat/big-buttons - ([4a5edf3](https://github.com/pix-l-crafters/pocket-draw/commit/4a5edf3e1128904d515984e03bb4dfa8b2f68bd6)) - Mihir Rabade
+- merge pull request #126 from pix-l-crafters/mobark/fix/duel-results-and-fire - ([2854a1a](https://github.com/pix-l-crafters/pocket-draw/commit/2854a1abc69d728800063d0ecc1720ddab2a891c)) - Mobark Bacran
+
+---
 
 ## [0.4.0](https://github.com/pix-l-crafters/pocket-draw/compare/v0.3.1..v0.4.0) - 2026-10-08
 

@@ -63,25 +63,31 @@ describe("WebRTC DuelChannel adapter", () => {
     expect(connection.channel.isConnected()).toBe(true);
   });
 
-  it.each(["tooLow", "tooHigh", "offTarget", "trackingUnavailable"] as const)(
-    "transports a fired miss reason %s unchanged",
-    (missReason) => {
-      const rtcChannel = new FakeDataChannel();
-      const connection = createDuelDataChannelConnection(rtcChannel);
-      const received: DuelMessage[] = [];
-      connection.channel.onMessage((message) => received.push(message));
-      const message: DuelMessage = {
-        type: "raised",
-        atMs: 1234,
-        reactionMs: 420,
-        zone: "miss",
-        missReason
-      };
-      connection.channel.send(message);
-      rtcChannel.receive(rtcChannel.sent[0]);
-      expect(received).toEqual([message]);
-    }
-  );
+  it.each([
+    "tooLow",
+    "tooHigh",
+    "offTarget",
+    "tiltUnavailable",
+    "compassUnavailable",
+    "locationUnavailable",
+    "opponentLocationUnavailable",
+    "trackingUnavailable"
+  ] as const)("transports a fired miss reason %s unchanged", (missReason) => {
+    const rtcChannel = new FakeDataChannel();
+    const connection = createDuelDataChannelConnection(rtcChannel);
+    const received: DuelMessage[] = [];
+    connection.channel.onMessage((message) => received.push(message));
+    const message: DuelMessage = {
+      type: "raised",
+      atMs: 1234,
+      reactionMs: 420,
+      zone: "miss",
+      missReason
+    };
+    connection.channel.send(message);
+    rtcChannel.receive(rtcChannel.sent[0]);
+    expect(received).toEqual([message]);
+  });
 
   it.each(["noShot", "invalid", "", null, 1, {}, []])(
     "rejects an invalid fired miss reason %s at the wire boundary",

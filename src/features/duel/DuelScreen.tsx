@@ -1,11 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { Modal, Platform, StyleSheet, View } from "react-native";
+import { IconButton } from "react-native-paper";
 
 import { CutCornerButton } from "../../components/CutCornerButton";
+import { ScreenHeader } from "../../components/ScreenHeader";
 import type { DuelMessage } from "../../contracts/duelChannel";
 import type { DuelLink } from "../../contracts/duelLink";
+import type {
+  MatchAnalytics,
+  RoundAnalytics,
+  ShotDiagnostics
+} from "../../contracts/matchAnalytics";
 import type { MatchResult } from "../../contracts/matchResult";
 import type { RoundOutcome } from "../../contracts/roundOutcome";
+import { useMatchAnalytics } from "../../hooks/useMatchAnalytics";
+import { colors } from "../../theme/tokens";
 import {
   subscribeMatchResultStatus,
   submitMatchResult
@@ -13,6 +22,7 @@ import {
 import type { SubmitMatchResultOutcome } from "../backend/types";
 import { MatchSummaryScreen } from "../postmatch/MatchSummaryScreen";
 import { generateMatchId } from "../qr/utils/qr.tokens";
+import { AIM_TOLERANCE_DEGREES } from "./aimBearing";
 import { ClockOffsetCalibrator } from "./clockOffsetCalibrator";
 import { DuelDisconnectRecovery } from "./disconnectRecovery";
 import { DrawCalibrationScreen } from "./DrawCalibrationScreen";
@@ -20,10 +30,16 @@ import {
   DuelConnectionScreen,
   type DuelConnectionState
 } from "./DuelConnectionScreen";
+import { DuelExitButton } from "./DuelExitButton";
 import { FalseStartCoordinator } from "./falseStartCoordinator";
 import type { DuelRole } from "./fireSignalCoordinator";
 import { GameInstructionsScreen } from "./GameInstructionsScreen";
 import type { PitchCalibration } from "./pitchMonitor";
+import {
+  BODYSHOT_MIN_F,
+  BODYSHOT_MAX_F,
+  HEADSHOT_DELTA_F
+} from "./pitchZoneClassifier";
 import { PreRound } from "./PreRound";
 import {
   applyRoundOutcome,
@@ -76,9 +92,17 @@ export function DuelScreen({
   self
 }: DuelScreenProps) {
   const { channel } = link;
-  const [instructionsSeen, setInstructionsSeen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [separationConfirmed, setSeparationConfirmed] = useState(false);
   const [calibration, setCalibration] = useState<PitchCalibration | null>(null);
+  const analyticsRoundsRef = useRef<RoundAnalytics[]>([]);
+  const pendingShotRef = useRef<ShotDiagnostics | null>(null);
+  const [confirmedAnalyticsHistory, setConfirmedAnalyticsHistory] = useState<
+    string | null
+  >(null);
   const [matchId, setMatchId] = useState(firstMatchId);
+  const [audioMuted, setAudioMuted] = useState(false);
+  const gameBeginStartedForMatchRef = useRef<string | null>(null);
   const falseStarts = useMemo(
     () => new FalseStartCoordinator(channel, self.id, opponent.id),
     [channel, self.id, opponent.id, matchId]
@@ -131,8 +155,8 @@ export function DuelScreen({
       });
   }, []);
   useEffect(() => {
-    if (instructionsSeen) runClockCalibration();
-  }, [instructionsSeen, runClockCalibration]);
+    runClockCalibration();
+  }, [runClockCalibration]);
 
   const [roundResult, setRoundResult] = useState<RoundOutcome | null>(null);
   const [roundShots, setRoundShots] = useState<RoundShots | null>(null);
@@ -179,6 +203,9 @@ export function DuelScreen({
       setMatchId(nextMatchId);
       setLoop(fresh);
       setRoundResult(null);
+      analyticsRoundsRef.current = [];
+      pendingShotRef.current = null;
+      setConfirmedAnalyticsHistory(null);
       setPeerReady(false);
       setRematch({ status: "idle" });
     },
@@ -329,12 +356,27 @@ export function DuelScreen({
             reply: true
           });
         }
+        const localKeys = roundKeys(loopRef.current);
+        if (
+          isMatchDecided(loopRef.current) &&
+          JSON.stringify(message.roundKeys) === JSON.stringify(localKeys)
+        ) {
+          setConfirmedAnalyticsHistory(
+            JSON.stringify([matchIdRef.current, localKeys])
+          );
+        }
         if (!syncingRef.current) return;
 
         syncingRef.current = false;
         const resumed = reconcileRounds(loopRef.current, message.roundKeys);
+        analyticsRoundsRef.current = analyticsRoundsRef.current.slice(
+          0,
+          resumed.rounds.length
+        );
+        pendingShotRef.current = null;
         falseStarts.syncPeerWarningCount(message.warningCounts?.[opponent.id]);
         if (resumed !== loopRef.current) {
+          setConfirmedAnalyticsHistory(null);
           loopRef.current = resumed;
           setLoop(resumed);
           setRoundResult(null);
@@ -391,6 +433,24 @@ export function DuelScreen({
       // Both devices judge the same captured shot zones and reaction times,
       // so they reach the same outcome without either side being the scorer.
       const outcome = judgeRoundShots(self, opponent, shots);
+      const roundNumber = loopRef.current.rounds.length + 1;
+      analyticsRoundsRef.current = [
+        ...analyticsRoundsRef.current.slice(0, roundNumber - 1),
+        {
+          roundNumber,
+          reactionMs: shots.selfReactionMs,
+          zone: shots.selfZone,
+          missReason:
+            shots.falseStartPlayer === "self"
+              ? null
+              : shots.selfReactionMs === null
+                ? "noShot"
+                : (shots.selfMissReason ?? null),
+          falseStarted: shots.falseStartPlayer === "self",
+          shot: pendingShotRef.current
+        }
+      ];
+      pendingShotRef.current = null;
       setLoop((state) => applyRoundOutcome(state, outcome));
       setRoundShots(shots);
       setRoundResult(outcome);
@@ -407,6 +467,63 @@ export function DuelScreen({
   const completedResult = useMemo(
     () => (matchDecided ? toMatchResult(loop, matchId) : null),
     [loop, matchDecided, matchId]
+  );
+  const analytics = useMemo<MatchAnalytics | null>(
+    () =>
+      completedResult && calibration
+        ? {
+            schemaVersion: 1,
+            matchId: completedResult.matchId,
+            playerId: self.id,
+            participantIds: completedResult.participantIds,
+            completedAt: completedResult.completedAt,
+            platform: Platform.OS,
+            clockOffsetMs,
+            calibration,
+            thresholds: {
+              bodyshotMinF: BODYSHOT_MIN_F,
+              bodyshotMaxF: BODYSHOT_MAX_F,
+              headshotMaxF: BODYSHOT_MAX_F + HEADSHOT_DELTA_F,
+              aimToleranceDegrees: AIM_TOLERANCE_DEGREES
+            },
+            rounds: analyticsRoundsRef.current.slice()
+          }
+        : null,
+    [completedResult, calibration, self.id, clockOffsetMs]
+  );
+  const completedHistory = completedResult
+    ? JSON.stringify([matchId, roundKeys(loop)])
+    : null;
+  // A locally judged final round may be discarded after a drop. Do not persist
+  // immutable diagnostics until the peer confirms this exact completed history.
+  useEffect(() => {
+    if (
+      !completedResult ||
+      confirmedAnalyticsHistory === completedHistory ||
+      connection.status !== "live"
+    )
+      return;
+    const ask = () =>
+      safeSend({
+        type: "matchSync",
+        matchId: completedResult.matchId,
+        roundKeys: roundKeys(loopRef.current),
+        warningCounts: falseStarts.getWarningCounts(),
+        reply: false
+      });
+    ask();
+    const timer = setInterval(ask, MATCH_SYNC_RETRY_MS);
+    return () => clearInterval(timer);
+  }, [
+    completedResult,
+    completedHistory,
+    confirmedAnalyticsHistory,
+    connection.status,
+    falseStarts,
+    safeSend
+  ]);
+  const analyticsSave = useMatchAnalytics(
+    confirmedAnalyticsHistory === completedHistory ? analytics : null
   );
   const [saveState, setSaveState] = useState<{
     result: MatchResult;
@@ -460,30 +577,65 @@ export function DuelScreen({
     );
   }
 
-  const exitControl = onExit && (
+  const exitControl = onExit ? (
     <View style={styles.exitRow}>
-      <CutCornerButton
-        label="Exit"
-        onPress={exit}
+      <DuelExitButton onPress={exit} />
+    </View>
+  ) : null;
+
+  const setupControls = (
+    <View style={styles.setupControls}>
+      <IconButton
+        accessibilityLabel="Help"
+        icon="help-circle-outline"
+        iconColor={colors.textMuted60}
+        onPress={() => setHelpOpen(true)}
       />
+      {onExit ? <DuelExitButton onPress={exit} /> : null}
     </View>
   );
+  const helpModal = (
+    <Modal
+      onRequestClose={() => setHelpOpen(false)}
+      visible={helpOpen}
+    >
+      <GameInstructionsScreen onClose={() => setHelpOpen(false)} />
+    </Modal>
+  );
 
-  if (!instructionsSeen || !calibration) {
+  if (!separationConfirmed) {
     return (
       <View style={styles.container}>
-        {!instructionsSeen ? (
-          <GameInstructionsScreen
-            onContinue={() => setInstructionsSeen(true)}
+        {setupControls}
+        <View style={styles.separationContent}>
+          <ScreenHeader
+            kicker="Duel setup"
+            subtitle="Face your opponent from a few paces away. The phones cannot measure this distance, so confirm when both players are ready."
+            title="STAND APART"
           />
-        ) : (
-          <DrawCalibrationScreen
-            clockCalibrationStatus={clockCalibrationStatus}
-            onComplete={setCalibration}
-            onRetryClockCalibration={runClockCalibration}
-          />
-        )}
-        {exitControl}
+          <View style={styles.separationAction}>
+            <CutCornerButton
+              label="CONTINUE TO CALIBRATION"
+              onPress={() => setSeparationConfirmed(true)}
+            />
+          </View>
+        </View>
+        {helpModal}
+      </View>
+    );
+  }
+
+  if (!calibration) {
+    return (
+      <View style={styles.container}>
+        {setupControls}
+        <DrawCalibrationScreen
+          clockCalibrationStatus={clockCalibrationStatus}
+          onComplete={setCalibration}
+          onRetryClockCalibration={runClockCalibration}
+          paused={helpOpen}
+        />
+        {helpModal}
       </View>
     );
   }
@@ -491,6 +643,8 @@ export function DuelScreen({
   if (completedResult && !roundResult) {
     return (
       <MatchSummaryScreen
+        analyticsSaveStatus={analyticsSave.status ?? "waiting"}
+        onRetryAnalytics={() => void analyticsSave.retry()}
         matchResult={completedResult}
         saveStatus={saveStatus}
         onRetrySave={() => void saveResult()}
@@ -519,6 +673,7 @@ export function DuelScreen({
   if (roundResult) {
     return (
       <RoundResultScreen
+        audioMuted={audioMuted}
         continueDisabled={matchDecided && saveStatus === "saving"}
         continueLabel={
           !matchDecided
@@ -536,9 +691,11 @@ export function DuelScreen({
           if (!matchDecided || saveStatus !== "saving") setRoundResult(null);
         }}
         opponentReactionMs={roundShots?.opponentReactionMs ?? null}
+        opponentZone={roundShots?.opponentZone ?? "miss"}
         outcome={roundResult}
         playerNames={playerNames}
         selfReactionMs={roundShots?.selfReactionMs ?? null}
+        selfZone={roundShots?.selfZone ?? "miss"}
         roundNumber={loop.rounds.length}
       />
     );
@@ -546,9 +703,11 @@ export function DuelScreen({
 
   return (
     <View style={styles.container}>
+      {exitControl}
       {/* Keyed on the match, round and resume: a fresh PreRound is the round
           reset. */}
       <PreRound
+        audioMuted={audioMuted}
         key={`${matchId}:${loop.rounds.length}:${resumeCount}`}
         channel={channel}
         calibration={calibration}
@@ -559,12 +718,24 @@ export function DuelScreen({
         clockCalibrationStatus={clockCalibrationStatus}
         clockOffsetMs={clockOffsetMs}
         onCountdownStart={consumePeerReady}
+        onGameBeginStart={() => {
+          gameBeginStartedForMatchRef.current = matchId;
+        }}
+        onToggleAudioMuted={() => setAudioMuted((muted) => !muted)}
+        onHelp={() => setHelpOpen(true)}
         onRetryClockCalibration={runClockCalibration}
         onRoundShots={handleRoundShots}
+        onShotDiagnostics={(shot) => {
+          pendingShotRef.current = shot;
+        }}
         peerReady={peerReady}
+        playGameBegin={
+          loop.rounds.length === 0 &&
+          gameBeginStartedForMatchRef.current !== matchId
+        }
         role={role}
       />
-      {exitControl}
+      {helpModal}
     </View>
   );
 }
@@ -573,9 +744,25 @@ const styles = StyleSheet.create({
   container: {
     flex: 1
   },
+  setupControls: {
+    alignItems: "center",
+    backgroundColor: colors.background,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 8,
+    paddingTop: 8
+  },
+  separationContent: {
+    flex: 1,
+    padding: 24
+  },
+  separationAction: {
+    marginTop: "auto"
+  },
   exitRow: {
-    position: "absolute",
-    right: 16,
-    top: 16
+    alignItems: "flex-end",
+    backgroundColor: colors.background,
+    paddingHorizontal: 24,
+    paddingTop: 8
   }
 });

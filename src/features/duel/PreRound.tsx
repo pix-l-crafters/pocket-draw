@@ -1,4 +1,8 @@
-import { setAudioModeAsync, useAudioPlayer } from "expo-audio";
+import {
+  setAudioModeAsync,
+  useAudioPlayer,
+  type AudioPlayer
+} from "expo-audio";
 import * as Haptics from "expo-haptics";
 import { Accelerometer } from "expo-sensors";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -8,11 +12,15 @@ import { IconButton, ProgressBar } from "react-native-paper";
 import { CutCornerButton } from "../../components/CutCornerButton";
 import { PermissionNotice } from "../../components/PermissionNotice";
 import type { DuelChannel, DuelMessage } from "../../contracts/duelChannel";
+import type {
+  AimDiagnostics,
+  ShotDiagnostics
+} from "../../contracts/matchAnalytics";
 import type { MissReason, Zone } from "../../contracts/roundOutcome";
 import { useForegroundRecheck } from "../../lib/useForegroundRecheck";
 import { colors, fonts } from "../../theme/tokens";
 import { isTopEdgeDown } from "./calibrationPose";
-import { COUNTDOWN_AUDIO_SOURCE } from "./countdownAudio";
+import { DUEL_CUES } from "./countdownAudio";
 import { FalseStartCoordinator } from "./falseStartCoordinator";
 import { FireSignalCoordinator, type DuelRole } from "./fireSignalCoordinator";
 import {
@@ -23,7 +31,7 @@ import {
 import { classifyZone, computeRaiseFraction } from "./pitchZoneClassifier";
 import { ReactionTimer } from "./reactionTimer";
 import { FIRE_WINDOW_MS, type RoundShots } from "./roundShots";
-import { useAimTracking } from "./useAimTracking";
+import { useAimTracking, type AimMissReason } from "./useAimTracking";
 import { subscribeVolumeFire } from "./volumeFireTrigger";
 
 const COUNTDOWN_VALUES = [3, 2, 1] as const;
@@ -38,11 +46,22 @@ export const COUNTDOWN_DURATION_MS =
  */
 const PEER_SHOT_GRACE_MS = 250;
 
+// Checked before the countdown so a player fixes tracking instead of losing
+// the round to a miss they could not see coming.
+const TRACKING_WARNINGS: Record<AimMissReason, string> = {
+  locationUnavailable:
+    "Your location signal is weak. Turn on precise location and try moving outside.",
+  compassUnavailable: "Compass not ready. Move your phone in a figure 8.",
+  opponentLocationUnavailable:
+    "Couldn't get your opponent's location. Ask them to turn on precise location and move outside.",
+  trackingUnavailable:
+    "Couldn't sync timing with your opponent's phone. Stay connected and wait a moment."
+};
+
 type Phase =
-  | "separate"
   | "position"
   | "waiting"
-  | "warning"
+  | "announcing"
   | "countdown"
   | "fire"
   | "done";
@@ -60,9 +79,15 @@ type PreRoundProps = {
   peerReady: boolean;
   clockCalibrationStatus: "calibrating" | "ready" | "failed";
   clockOffsetMs: number;
+  audioMuted: boolean;
+  onToggleAudioMuted: () => void;
+  onHelp?: () => void;
+  playGameBegin: boolean;
+  onGameBeginStart: () => void;
   onRetryClockCalibration: () => void;
   onCountdownStart: () => void;
   onRoundShots: (shots: RoundShots) => void;
+  onShotDiagnostics?: (shot: ShotDiagnostics) => void;
 };
 
 export function PreRound({
@@ -76,15 +101,33 @@ export function PreRound({
   peerReady,
   clockCalibrationStatus,
   clockOffsetMs,
+  audioMuted,
+  onToggleAudioMuted,
+  onHelp,
+  playGameBegin,
+  onGameBeginStart,
   onRetryClockCalibration,
   onCountdownStart,
-  onRoundShots
+  onRoundShots,
+  onShotDiagnostics
 }: PreRoundProps) {
-  const countdownAudio = useAudioPlayer(COUNTDOWN_AUDIO_SOURCE);
-  const [phase, setPhase] = useState<Phase>("separate");
+  const gameBeginAudio = useAudioPlayer(DUEL_CUES.gameBegin);
+  const countdown3Audio = useAudioPlayer(DUEL_CUES.countdown3);
+  const countdown2Audio = useAudioPlayer(DUEL_CUES.countdown2);
+  const countdown1Audio = useAudioPlayer(DUEL_CUES.countdown1);
+  const fireAudio = useAudioPlayer(DUEL_CUES.fire);
+  const gunshotAudio = useAudioPlayer(DUEL_CUES.gunshot);
+  const [phase, setPhase] = useState<Phase>("position");
   const phaseRef = useRef(phase);
   phaseRef.current = phase;
-  const captureAim = useAimTracking(channel, clockOffsetMs);
+  const latestAimRef = useRef<AimDiagnostics | null>(null);
+  const { captureAim, trackingIssues } = useAimTracking(
+    channel,
+    clockOffsetMs,
+    (diagnostics) => {
+      latestAimRef.current = diagnostics;
+    }
+  );
   const pitchMonitor = useMemo(() => new PitchMonitor(), []);
   const [pitchStatus, setPitchStatus] = useState<
     PitchMonitorStartResult | "starting"
@@ -93,8 +136,8 @@ export function PreRound({
   const [falseStartPlayer, setFalseStartPlayer] = useState<
     "self" | "opponent" | null
   >(null);
-  const [warnedPlayers, setWarnedPlayers] = useState<string[]>([]);
   const attemptRef = useRef(0);
+  const cancelledAttemptRef = useRef(-1);
   const [selfZone, setSelfZone] = useState<Zone>("miss");
   const [opponentZone, setOpponentZone] = useState<Zone>("miss");
   const [selfMissReason, setSelfMissReason] =
@@ -122,27 +165,21 @@ export function PreRound({
 
   useEffect(() => {
     const unsubscribe = falseStarts.onOutcome((outcome) => {
-      if (outcome.kind === "warning") {
-        setWarnedPlayers((players) =>
-          players.includes(outcome.playerId)
-            ? players
-            : [...players, outcome.playerId]
+      if (phaseRef.current !== "countdown") return;
+      cancelledAttemptRef.current = attemptRef.current;
+      phaseRef.current = "position";
+      timersRef.current.forEach(clearTimeout);
+      timersRef.current = [];
+      setCountdown(null);
+      setFalseStartPlayer(
+        outcome.playerId === selfPlayerId ? "self" : "opponent"
+      );
+      setPhase("position");
+      falseStarts.endRound();
+      if (outcome.playerId === selfPlayerId) {
+        void Haptics.notificationAsync(
+          Haptics.NotificationFeedbackType.Warning
         );
-        if (falseStarts.getOutcome()?.kind !== "falseStart")
-          setPhase("warning");
-        if (outcome.playerId === selfPlayerId) {
-          void Haptics.notificationAsync(
-            Haptics.NotificationFeedbackType.Warning
-          );
-        }
-      } else {
-        const canonical = falseStarts.getOutcome();
-        const playerId =
-          canonical?.kind === "falseStart"
-            ? canonical.playerId
-            : outcome.playerId;
-        setFalseStartPlayer(playerId === selfPlayerId ? "self" : "opponent");
-        if (phaseRef.current === "warning") setPhase("countdown");
       }
     });
     return () => {
@@ -159,12 +196,13 @@ export function PreRound({
   const [opponentReactionMs, setOpponentReactionMs] = useState<number | null>(
     null
   );
-  const [audioMuted, setAudioMuted] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const reactionTimerRef = useRef(new ReactionTimer());
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const firedAtRef = useRef(0);
   const reportedRef = useRef(false);
+  const introStartedRef = useRef(false);
+  const afterIntroRef = useRef<(() => void) | null>(null);
 
   // Timers and the message handler both read this, and neither sees a state
   // value captured on a later render.
@@ -172,6 +210,27 @@ export function PreRound({
   audioMutedRef.current = audioMuted;
 
   const isHost = role === "host";
+
+  useEffect(() => {
+    for (const player of [
+      gameBeginAudio,
+      countdown3Audio,
+      countdown2Audio,
+      countdown1Audio,
+      fireAudio,
+      gunshotAudio
+    ]) {
+      player.volume = audioMuted ? 0 : 1;
+    }
+  }, [
+    audioMuted,
+    gameBeginAudio,
+    countdown3Audio,
+    countdown2Audio,
+    countdown1Audio,
+    fireAudio,
+    gunshotAudio
+  ]);
 
   // Countdown timers fire up to ~3s after the first tick. Without this, leaving
   // the duel mid-countdown sends on a closed channel and throws inside
@@ -200,14 +259,20 @@ export function PreRound({
     }
   };
 
-  const playCountdownAudio = () => {
-    if (!COUNTDOWN_AUDIO_SOURCE || audioMutedRef.current) return;
-    countdownAudio.seekTo(0);
-    countdownAudio.play();
+  const playCue = (player: AudioPlayer) => {
+    if (audioMutedRef.current) return;
+    player.seekTo(0);
+    player.play();
   };
 
   const showTick = (value: number) => {
-    playCountdownAudio();
+    playCue(
+      value === 3
+        ? countdown3Audio
+        : value === 2
+          ? countdown2Audio
+          : countdown1Audio
+    );
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setCountdown(value);
   };
@@ -219,19 +284,6 @@ export function PreRound({
   );
   useEffect(() => () => fireCoordinator.dispose(), [fireCoordinator]);
 
-  useEffect(() => {
-    if (phase !== "warning" || role !== "host") return undefined;
-    const timer = setTimeout(() => {
-      if (falseStarts.getOutcome()?.kind === "falseStart") return;
-      timersRef.current.forEach(clearTimeout);
-      timersRef.current = [];
-      attemptRef.current += 1;
-      setWarnedPlayers([]);
-      startCountdown();
-    }, 1200);
-    return () => clearTimeout(timer);
-  }, [phase, role, falseStarts]);
-
   // Both roles receive a FIRE timestamp in their own clock domain.
   useEffect(
     () =>
@@ -241,6 +293,7 @@ export function PreRound({
         falseStarts.markFire(signal.atMs);
         setCountdown(0);
         setPhase("fire");
+        playCue(fireAudio);
         void Haptics.notificationAsync(
           Haptics.NotificationFeedbackType.Success
         );
@@ -271,10 +324,7 @@ export function PreRound({
       subscription = Accelerometer.addListener(({ x, y, z }) => {
         if (!mounted) return;
         setTopEdgeDown(isTopEdgeDown(x, y, z));
-        if (
-          phaseRef.current === "countdown" ||
-          phaseRef.current === "warning"
-        ) {
+        if (phaseRef.current === "countdown") {
           try {
             falseStarts.processLocalSample({ x, y, z, atMs: Date.now() });
           } catch {
@@ -293,7 +343,7 @@ export function PreRound({
   }, [motionAttempt, falseStarts]);
 
   useEffect(() => {
-    // The countdown cue must be audible even with the iOS silent switch on —
+    // Duel cues must be audible even with the iOS silent switch on —
     // haptic strength alone varies too much across devices to be fair timing.
     void setAudioModeAsync({ playsInSilentMode: true });
   }, []);
@@ -301,12 +351,22 @@ export function PreRound({
   useEffect(() => {
     return channel.onMessage((message: DuelMessage) => {
       if (message.type === "countdown") {
-        if (phaseRef.current === "warning" && message.value !== 3) return;
         if (message.value === 3) {
           if ((message.attempt ?? 0) < attemptRef.current) return;
+          if ((message.attempt ?? 0) <= cancelledAttemptRef.current) return;
+          if (
+            cancelledAttemptRef.current >= 0 &&
+            phaseRef.current !== "waiting"
+          )
+            return;
           attemptRef.current = message.attempt ?? 0;
           falseStarts.arm(attemptRef.current);
-          setWarnedPlayers([]);
+          setFalseStartPlayer(null);
+        } else if (
+          (message.attempt ?? 0) !== attemptRef.current ||
+          phaseRef.current !== "countdown"
+        ) {
+          return;
         }
         setPhase((current) => (current === "fire" ? current : "countdown"));
         showTick(message.value);
@@ -367,7 +427,7 @@ export function PreRound({
 
   const handleFire = () => {
     if (phase !== "fire") {
-      if (phase === "countdown" || phase === "warning") {
+      if (phase === "countdown") {
         try {
           falseStarts.processLocalFire(Date.now());
         } catch {
@@ -385,20 +445,32 @@ export function PreRound({
     if (!capture) return;
 
     const theta = pitchMonitor.currentTheta();
+    const raiseFraction =
+      theta === null
+        ? null
+        : computeRaiseFraction(
+            theta,
+            calibration.thetaReady,
+            calibration.thetaShoulder
+          );
     const shot = captureAim(
       theta === null
-        ? { zone: "miss", missReason: "trackingUnavailable" }
-        : classifyZone(
-            computeRaiseFraction(
-              theta,
-              calibration.thetaReady,
-              calibration.thetaShoulder
-            )
-          )
+        ? { zone: "miss", missReason: "tiltUnavailable" }
+        : classifyZone(raiseFraction!)
     );
+    onShotDiagnostics?.({
+      firedAtMs: capture.raisedAtMs,
+      thetaFire: theta,
+      raiseFraction,
+      pitchStatus,
+      pitchSampleUsable: theta !== null,
+      motion: pitchMonitor.snapshot(),
+      aim: latestAimRef.current
+    });
     setSelfZone(shot.zone);
     setSelfMissReason(shot.missReason);
     setSelfReactionMs(capture.reactionMs);
+    playCue(gunshotAudio);
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     safeSend({
       type: "raised",
@@ -414,6 +486,10 @@ export function PreRound({
   const confirmActionEnabledRef = useRef(false);
 
   const startCountdown = () => {
+    if (cancelledAttemptRef.current >= 0) {
+      attemptRef.current += 1;
+      cancelledAttemptRef.current = -1;
+    }
     falseStarts.arm(attemptRef.current);
     if (
       !safeSend({
@@ -424,13 +500,14 @@ export function PreRound({
     )
       return;
     onCountdownStart();
+    setFalseStartPlayer(null);
     setPhase("countdown");
     showTick(COUNTDOWN_VALUES[0]);
 
     COUNTDOWN_VALUES.slice(1).forEach((value, index) => {
       later(
         () => {
-          if (phaseRef.current === "warning") return;
+          if (phaseRef.current !== "countdown") return;
           if (
             !safeSend({
               type: "countdown",
@@ -447,7 +524,7 @@ export function PreRound({
 
     later(() => {
       try {
-        if (phaseRef.current === "warning") return;
+        if (phaseRef.current !== "countdown") return;
         fireCoordinator.markCountdownComplete();
         fireCoordinator.triggerFire();
       } catch {
@@ -456,22 +533,52 @@ export function PreRound({
     }, COUNTDOWN_DURATION_MS);
   };
 
-  const advance = () => {
-    // Separation is the players' own call: nothing on the phone measures
-    // the distance between them, so the step only asks.
-    if (phase === "separate") {
-      setPhase("position");
-      return;
-    }
-    if (phase !== "position" || !topEdgeDown) return;
+  useEffect(() => {
+    const subscription = gameBeginAudio.addListener(
+      "playbackStatusUpdate",
+      (status) => {
+        if (!status.didJustFinish) return;
+        const afterIntro = afterIntroRef.current;
+        afterIntroRef.current = null;
+        afterIntro?.();
+      }
+    );
+    return () => subscription.remove();
+  }, [gameBeginAudio]);
 
+  useEffect(() => {
+    if (!audioMuted || !afterIntroRef.current) return;
+    gameBeginAudio.pause();
+    const afterIntro = afterIntroRef.current;
+    afterIntroRef.current = null;
+    afterIntro();
+  }, [audioMuted, gameBeginAudio]);
+
+  const finishPosition = () => {
     if (isHost) {
       startCountdown();
+    } else if (safeSend({ type: "ready" })) {
+      setFalseStartPlayer(null);
+      setPhase("waiting");
+    }
+  };
+
+  const advance = () => {
+    if (phase !== "position" || !topEdgeDown) return;
+
+    if (playGameBegin && !introStartedRef.current) {
+      introStartedRef.current = true;
+      onGameBeginStart();
+      if (audioMutedRef.current) {
+        finishPosition();
+        return;
+      }
+      afterIntroRef.current = finishPosition;
+      setPhase("announcing");
+      playCue(gameBeginAudio);
       return;
     }
-
-    if (!safeSend({ type: "ready" })) return;
-    setPhase("waiting");
+    finishPosition();
   };
 
   const confirmDisabled =
@@ -485,18 +592,14 @@ export function PreRound({
 
   useEffect(() => {
     if (
-      (phase !== "separate" &&
-        phase !== "position" &&
-        phase !== "fire" &&
-        phase !== "countdown" &&
-        phase !== "warning") ||
+      (phase !== "position" && phase !== "fire" && phase !== "countdown") ||
       (Platform.OS !== "android" && Platform.OS !== "ios")
     ) {
       return undefined;
     }
     return subscribeVolumeFire(({ direction }) => {
       const currentPhase = phaseRef.current;
-      if (currentPhase === "separate" || currentPhase === "position") {
+      if (currentPhase === "position") {
         if (direction === "up" && confirmActionEnabledRef.current) {
           advanceRef.current?.();
         }
@@ -507,7 +610,6 @@ export function PreRound({
   }, [phase]);
 
   const status = useMemo(() => {
-    if (phase === "separate") return "STAND APART";
     if (phase === "position") {
       if (!topEdgeDown) return "POINT THE TOP EDGE TOWARD THE GROUND";
       return isHost && !peerReady
@@ -515,20 +617,29 @@ export function PreRound({
         : "PHONE POSITION CONFIRMED";
     }
     if (phase === "waiting") return "WAITING FOR THE DRAW";
+    if (phase === "announcing") return "THE GAME WILL NOW BEGIN";
     if (phase === "countdown") return "GET READY";
-    if (phase === "warning") return "FALSE START WARNING";
     return "DRAW!";
   }, [isHost, peerReady, phase, topEdgeDown]);
 
   return (
     <View style={styles.container}>
+      {onHelp && phase === "position" && (
+        <IconButton
+          accessibilityLabel="Help"
+          icon="help-circle-outline"
+          iconColor={colors.textMuted60}
+          onPress={onHelp}
+          style={styles.helpButton}
+        />
+      )}
       <IconButton
         accessibilityLabel={
-          audioMuted ? "Turn countdown sound on" : "Mute countdown sound"
+          audioMuted ? "Turn duel sound on" : "Mute duel sound"
         }
         icon={audioMuted ? "volume-off" : "volume-high"}
         iconColor={colors.textMuted60}
-        onPress={() => setAudioMuted((muted) => !muted)}
+        onPress={onToggleAudioMuted}
         style={styles.muteButton}
       />
       <View style={styles.content}>
@@ -545,8 +656,7 @@ export function PreRound({
             ? "Check the connection to your opponent, then retry before the duel."
             : clockCalibrationStatus === "calibrating"
               ? "Synchronizing both players’ clocks before timed play."
-              : phase === "separate" &&
-                "Face your opponent from a few paces away, then confirm or press volume up."}
+              : null}
           {clockCalibrationStatus === "ready" &&
             phase === "position" &&
             (isHost
@@ -559,15 +669,44 @@ export function PreRound({
             phase === "countdown" &&
             "Keep still until the buzz."}
         </Text>
+        {falseStartPlayer !== null && phase === "position" && (
+          <Text
+            style={
+              falseStartPlayer === "self" ? styles.warningDetail : styles.detail
+            }
+          >
+            {falseStartPlayer === "self" ? selfName : opponentName}{" "}
+            false-started. Confirm your phone position to retry this round.
+          </Text>
+        )}
         <Text style={styles.detail}>
           {pitchStatus !== "started"
             ? pitchStatus === "starting"
               ? "STARTING MOTION SENSORS"
               : "MOTION UNAVAILABLE — enable motion access in settings, then retry."
-            : falseStartPlayer !== null
-              ? "FALSE START — the non-offending player can still shoot at FIRE."
-              : "Aim the top edge at your opponent. Missing GPS or a calibrated compass counts as a miss."}
+            : "Aim the top edge at your opponent. Missing GPS or a calibrated compass counts as a miss."}
         </Text>
+        {clockCalibrationStatus === "ready" &&
+          pitchStatus === "started" &&
+          (phase === "position" || phase === "waiting") &&
+          !!trackingIssues?.length && (
+            <View
+              accessibilityLiveRegion="polite"
+              style={styles.trackingCheck}
+            >
+              <Text style={styles.trackingKicker}>
+                TRACKING NOT READY — SHOTS WILL MISS
+              </Text>
+              {trackingIssues.map((reason) => (
+                <Text
+                  key={reason}
+                  style={styles.trackingWarning}
+                >
+                  {TRACKING_WARNINGS[reason]}
+                </Text>
+              ))}
+            </View>
+          )}
         {!motionDenied && pitchStatus === "permissionDenied" && (
           <PermissionNotice
             canAskAgain={false}
@@ -577,7 +716,7 @@ export function PreRound({
           />
         )}
         {clockCalibrationStatus === "ready" &&
-          (phase === "separate" || phase === "position") &&
+          phase === "position" &&
           motionDenied && (
             <PermissionNotice
               canAskAgain={false}
@@ -612,7 +751,7 @@ export function PreRound({
           />
         )}
         {clockCalibrationStatus === "ready" &&
-          (phase === "separate" || phase === "position") &&
+          phase === "position" &&
           !motionDenied &&
           pitchStatus === "started" && (
             <CutCornerButton
@@ -626,7 +765,7 @@ export function PreRound({
 
       {/* Android intercepts volume keys; iOS observes volume changes while
           preserving the normal volume adjustment. Tap remains available. */}
-      {(phase === "fire" || phase === "countdown" || phase === "warning") && (
+      {(phase === "fire" || phase === "countdown") && (
         <Pressable
           accessibilityLabel="Fire"
           accessibilityRole="button"
@@ -642,11 +781,7 @@ export function PreRound({
               phase === "fire" && styles.fireTextActive
             ]}
           >
-            {phase === "fire"
-              ? "FIRE!"
-              : phase === "warning"
-                ? "WARNING"
-                : countdown}
+            {phase === "fire" ? "FIRE!" : countdown}
           </Text>
           <Text
             style={[
@@ -654,28 +789,21 @@ export function PreRound({
               phase === "fire" && styles.fireTextActive
             ]}
           >
-            {phase === "warning"
-              ? `${[...warnedPlayers]
-                  .sort()
-                  .map((id) => (id === selfPlayerId ? selfName : opponentName))
-                  .join(
-                    " and "
-                  )} moved early. Warning 1 of 1. Restarting round.`
-              : phase === "countdown"
-                ? "WAIT FOR THE BUZZ — EARLY FIRE IS A FALSE START"
-                : falseStarts.hasFalseStarted(selfPlayerId)
-                  ? "FALSE START — YOUR SHOT IS DISQUALIFIED"
-                  : selfReactionMs === null
-                    ? Platform.OS === "android"
-                      ? "PRESS VOLUME OR TAP ANYWHERE"
-                      : Platform.OS === "ios"
-                        ? "VOLUME BUTTONS FIRE AND CHANGE VOLUME — OR TAP"
-                        : "TAP ANYWHERE"
-                    : `${selfReactionMs}ms — ${
-                        opponentReactionMs === null
-                          ? "waiting for your opponent"
-                          : `they fired in ${opponentReactionMs}ms`
-                      }`}
+            {phase === "countdown"
+              ? "WAIT FOR THE BUZZ — EARLY FIRE IS A FALSE START"
+              : falseStarts.hasFalseStarted(selfPlayerId)
+                ? "FALSE START — YOUR SHOT IS DISQUALIFIED"
+                : selfReactionMs === null
+                  ? Platform.OS === "android"
+                    ? "PRESS VOLUME OR TAP ANYWHERE"
+                    : Platform.OS === "ios"
+                      ? "VOLUME BUTTONS FIRE AND CHANGE VOLUME — OR TAP"
+                      : "TAP ANYWHERE"
+                  : `${selfReactionMs}ms — ${
+                      opponentReactionMs === null
+                        ? "waiting for your opponent"
+                        : `they fired in ${opponentReactionMs}ms`
+                    }`}
           </Text>
         </Pressable>
       )}
@@ -705,6 +833,11 @@ const styles = StyleSheet.create({
     right: 8,
     top: 8
   },
+  helpButton: {
+    left: 8,
+    position: "absolute",
+    top: 8
+  },
   kicker: {
     color: colors.success,
     fontFamily: fonts.mono,
@@ -717,6 +850,24 @@ const styles = StyleSheet.create({
     fontFamily: fonts.body,
     fontSize: 18,
     minHeight: 48
+  },
+  warningDetail: {
+    color: colors.warning,
+    fontFamily: fonts.body,
+    fontSize: 18,
+    minHeight: 48
+  },
+  trackingCheck: { gap: 4 },
+  trackingKicker: {
+    color: colors.warning,
+    fontFamily: fonts.mono,
+    fontSize: 12,
+    letterSpacing: 1.5
+  },
+  trackingWarning: {
+    color: colors.warning,
+    fontFamily: fonts.body,
+    fontSize: 16
   },
   fireOverlay: {
     ...StyleSheet.absoluteFillObject,

@@ -19,6 +19,11 @@ let mockNowMs = 10_000;
 let mockMotionAvailable = true;
 let mockMotionGranted = true;
 
+jest.mock("../backend/matchAnalytics", () => ({
+  submitMatchAnalytics: jest.fn(async () => "written"),
+  subscribeAnalyticsStatus: jest.fn(() => () => undefined)
+}));
+
 jest.mock("../backend/matchResultsService", () => ({
   subscribeMatchResultStatus: jest.fn(() => () => undefined),
   submitMatchResult: jest.fn()
@@ -62,7 +67,24 @@ jest.mock("expo-sensors", () => ({
 
 jest.mock("expo-audio", () => ({
   setAudioModeAsync: async () => undefined,
-  useAudioPlayer: () => ({ seekTo: () => undefined, play: () => undefined })
+  useAudioPlayer: () => {
+    let onStatus: ((status: { didJustFinish: boolean }) => void) | undefined;
+    return {
+      seekTo: () => undefined,
+      pause: () => undefined,
+      play: () => {
+        void Promise.resolve().then(() => onStatus?.({ didJustFinish: true }));
+      },
+      addListener: (_event: string, listener: typeof onStatus) => {
+        onStatus = listener;
+        return {
+          remove: () => {
+            onStatus = undefined;
+          }
+        };
+      }
+    };
+  }
 }));
 
 jest.mock("expo-haptics", () => ({
@@ -101,12 +123,13 @@ describe("DuelScreen clock calibration", () => {
       },
       reconnect: () => Promise.reject(new Error("unused"))
     });
+    const onExit = jest.fn();
     const view = await render(
       <PaperProvider theme={appTheme}>
         <DuelScreen
           link={link}
           matchId="match"
-          onExit={() => undefined}
+          onExit={onExit}
           opponent={{ id: "host", name: "Host" }}
           role="guest"
           self={{ id: "guest", name: "Guest" }}
@@ -114,23 +137,13 @@ describe("DuelScreen clock calibration", () => {
       </PaperProvider>
     );
 
-    expect(view.getByText("Exit")).toBeTruthy();
-    await fireEvent.press(view.getByText("I'm Ready"));
-    expect(view.queryByText("STAND APART")).toBeNull();
+    expect(view.getByRole("button", { name: "Exit duel" })).toBeTruthy();
+    expect(view.queryByText("Exit")).toBeNull();
+    expect(view.getByText("STAND APART")).toBeTruthy();
+    expect(view.getByRole("button", { name: "Help" })).toBeTruthy();
+    await fireEvent.press(view.getByText("CONTINUE TO CALIBRATION"));
+    expect(view.getByText("Calibrate your draw")).toBeTruthy();
     await fireEvent.press(view.getByText("Start calibration"));
-    for (let index = 0; index <= 20; index += 1) {
-      await act(() => {
-        mockPitchListeners.forEach((listener) =>
-          listener({ rotation: { beta: 0 } })
-        );
-        mockAccelerometerListeners.forEach((listener) =>
-          listener({ x: 0, y: 0.9, z: 0 })
-        );
-        mockNowMs += 100;
-      });
-    }
-    expect(view.queryByText("STAND APART")).toBeNull();
-    expect(view.queryByText("Continue")).toBeNull();
     for (let index = 0; index <= 20; index += 1) {
       await act(() => {
         mockPitchListeners.forEach((listener) =>
@@ -143,10 +156,24 @@ describe("DuelScreen clock calibration", () => {
       });
     }
     expect(view.queryByText("STAND APART")).toBeNull();
+    expect(view.queryByText("Continue")).toBeNull();
+    for (let index = 0; index <= 20; index += 1) {
+      await act(() => {
+        mockPitchListeners.forEach((listener) =>
+          listener({ rotation: { beta: 0 } })
+        );
+        mockAccelerometerListeners.forEach((listener) =>
+          listener({ x: 0, y: 0.9, z: 0 })
+        );
+        mockNowMs += 100;
+      });
+    }
     await fireEvent.press(view.getByText("Continue"));
-    expect(view.getByText("STAND APART")).toBeTruthy();
+    expect(view.getByText("POINT THE TOP EDGE TOWARD THE GROUND")).toBeTruthy();
     expect(view.queryByText("CALIBRATING CLOCKS")).toBeNull();
-    expect(view.getByText("Exit")).toBeTruthy();
+    await fireEvent.press(view.getByRole("button", { name: "Exit duel" }));
+    expect(link.status()).toBe("closed");
+    expect(onExit).toHaveBeenCalledTimes(1);
 
     await view.unmount();
     let pongReceived = false;
@@ -156,6 +183,41 @@ describe("DuelScreen clock calibration", () => {
     peerChannel.send({ type: "clockPing", t0: Date.now() });
     expect(pongReceived).toBe(false);
     peer.dispose();
+  });
+
+  it("lets the player exit from the initial calibration screen", async () => {
+    const [duelChannel] = createMockDuelChannelPair();
+    const disconnect = jest.fn();
+    const link = createDuelLink({
+      connection: {
+        channel: duelChannel,
+        onDrop: () => undefined,
+        disconnect
+      },
+      reconnect: () => Promise.reject(new Error("unused"))
+    });
+    const onExit = jest.fn();
+    const view = await render(
+      <PaperProvider theme={appTheme}>
+        <DuelScreen
+          link={link}
+          matchId="match"
+          onExit={onExit}
+          opponent={{ id: "host", name: "Host" }}
+          role="guest"
+          self={{ id: "guest", name: "Guest" }}
+        />
+      </PaperProvider>
+    );
+    expect(view.getByText("STAND APART")).toBeTruthy();
+    expect(view.getByRole("button", { name: "Help" })).toBeTruthy();
+    expect(view.queryByText("How to play")).toBeNull();
+    expect(view.queryByText("Exit")).toBeNull();
+    await fireEvent.press(view.getByRole("button", { name: "Exit duel" }));
+    expect(link.status()).toBe("closed");
+    expect(link.channel.isConnected()).toBe(false);
+    expect(disconnect).toHaveBeenCalledTimes(1);
+    expect(onExit).toHaveBeenCalledTimes(1);
   });
 
   it.each([
@@ -200,7 +262,7 @@ describe("DuelScreen clock calibration", () => {
         </PaperProvider>
       );
 
-      await fireEvent.press(view.getByText("I'm Ready"));
+      await fireEvent.press(view.getByText("CONTINUE TO CALIBRATION"));
       await fireEvent.press(view.getByText("Start calibration"));
       for (const action of recoveryActions) {
         expect(view.getByText(action)).toBeTruthy();
@@ -209,7 +271,7 @@ describe("DuelScreen clock calibration", () => {
       expect(link.status()).toBe("live");
       expect(onExit).not.toHaveBeenCalled();
 
-      await fireEvent.press(view.getByText("Exit"));
+      await fireEvent.press(view.getByRole("button", { name: "Exit duel" }));
       expect(link.status()).toBe("closed");
       expect(link.channel.isConnected()).toBe(false);
       expect(onExit).toHaveBeenCalledTimes(1);

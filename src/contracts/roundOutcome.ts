@@ -9,8 +9,21 @@ export type MissReason =
   | "tooLow"
   | "tooHigh"
   | "offTarget"
-  | "trackingUnavailable"
+  | TrackingMissReason
   | "noShot";
+
+/**
+ * The shot could not be verified, named by the reading that was missing so the
+ * player knows what to fix. `trackingUnavailable` is the cause-unknown
+ * fallback: rounds and peers from before the split, or a bearing that GPS alone
+ * cannot define.
+ */
+export type TrackingMissReason =
+  | "tiltUnavailable"
+  | "compassUnavailable"
+  | "locationUnavailable"
+  | "opponentLocationUnavailable"
+  | "trackingUnavailable";
 
 export type RoundMiss = {
   playerId: string;
@@ -41,6 +54,8 @@ export type RoundOutcome = (
       kind: "win";
       winnerId: string;
       winnerZone: Zone;
+      /** The losing player's detected zone, even when timing made it score 0. */
+      loserZone: Zone;
       winnerPoints: number;
       loserPoints: number;
       reactionMs: number;

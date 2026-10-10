@@ -14,9 +14,9 @@ export type ShotClassification =
 
 // ponytail: fractional thresholds are a placeholder pending playtesting
 // (the spec explicitly leaves these open) — tune BODYSHOT_MIN_F/DELTA here.
-const BODYSHOT_MIN_F = 0.8;
-const BODYSHOT_MAX_F = 1.0;
-const HEADSHOT_DELTA_F = 0.2;
+export const BODYSHOT_MIN_F = 0.8;
+export const BODYSHOT_MAX_F = 1.0;
+export const HEADSHOT_DELTA_F = 0.2;
 
 /**
  * F = (θfire − θready) / (θshoulder − θready): how far through the calibrated
@@ -36,7 +36,7 @@ export function computeRaiseFraction(
 
 export function classifyZone(f: number): ShotClassification {
   if (!Number.isFinite(f)) {
-    return { zone: "miss", missReason: "trackingUnavailable" };
+    return { zone: "miss", missReason: "tiltUnavailable" };
   }
   if (f >= BODYSHOT_MIN_F && f <= BODYSHOT_MAX_F) {
     return { zone: "bodyshot" };

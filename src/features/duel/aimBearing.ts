@@ -28,16 +28,34 @@ export function classifyAimZone(
   opponent: AimPosition | null | undefined
 ): ShotClassification {
   if (shot.zone === "miss") return shot;
+  if (!isUsableAimPosition(self))
+    return { zone: "miss", missReason: "locationUnavailable" };
   if (
     typeof heading !== "number" ||
     !Number.isFinite(heading) ||
     heading < 0 ||
-    heading >= 360 ||
-    !isUsableAimPosition(self) ||
-    !isUsableAimPosition(opponent)
+    heading >= 360
   )
-    return { zone: "miss", missReason: "trackingUnavailable" };
+    return { zone: "miss", missReason: "compassUnavailable" };
+  if (!isUsableAimPosition(opponent))
+    return { zone: "miss", missReason: "opponentLocationUnavailable" };
 
+  const geometry = aimGeometry(heading, self, opponent);
+  if (!geometry) return { zone: "miss", missReason: "trackingUnavailable" };
+  if (geometry.bypassedWithinGpsUncertainty) return shot;
+  if (geometry.headingErrorDegrees === null)
+    return { zone: "miss", missReason: "trackingUnavailable" };
+  return geometry.headingErrorDegrees <= AIM_TOLERANCE_DEGREES
+    ? shot
+    : { zone: "miss", missReason: "offTarget" };
+}
+
+export function aimGeometry(
+  heading: number | null,
+  self: AimPosition | null,
+  opponent: AimPosition | null
+) {
+  if (!isUsableAimPosition(self) || !isUsableAimPosition(opponent)) return null;
   const radians = Math.PI / 180;
   const latitude = self.latitude * radians;
   const opponentLatitude = opponent.latitude * radians;
@@ -57,14 +75,23 @@ export function classifyAimZone(
     2 * 6_371_000 * Math.asin(Math.sqrt(Math.min(1, haversine)));
   // A few paces is usually inside phone GPS uncertainty. The bearing cannot
   // verify aim there, so keep the calibrated pitch result.
-  if (separation <= self.accuracy + opponent.accuracy) return shot;
+  const bypassedWithinGpsUncertainty =
+    separation <= self.accuracy + opponent.accuracy;
   // Coincident and antipodal points have no unique initial bearing.
-  if (Math.hypot(x, y) < 1e-12)
-    return { zone: "miss", missReason: "trackingUnavailable" };
-
-  const bearing = (Math.atan2(y, x) / radians + 360) % 360;
-  const difference = Math.abs(((heading - bearing + 540) % 360) - 180);
-  return difference <= AIM_TOLERANCE_DEGREES
-    ? shot
-    : { zone: "miss", missReason: "offTarget" };
+  const bearingDegrees =
+    Math.hypot(x, y) < 1e-12 ? null : (Math.atan2(y, x) / radians + 360) % 360;
+  const headingErrorDegrees =
+    bearingDegrees !== null &&
+    heading !== null &&
+    Number.isFinite(heading) &&
+    heading >= 0 &&
+    heading < 360
+      ? Math.abs(((heading - bearingDegrees + 540) % 360) - 180)
+      : null;
+  return {
+    bearingDegrees,
+    headingErrorDegrees,
+    separationMeters: separation,
+    bypassedWithinGpsUncertainty
+  };
 }

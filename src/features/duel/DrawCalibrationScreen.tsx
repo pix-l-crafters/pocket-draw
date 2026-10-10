@@ -1,22 +1,34 @@
+import { setAudioModeAsync, useAudioPlayer } from "expo-audio";
 import * as Haptics from "expo-haptics";
 import { Accelerometer } from "expo-sensors";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Platform, StyleSheet, Text, View } from "react-native";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  AppState,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View
+} from "react-native";
 
 import { CutCornerButton } from "../../components/CutCornerButton";
 import { CutCornerSurface } from "../../components/CutCornerSurface";
 import { PermissionNotice } from "../../components/PermissionNotice";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { StatusTag } from "../../components/StatusTag";
+import type { CalibrationPoseSnapshot } from "../../contracts/matchAnalytics";
 import { useForegroundRecheck } from "../../lib/useForegroundRecheck";
 import { colors, fonts } from "../../theme/tokens";
 import { isTopEdgeDown, isTopEdgeForward, PoseHold } from "./calibrationPose";
 import { PitchMonitor, type PitchCalibration } from "./pitchMonitor";
 import { PoseIllustration } from "./PoseIllustration";
+import { PoseProximityFeedback } from "./poseProximityFeedback";
 import { subscribeVolumeFire } from "./volumeFireTrigger";
 
 const MIN_CALIBRATION_ARC_RAD = 0.05;
 const MAX_CONFIRM_SAMPLE_AGE_MS = 350;
+const MIN_POSE_TEXT_WIDTH = 140;
 
 type TiltReading = { x: number; y: number; z: number; atMs: number };
 
@@ -34,6 +46,7 @@ type DrawCalibrationScreenProps = {
   onComplete: (calibration: PitchCalibration) => void;
   clockCalibrationStatus: "calibrating" | "ready" | "failed";
   onRetryClockCalibration: () => void;
+  paused?: boolean;
 };
 
 const statusCopy: Record<CalibrationStatus, string> = {
@@ -63,75 +76,147 @@ const statusLabels: Record<CalibrationStatus, string> = {
 export function DrawCalibrationScreen({
   onComplete,
   clockCalibrationStatus,
-  onRetryClockCalibration
+  onRetryClockCalibration,
+  paused = false
 }: DrawCalibrationScreenProps) {
+  const { fontScale } = useWindowDimensions();
+  const poseTextLayout = { flexBasis: MIN_POSE_TEXT_WIDTH * fontScale };
+  const confirmationAudio = useAudioPlayer(
+    require("../../../assets/audio/pose-confirmation.wav")
+  );
+  const proximityFeedback = useMemo(
+    () =>
+      new PoseProximityFeedback((band) => {
+        void Haptics.impactAsync(
+          band === "far"
+            ? Haptics.ImpactFeedbackStyle.Heavy
+            : Haptics.ImpactFeedbackStyle.Light
+        ).catch(() => undefined);
+      }),
+    []
+  );
   const [status, setStatus] = useState<CalibrationStatus>("idle");
   const [poseHint, setPoseHint] = useState<string | null>(null);
   const pitchMonitorRef = useRef<PitchMonitor | null>(null);
   const accelerometerRef = useRef<{ remove(): void } | null>(null);
   const latestTiltRef = useRef<TiltReading | null>(null);
   const holdRef = useRef(new PoseHold());
-  const stageRef = useRef<"ready" | "shoulder" | "passed">("ready");
-  const thetaReadyRef = useRef<number | null>(null);
+  const stageRef = useRef<"ready" | "shoulder" | "passed">("shoulder");
+  const thetaShoulderRef = useRef<number | null>(null);
+  const shoulderPoseRef = useRef<CalibrationPoseSnapshot | null>(null);
   const calibrationRef = useRef<PitchCalibration | null>(null);
+  const pausedRef = useRef(paused);
+  pausedRef.current = paused;
+  const appActiveRef = useRef(AppState.currentState === "active");
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (state) => {
+      appActiveRef.current = state === "active";
+      if (!appActiveRef.current) proximityFeedback.stop();
+    });
+    return () => subscription.remove();
+  }, [proximityFeedback]);
+
+  useEffect(() => {
+    void setAudioModeAsync({ playsInSilentMode: true }).catch(() => undefined);
+  }, []);
 
   const matchesPose = useCallback(
     (stage: "ready" | "shoulder", tilt: TiltReading, theta: number | null) =>
       theta !== null &&
-      (stage === "ready"
-        ? isTopEdgeDown(tilt.x, tilt.y, tilt.z)
-        : isTopEdgeForward(tilt.x, tilt.y, tilt.z) &&
-          thetaReadyRef.current !== null &&
-          Math.abs(theta - thetaReadyRef.current) >= MIN_CALIBRATION_ARC_RAD),
+      (stage === "shoulder"
+        ? isTopEdgeForward(tilt.x, tilt.y, tilt.z)
+        : isTopEdgeDown(tilt.x, tilt.y, tilt.z) &&
+          thetaShoulderRef.current !== null &&
+          Math.abs(theta - thetaShoulderRef.current) >=
+            MIN_CALIBRATION_ARC_RAD),
     []
   );
 
-  const completePose = useCallback((theta: number) => {
-    const stage = stageRef.current;
-    if (stage === "passed") return;
-    holdRef.current.reset();
-    setPoseHint(null);
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    if (stage === "ready") {
-      thetaReadyRef.current = theta;
-      stageRef.current = "shoulder";
-      setStatus("shoulder");
-    } else {
-      calibrationRef.current = {
-        thetaReady: thetaReadyRef.current!,
-        thetaShoulder: theta
+  const completePose = useCallback(
+    (theta: number, confirmation: "hold" | "volume" = "hold") => {
+      if (pausedRef.current || stageRef.current === "passed") return;
+      const stage = stageRef.current;
+      holdRef.current.reset();
+      setPoseHint(null);
+      void Haptics.notificationAsync(
+        Haptics.NotificationFeedbackType.Success
+      ).catch(() => undefined);
+      try {
+        void confirmationAudio.seekTo(0).catch(() => undefined);
+      } catch {
+        // A failed seek still allows the short cue to play.
+      }
+      try {
+        confirmationAudio.play();
+      } catch {
+        // Audio is supplementary; a failed sound must not block calibration.
+      }
+      const snapshot: CalibrationPoseSnapshot = {
+        capturedAtMs: Date.now(),
+        confirmation,
+        accelerometer: latestTiltRef.current
+          ? { ...latestTiltRef.current }
+          : null,
+        motion: pitchMonitorRef.current?.snapshot() ?? null
       };
-      stageRef.current = "passed";
-      accelerometerRef.current?.remove();
-      accelerometerRef.current = null;
-      pitchMonitorRef.current?.stop();
-      setStatus("passed");
-    }
-  }, []);
+      if (stage === "shoulder") {
+        thetaShoulderRef.current = theta;
+        shoulderPoseRef.current = snapshot;
+        stageRef.current = "ready";
+        setStatus("ready");
+      } else {
+        calibrationRef.current = {
+          thetaReady: theta,
+          thetaShoulder: thetaShoulderRef.current!,
+          readyPose: snapshot,
+          shoulderPose: shoulderPoseRef.current!
+        };
+        stageRef.current = "passed";
+        proximityFeedback.stop();
+        accelerometerRef.current?.remove();
+        accelerometerRef.current = null;
+        pitchMonitorRef.current?.stop();
+        setStatus("passed");
+      }
+    },
+    [confirmationAudio, proximityFeedback]
+  );
 
   useEffect(
     () => () => {
       pitchMonitorRef.current?.stop();
       pitchMonitorRef.current = null;
+      proximityFeedback.dispose();
       accelerometerRef.current?.remove();
       accelerometerRef.current = null;
     },
-    []
+    [proximityFeedback]
   );
 
   const startCalibration = useCallback(async () => {
     pitchMonitorRef.current?.stop();
+    proximityFeedback.stop();
     accelerometerRef.current?.remove();
     accelerometerRef.current = null;
     latestTiltRef.current = null;
     holdRef.current.reset();
-    stageRef.current = "ready";
-    thetaReadyRef.current = null;
+    stageRef.current = "shoulder";
+    thetaShoulderRef.current = null;
+    shoulderPoseRef.current = null;
     calibrationRef.current = null;
     setPoseHint(null);
     setStatus("starting");
 
-    const pitchMonitor = new PitchMonitor();
+    const pitchMonitor = new PitchMonitor((theta) => {
+      const thetaShoulder = thetaShoulderRef.current;
+      if (thetaShoulder !== null && appActiveRef.current) {
+        proximityFeedback.update(
+          theta === null ? null : Math.abs(theta - thetaShoulder),
+          MIN_CALIBRATION_ARC_RAD
+        );
+      }
+    });
     pitchMonitorRef.current = pitchMonitor;
     const result = await pitchMonitor.start();
     if (pitchMonitorRef.current !== pitchMonitor || result === "cancelled") {
@@ -154,6 +239,7 @@ export function DrawCalibrationScreen({
       }
       Accelerometer.setUpdateInterval(100);
       accelerometerRef.current = Accelerometer.addListener(({ x, y, z }) => {
+        if (pausedRef.current) return;
         const stage = stageRef.current;
         if (stage === "passed") return;
         const tilt = { x, y, z, atMs: Date.now() };
@@ -164,14 +250,14 @@ export function DrawCalibrationScreen({
           return;
         completePose(theta);
       });
-      setStatus("ready");
+      setStatus("shoulder");
     } catch {
       if (pitchMonitorRef.current === pitchMonitor) {
         pitchMonitor.stop();
         setStatus("error");
       }
     }
-  }, [completePose, matchesPose]);
+  }, [completePose, matchesPose, proximityFeedback]);
   const handleContinue = useCallback(() => {
     if (status === "passed" && calibrationRef.current) {
       onComplete(calibrationRef.current);
@@ -179,13 +265,17 @@ export function DrawCalibrationScreen({
   }, [onComplete, status]);
 
   useEffect(() => {
+    if (paused) {
+      holdRef.current.reset();
+      return undefined;
+    }
     if (
       (status !== "ready" && status !== "shoulder" && status !== "passed") ||
       (Platform.OS !== "android" && Platform.OS !== "ios")
     )
       return undefined;
     return subscribeVolumeFire(({ direction }) => {
-      if (direction !== "up") return;
+      if (pausedRef.current || direction !== "up") return;
       const stage = stageRef.current;
       if (stage === "passed") {
         handleContinue();
@@ -204,16 +294,16 @@ export function DrawCalibrationScreen({
         theta === null
       ) {
         setPoseHint(
-          stage === "ready"
-            ? "Point the top edge down first."
-            : "Point the top edge forward and raise the phone from ready first."
+          stage === "shoulder"
+            ? "Point the top edge forward at shoulder height first."
+            : "Point the top edge down and lower the phone from shoulder height first."
         );
         void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         return;
       }
-      completePose(theta);
+      completePose(theta, "volume");
     });
-  }, [status, completePose, handleContinue, matchesPose]);
+  }, [status, completePose, handleContinue, matchesPose, paused]);
 
   const recheckMotion = useCallback(() => {
     if (status === "permissionDenied") void startCalibration();
@@ -232,7 +322,11 @@ export function DrawCalibrationScreen({
             : "Retry";
 
   return (
-    <View style={styles.screen}>
+    <ScrollView
+      contentContainerStyle={styles.content}
+      style={styles.screen}
+      testID="draw-calibration-scroll"
+    >
       <ScreenHeader
         kicker="Draw calibration"
         subtitle="Hold each guided pose for two seconds or press volume up. Press volume up to continue."
@@ -241,28 +335,32 @@ export function DrawCalibrationScreen({
 
       <CutCornerSurface style={styles.instructionCard}>
         <View style={styles.stepRow}>
-          <Text style={styles.stepNumber}>
-            {status === "shoulder" || status === "passed" ? "✓" : "01"}
-          </Text>
-          <PoseIllustration
-            active={status === "ready"}
-            pose="ready"
-          />
-          <Text style={styles.stepText}>
-            Phone down at your side, top edge toward the ground.
+          <View style={styles.stepVisual}>
+            <Text style={styles.stepNumber}>
+              {status === "ready" || status === "passed" ? "✓" : "01"}
+            </Text>
+            <PoseIllustration
+              active={status === "shoulder"}
+              pose="shoulder"
+            />
+          </View>
+          <Text style={[styles.stepText, poseTextLayout]}>
+            Phone at shoulder height, top edge pointing forward.
           </Text>
         </View>
         <View style={styles.divider} />
         <View style={styles.stepRow}>
-          <Text style={styles.stepNumber}>
-            {status === "passed" ? "✓" : "02"}
-          </Text>
-          <PoseIllustration
-            active={status === "shoulder"}
-            pose="shoulder"
-          />
-          <Text style={styles.stepText}>
-            Phone at shoulder height, top edge pointing forward.
+          <View style={styles.stepVisual}>
+            <Text style={styles.stepNumber}>
+              {status === "passed" ? "✓" : "02"}
+            </Text>
+            <PoseIllustration
+              active={status === "ready"}
+              pose="ready"
+            />
+          </View>
+          <Text style={[styles.stepText, poseTextLayout]}>
+            Phone down at your side, top edge toward the ground.
           </Text>
         </View>
       </CutCornerSurface>
@@ -316,14 +414,17 @@ export function DrawCalibrationScreen({
           />
         ) : null}
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
     backgroundColor: colors.background,
-    flex: 1,
+    flex: 1
+  },
+  content: {
+    flexGrow: 1,
     padding: 24
   },
   instructionCard: {
@@ -331,6 +432,12 @@ const styles = StyleSheet.create({
     padding: 20
   },
   stepRow: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 16
+  },
+  stepVisual: {
     alignItems: "flex-start",
     flexDirection: "row",
     gap: 16
@@ -343,7 +450,9 @@ const styles = StyleSheet.create({
   },
   stepText: {
     color: colors.text,
-    flex: 1,
+    flexGrow: 1,
+    // Cap width instead of shrinking so Yoga keeps the basis when wrapping.
+    maxWidth: "100%",
     fontFamily: fonts.body,
     fontSize: 16,
     lineHeight: 22
