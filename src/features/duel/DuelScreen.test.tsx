@@ -115,7 +115,6 @@ describe("DuelScreen clock calibration", () => {
     );
 
     expect(view.getByText("Exit")).toBeTruthy();
-    await fireEvent.press(view.getByText("I'm Ready"));
     expect(view.queryByText("STAND APART")).toBeNull();
     await fireEvent.press(view.getByText("Start calibration"));
     for (let index = 0; index <= 20; index += 1) {
@@ -200,7 +199,6 @@ describe("DuelScreen clock calibration", () => {
         </PaperProvider>
       );
 
-      await fireEvent.press(view.getByText("I'm Ready"));
       await fireEvent.press(view.getByText("Start calibration"));
       for (const action of recoveryActions) {
         expect(view.getByText(action)).toBeTruthy();

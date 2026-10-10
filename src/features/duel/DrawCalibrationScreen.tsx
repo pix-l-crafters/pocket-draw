@@ -34,6 +34,7 @@ type DrawCalibrationScreenProps = {
   onComplete: (calibration: PitchCalibration) => void;
   clockCalibrationStatus: "calibrating" | "ready" | "failed";
   onRetryClockCalibration: () => void;
+  paused?: boolean;
 };
 
 const statusCopy: Record<CalibrationStatus, string> = {
@@ -63,7 +64,8 @@ const statusLabels: Record<CalibrationStatus, string> = {
 export function DrawCalibrationScreen({
   onComplete,
   clockCalibrationStatus,
-  onRetryClockCalibration
+  onRetryClockCalibration,
+  paused = false
 }: DrawCalibrationScreenProps) {
   const [status, setStatus] = useState<CalibrationStatus>("idle");
   const [poseHint, setPoseHint] = useState<string | null>(null);
@@ -74,6 +76,8 @@ export function DrawCalibrationScreen({
   const stageRef = useRef<"ready" | "shoulder" | "passed">("ready");
   const thetaReadyRef = useRef<number | null>(null);
   const calibrationRef = useRef<PitchCalibration | null>(null);
+  const pausedRef = useRef(paused);
+  pausedRef.current = paused;
 
   const matchesPose = useCallback(
     (stage: "ready" | "shoulder", tilt: TiltReading, theta: number | null) =>
@@ -87,8 +91,8 @@ export function DrawCalibrationScreen({
   );
 
   const completePose = useCallback((theta: number) => {
+    if (pausedRef.current || stageRef.current === "passed") return;
     const stage = stageRef.current;
-    if (stage === "passed") return;
     holdRef.current.reset();
     setPoseHint(null);
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -154,6 +158,7 @@ export function DrawCalibrationScreen({
       }
       Accelerometer.setUpdateInterval(100);
       accelerometerRef.current = Accelerometer.addListener(({ x, y, z }) => {
+        if (pausedRef.current) return;
         const stage = stageRef.current;
         if (stage === "passed") return;
         const tilt = { x, y, z, atMs: Date.now() };
@@ -179,13 +184,17 @@ export function DrawCalibrationScreen({
   }, [onComplete, status]);
 
   useEffect(() => {
+    if (paused) {
+      holdRef.current.reset();
+      return undefined;
+    }
     if (
       (status !== "ready" && status !== "shoulder" && status !== "passed") ||
       (Platform.OS !== "android" && Platform.OS !== "ios")
     )
       return undefined;
     return subscribeVolumeFire(({ direction }) => {
-      if (direction !== "up") return;
+      if (pausedRef.current || direction !== "up") return;
       const stage = stageRef.current;
       if (stage === "passed") {
         handleContinue();
@@ -213,7 +222,7 @@ export function DrawCalibrationScreen({
       }
       completePose(theta);
     });
-  }, [status, completePose, handleContinue, matchesPose]);
+  }, [status, completePose, handleContinue, matchesPose, paused]);
 
   const recheckMotion = useCallback(() => {
     if (status === "permissionDenied") void startCalibration();

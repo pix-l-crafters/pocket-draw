@@ -238,7 +238,6 @@ async function renderPhones() {
     });
   };
   const calibrate = async (role: DuelRole) => {
-    await press(role, "I'm Ready");
     await press(role, "Start calibration");
     expect(mockPhones[role].motion.size).toBe(1);
     for (let index = 0; index <= 20; index += 1) {
@@ -341,6 +340,43 @@ describe("DuelScreen real two-phone gameplay", () => {
     jest.useRealTimers();
   });
 
+  it("opens optional help over calibration and returns to the active step", async () => {
+    const { phones, press } = await renderPhones();
+    const host = phones.host;
+
+    expect(host.getByText("Calibrate your draw")).toBeTruthy();
+    expect(host.getByRole("button", { name: "Help" })).toBeTruthy();
+    expect(host.queryByText("How to play")).toBeNull();
+    await press("host", "Start calibration");
+    expect(host.getByText("Ready pose")).toBeTruthy();
+    await act(() => {
+      publishSensors("host");
+      mockPhones.host.tilt.forEach((listener) =>
+        listener({ x: 0, y: -0.9, z: 0 })
+      );
+    });
+
+    await press("host", "Help");
+    mockVolumeListeners.forEach((listener) => listener({ direction: "up" }));
+    expect(host.getByText("Ready pose")).toBeTruthy();
+    for (let index = 0; index <= 20; index += 1) {
+      await act(() => {
+        publishSensors("host");
+        mockPhones.host.tilt.forEach((listener) =>
+          listener({ x: 0, y: -0.9, z: 0 })
+        );
+        jest.advanceTimersByTime(100);
+      });
+    }
+    expect(host.queryByText("Shoulder pose")).toBeNull();
+    expect(host.getByRole("button", { name: "Close help" })).toBeTruthy();
+    expect(host.getByText("How to play")).toBeTruthy();
+    await press("host", "Close help");
+
+    expect(host.queryByText("How to play")).toBeNull();
+    expect(host.getByText("Ready pose")).toBeTruthy();
+  });
+
   it.each(["tap", "volume", "movement"] as const)(
     "agrees on a four-round 5–3 match, including a %s false start and the nonoffender's headshot",
     async (earlyInput) => {
@@ -360,7 +396,7 @@ describe("DuelScreen real two-phone gameplay", () => {
       await press("host", "CONFIRM");
       expect(phones.host.getByText("WAITING FOR YOUR OPPONENT")).toBeTruthy();
       expect(phones.host.queryByRole("button", { name: "Fire" })).toBeNull();
-      expect(phones.guest.getByText("I'm Ready")).toBeTruthy();
+      expect(phones.guest.getByText("Start calibration")).toBeTruthy();
 
       await calibrate("guest");
       await position("guest");

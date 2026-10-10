@@ -236,7 +236,6 @@ async function renderPhones(network = testNetwork()) {
   const host = within(view.getByTestId("host"));
   const guest = within(view.getByTestId("guest"));
   for (const phone of [host, guest]) {
-    await fireEvent.press(phone.getByText("I'm Ready"));
     await fireEvent.press(phone.getByText("Complete calibration"));
   }
   return { host, guest, network, onExit };
