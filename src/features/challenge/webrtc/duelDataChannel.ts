@@ -1,4 +1,5 @@
 import type { DuelChannel, DuelMessage } from "../../../contracts/duelChannel";
+import type { MissReason } from "../../../contracts/roundOutcome";
 import { MAX_ROUND_COUNT } from "../../duel/roundLoop";
 import { hasValidMatchId } from "../../qr/utils/qr.validation";
 import type { DuelTransportConnection } from "../session/duelSessionTransport";
@@ -7,6 +8,19 @@ import type { DuelTransportConnection } from "../session/duelSessionTransport";
 const MAX_ROUND_KEY_LENGTH = 1024;
 /** Upper bound on waiting for a closing DataChannel before closing its peer. */
 const PEER_CLOSE_FALLBACK_MS = 1000;
+/** `noShot` is decided at the window's edge, never fired over the wire. */
+const FIRED_MISS_REASONS: ReadonlySet<unknown> = new Set<
+  Exclude<MissReason, "noShot">
+>([
+  "tooLow",
+  "tooHigh",
+  "offTarget",
+  "tiltUnavailable",
+  "compassUnavailable",
+  "locationUnavailable",
+  "opponentLocationUnavailable",
+  "trackingUnavailable"
+]);
 
 export interface RtcDataChannelLike {
   readyState: string;
@@ -75,10 +89,7 @@ export function isDuelMessage(value: unknown): value is DuelMessage {
           message.zone === "headshot") &&
         (message.missReason === undefined ||
           (message.zone === "miss" &&
-            (message.missReason === "tooLow" ||
-              message.missReason === "tooHigh" ||
-              message.missReason === "offTarget" ||
-              message.missReason === "trackingUnavailable")))
+            FIRED_MISS_REASONS.has(message.missReason)))
       );
     case "aimPosition":
       return (

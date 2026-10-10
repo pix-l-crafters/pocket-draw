@@ -31,7 +31,7 @@ import {
 import { classifyZone, computeRaiseFraction } from "./pitchZoneClassifier";
 import { ReactionTimer } from "./reactionTimer";
 import { FIRE_WINDOW_MS, type RoundShots } from "./roundShots";
-import { useAimTracking } from "./useAimTracking";
+import { useAimTracking, type AimMissReason } from "./useAimTracking";
 import { subscribeVolumeFire } from "./volumeFireTrigger";
 
 const COUNTDOWN_VALUES = [3, 2, 1] as const;
@@ -45,6 +45,18 @@ export const COUNTDOWN_DURATION_MS =
  * devices can score the same last-instant shot differently.
  */
 const PEER_SHOT_GRACE_MS = 250;
+
+// Checked before the countdown so a player fixes tracking instead of losing
+// the round to a miss they could not see coming.
+const TRACKING_WARNINGS: Record<AimMissReason, string> = {
+  locationUnavailable:
+    "Your location signal is weak. Turn on precise location and try moving outside.",
+  compassUnavailable: "Compass not ready. Move your phone in a figure 8.",
+  opponentLocationUnavailable:
+    "Couldn't get your opponent's location. Ask them to turn on precise location and move outside.",
+  trackingUnavailable:
+    "Couldn't sync timing with your opponent's phone. Stay connected and wait a moment."
+};
 
 type Phase =
   | "separate"
@@ -108,9 +120,13 @@ export function PreRound({
   const phaseRef = useRef(phase);
   phaseRef.current = phase;
   const latestAimRef = useRef<AimDiagnostics | null>(null);
-  const captureAim = useAimTracking(channel, clockOffsetMs, (diagnostics) => {
-    latestAimRef.current = diagnostics;
-  });
+  const { captureAim, trackingIssues } = useAimTracking(
+    channel,
+    clockOffsetMs,
+    (diagnostics) => {
+      latestAimRef.current = diagnostics;
+    }
+  );
   const pitchMonitor = useMemo(() => new PitchMonitor(), []);
   const [pitchStatus, setPitchStatus] = useState<
     PitchMonitorStartResult | "starting"
@@ -438,7 +454,7 @@ export function PreRound({
           );
     const shot = captureAim(
       theta === null
-        ? { zone: "miss", missReason: "trackingUnavailable" }
+        ? { zone: "miss", missReason: "tiltUnavailable" }
         : classifyZone(raiseFraction!)
     );
     onShotDiagnostics?.({
@@ -671,6 +687,29 @@ export function PreRound({
               : "MOTION UNAVAILABLE — enable motion access in settings, then retry."
             : "Aim the top edge at your opponent. Missing GPS or a calibrated compass counts as a miss."}
         </Text>
+        {clockCalibrationStatus === "ready" &&
+          pitchStatus === "started" &&
+          (phase === "separate" ||
+            phase === "position" ||
+            phase === "waiting") &&
+          !!trackingIssues?.length && (
+            <View
+              accessibilityLiveRegion="polite"
+              style={styles.trackingCheck}
+            >
+              <Text style={styles.trackingKicker}>
+                TRACKING NOT READY — SHOTS WILL MISS
+              </Text>
+              {trackingIssues.map((reason) => (
+                <Text
+                  key={reason}
+                  style={styles.trackingWarning}
+                >
+                  {TRACKING_WARNINGS[reason]}
+                </Text>
+              ))}
+            </View>
+          )}
         {!motionDenied && pitchStatus === "permissionDenied" && (
           <PermissionNotice
             canAskAgain={false}
@@ -815,6 +854,18 @@ const styles = StyleSheet.create({
     fontFamily: fonts.body,
     fontSize: 18,
     minHeight: 48
+  },
+  trackingCheck: { gap: 4 },
+  trackingKicker: {
+    color: colors.warning,
+    fontFamily: fonts.mono,
+    fontSize: 12,
+    letterSpacing: 1.5
+  },
+  trackingWarning: {
+    color: colors.warning,
+    fontFamily: fonts.body,
+    fontSize: 16
   },
   fireOverlay: {
     ...StyleSheet.absoluteFillObject,

@@ -15,7 +15,7 @@ import { AppState, type AppStateStatus } from "react-native";
 import type { DuelChannel, DuelMessage } from "../../contracts/duelChannel";
 import type { AimDiagnostics } from "../../contracts/matchAnalytics";
 import { classifyZone, type ShotClassification } from "./pitchZoneClassifier";
-import { useAimTracking } from "./useAimTracking";
+import { useAimTracking, type AimTracking } from "./useAimTracking";
 
 jest.mock("expo-location", () => ({
   Accuracy: { High: 4 },
@@ -100,10 +100,7 @@ async function mount(clockOffsetMs = 0) {
     },
     isConnected: () => connected
   };
-  const view = await renderHook<
-    (shot: ShotClassification) => ShotClassification,
-    { clockOffsetMs: number }
-  >(
+  const view = await renderHook<AimTracking, { clockOffsetMs: number }>(
     ({ clockOffsetMs }) =>
       useAimTracking(channel, clockOffsetMs, (reading) =>
         diagnostics.push(reading)
@@ -113,7 +110,8 @@ async function mount(clockOffsetMs = 0) {
     }
   );
   await act(async () => {});
-  const capture = view.result.current!;
+  const capture: (shot: ShotClassification) => ShotClassification =
+    view.result.current!.captureAim;
   const receive = (message: DuelMessage) =>
     act(() => handlers.forEach((listener) => listener(message)));
   const setPosition = (reading = position()) =>
@@ -237,7 +235,7 @@ describe("useAimTracking", () => {
     });
     expect(duel.capture({ zone: "bodyshot" })).toEqual({
       zone: "miss",
-      missReason: "trackingUnavailable"
+      missReason: "locationUnavailable"
     });
     await duel.trustedReadings();
     await duel.setHeading(heading(180));
@@ -248,17 +246,77 @@ describe("useAimTracking", () => {
     await duel.wait(2001);
     expect(duel.capture({ zone: "bodyshot" })).toEqual({
       zone: "miss",
-      missReason: "trackingUnavailable"
+      missReason: "compassUnavailable"
     });
     await duel.setHeading(heading(180, 180, 2));
     expect(duel.capture({ zone: "bodyshot" })).toEqual({
       zone: "miss",
-      missReason: "trackingUnavailable"
+      missReason: "compassUnavailable"
     });
     expect(duel.capture(classifyZone(0.4))).toEqual({
       zone: "miss",
       missReason: "tooLow"
     });
+  });
+
+  test("names the reading that failed, own location and compass before the opponent's", async () => {
+    const duel = await mount();
+    const missReason = () => duel.capture({ zone: "bodyshot" }).missReason;
+    expect(missReason()).toBe("locationUnavailable");
+    await duel.setPosition();
+    expect(missReason()).toBe("compassUnavailable");
+    await duel.setHeading(heading(0, 180, 2));
+    expect(missReason()).toBe("compassUnavailable");
+    await duel.setHeading();
+    expect(missReason()).toBe("opponentLocationUnavailable");
+    await duel.receive(peerPosition());
+    expect(missReason()).toBeUndefined();
+    await duel.wait(5001);
+    await duel.setHeading();
+    expect(missReason()).toBe("locationUnavailable");
+    await duel.setPosition();
+    expect(missReason()).toBe("opponentLocationUnavailable");
+  });
+
+  test("a nonfinite clock offset cannot age the opponent's fix", async () => {
+    const duel = await mount();
+    await duel.trustedReadings();
+    await duel.view.rerender({ clockOffsetMs: NaN });
+    expect(duel.capture({ zone: "bodyshot" }).missReason).toBe(
+      "opponentLocationUnavailable"
+    );
+    expect(duel.diagnostics.at(-1)?.issues).toEqual([
+      "opponentPositionStale",
+      "clockOffsetInvalid"
+    ]);
+  });
+
+  test("reports tracking readiness before any shot, ignoring a still compass", async () => {
+    const duel = await mount();
+    const issues = () => duel.view.result.current?.trackingIssues;
+    expect(issues()).toBeNull();
+    await duel.wait(1000);
+    expect(issues()).toEqual([
+      "locationUnavailable",
+      "compassUnavailable",
+      "opponentLocationUnavailable"
+    ]);
+    await duel.trustedReadings();
+    await duel.wait(1000);
+    expect(issues()).toEqual([]);
+    // A phone held still in the ready pose stops reporting heading changes.
+    await duel.wait(3000);
+    expect(issues()).toEqual([]);
+    await duel.setHeading(heading(0, 180, 2));
+    await duel.wait(1000);
+    expect(issues()).toEqual(["compassUnavailable"]);
+    await duel.setHeading();
+    await duel.wait(2000);
+    expect(issues()).toEqual([
+      "locationUnavailable",
+      "opponentLocationUnavailable"
+    ]);
+    expect(duel.capture).toBe(duel.view.result.current?.captureAim);
   });
 
   test("missing readings never produce a hit", async () => {
@@ -299,7 +357,7 @@ describe("useAimTracking", () => {
     await duel.trustedReadings();
     expect(duel.capture({ zone: "headshot" }).zone).toBe("headshot");
     await duel.view.rerender({ clockOffsetMs: 0 });
-    expect(duel.view.result.current).toBe(duel.capture);
+    expect(duel.view.result.current?.captureAim).toBe(duel.capture);
     await duel.setHeading(heading(180));
     expect(duel.capture({ zone: "headshot" }).zone).toBe("miss");
     await duel.receive(peerPosition(-0.001));
@@ -456,7 +514,7 @@ describe("useAimTracking", () => {
       const listener = [...duel.handlers][0];
       expect(duel.capture({ zone: "headshot" }).zone).toBe("miss");
       await duel.view.rerender({ clockOffsetMs });
-      expect(duel.view.result.current).toBe(duel.capture);
+      expect(duel.view.result.current?.captureAim).toBe(duel.capture);
       expect(duel.capture({ zone: "headshot" }).zone).toBe("headshot");
       expect([...duel.handlers]).toEqual([listener]);
       expect(watchPositionAsync).toHaveBeenCalledTimes(1);
@@ -594,7 +652,7 @@ describe("useAimTracking", () => {
     await act(async () => {});
     await duel.trustedReadings();
     expect(duel.capture({ zone: "headshot" }).zone).toBe("headshot");
-    expect(duel.view.result.current).toBe(duel.capture);
+    expect(duel.view.result.current?.captureAim).toBe(duel.capture);
   });
 
   test("skips disconnected sends and survives a drop during publication", async () => {

@@ -317,6 +317,55 @@ describe("PreRound countdown and draw", () => {
     expect(view.getByText("POINT THE TOP EDGE TOWARD THE GROUND")).toBeTruthy();
   });
 
+  it("warns before the countdown which tracking reading would make shots miss", async () => {
+    const { deliver, view } = await renderPreRound("guest");
+    // The check runs once a second against the latest compass reading.
+    const checkWithCompassAccuracy = (accuracy: number) =>
+      act(() => {
+        mockHeadingListeners.forEach((listener) =>
+          listener({ trueHeading: 0, magHeading: 0, accuracy })
+        );
+        jest.advanceTimersByTime(1000);
+      });
+    expect(view.queryByText(/TRACKING NOT READY/)).toBeNull();
+
+    await checkWithCompassAccuracy(3);
+    expect(view.getByText(/TRACKING NOT READY/)).toBeTruthy();
+    expect(
+      view.getByText(/Couldn't get your opponent's location/)
+    ).toBeTruthy();
+    expect(view.queryByText(/Compass not ready/)).toBeNull();
+
+    await checkWithCompassAccuracy(1);
+    expect(
+      view.getByText("Compass not ready. Move your phone in a figure 8.")
+    ).toBeTruthy();
+
+    await deliver({
+      type: "aimPosition",
+      latitude: 0.001,
+      longitude: 0,
+      accuracy: 1,
+      sampleAtMs: Date.now()
+    });
+    await checkWithCompassAccuracy(3);
+    expect(view.queryByText(/TRACKING NOT READY/)).toBeNull();
+  });
+
+  it("keeps the tracking check out of the countdown", async () => {
+    const { setReading, view, wait } = await renderPreRound("host");
+    await fireEvent.press(view.getByText("CONFIRM"));
+    await setReading({ x: 0, y: -1, z: 0 });
+    await wait(1000);
+    expect(
+      view.getByText(/Couldn't get your opponent's location/)
+    ).toBeTruthy();
+
+    await fireEvent.press(view.getByText("CONFIRM"));
+    await wait(1000);
+    expect(view.queryByText(/TRACKING NOT READY/)).toBeNull();
+  });
+
   it("uses volume-up to confirm each enabled pre-round step", async () => {
     const { deliver, pressVolume, sent, setReading, view } =
       await renderPreRound("host");
@@ -708,10 +757,10 @@ describe("PreRound countdown and draw", () => {
     });
     expect(sent.at(-1)).toMatchObject({
       zone: "miss",
-      missReason: "trackingUnavailable"
+      missReason: "tiltUnavailable"
     });
     expect(shots[0]).toMatchObject({
-      selfMissReason: "trackingUnavailable",
+      selfMissReason: "tiltUnavailable",
       opponentMissReason: "tooLow"
     });
     expect(
@@ -722,7 +771,7 @@ describe("PreRound countdown and draw", () => {
       ).misses
     ).toEqual([
       { playerId: "guest", reason: "tooLow" },
-      { playerId: "host", reason: "trackingUnavailable" }
+      { playerId: "host", reason: "tiltUnavailable" }
     ]);
   });
 

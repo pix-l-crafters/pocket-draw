@@ -669,7 +669,7 @@ describe("DuelScreen real two-phone gameplay", () => {
       hostHeading: NaN,
       guestPitch: 1.1,
       winner: "Gil",
-      miss: /could not verify|unavailable|unverified/i
+      miss: /compass not ready/i
     }
   ])(
     "explains the result on both phones with a 2500ms gap: %p",

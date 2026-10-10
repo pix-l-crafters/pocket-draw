@@ -36,7 +36,7 @@ export function computeRaiseFraction(
 
 export function classifyZone(f: number): ShotClassification {
   if (!Number.isFinite(f)) {
-    return { zone: "miss", missReason: "trackingUnavailable" };
+    return { zone: "miss", missReason: "tiltUnavailable" };
   }
   if (f >= BODYSHOT_MIN_F && f <= BODYSHOT_MAX_F) {
     return { zone: "bodyshot" };

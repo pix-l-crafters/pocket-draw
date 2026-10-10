@@ -47,15 +47,31 @@ zero points: a slower hit suppressed by a faster hit is not a physical miss.
 - `offTarget`: fresh, reliable compass and separated GPS fixes verified that
   aim was outside the opponent's cone. The diagram is schematic; no exact
   physical direction or bullet trajectory is reconstructed.
-- `trackingUnavailable`: motion or aim could not be verified, including stale,
-  unreliable, ambiguous, or overlapping position readings.
+- Tracking misses name the reading that could not verify the shot, so the
+  result card can say what to fix:
+  - `tiltUnavailable`: no fresh pitch sample at fire time.
+  - `locationUnavailable`: this phone's GPS fix was missing, invalid, or stale.
+  - `compassUnavailable`: the heading was missing, below high calibration, or
+    stale.
+  - `opponentLocationUnavailable`: the opponent's GPS fix never arrived, was
+    invalid, or was stale.
+  - `trackingUnavailable`: cause unknown — rounds and peers from before the
+    split, or fixes with no unique bearing between them.
 - `noShot`: the player did not fire before the FIRE window ended.
+
+When several tracking readings fail, the player's own location comes first,
+then their compass, then the opponent's location.
 
 Known pitch misses retain their cause even when aim tracking is unavailable.
 The `raised` message carries the fired miss reason; `RoundOutcome.misses`
 retains player IDs and reasons in deterministic ID order through match history
 and reconnect comparison. False-start offenders are excluded. Older fired
 misses without diagnostics receive no guessed illustration.
+
+Before the countdown, PreRound shows the same checks live (about once a
+second) with a fix for each, so most tracking misses are caught before the
+round starts. A stale heading is not flagged there: phones only report heading
+changes, and the raise to fire refreshes it.
 
 Raise-correction arrows and the off-target marker animate once for 650 ms on
 the native driver; essential diagrams and text remain visible. Tracking
