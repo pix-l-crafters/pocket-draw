@@ -85,6 +85,25 @@ function setPitch(beta: number | null) {
 }
 
 describe("PitchMonitor", () => {
+  it("retains a firing snapshot with raw motion and sample age, including stale readings", async () => {
+    const monitor = new PitchMonitor();
+    await monitor.start();
+    setPitch(0.8);
+    jest.advanceTimersByTime(2_001);
+    expect(monitor.currentTheta()).toBeNull();
+    expect(monitor.snapshot()).toMatchObject({
+      receivedAtMs: 10_000,
+      ageMs: 2_001,
+      rotation: { alpha: 0, beta: 0.8, gamma: 0 },
+      acceleration: null,
+      accelerationIncludingGravity: { z: 9.80665 },
+      rotationRate: null,
+      interval: 20,
+      orientation: 0
+    });
+    monitor.stop();
+    expect(monitor.snapshot()).toBeNull();
+  });
   beforeEach(() => {
     jest.useFakeTimers();
     jest.setSystemTime(10_000);

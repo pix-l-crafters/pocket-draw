@@ -129,10 +129,22 @@ describe("DrawCalibrationScreen", () => {
     expect(Haptics.notificationAsync).toHaveBeenCalledTimes(2);
     expect(view.getByText("Clock: ✓ calibrated")).toBeTruthy();
     await fireEvent.press(view.getByText("Continue"));
-    expect(onComplete).toHaveBeenCalledWith({
-      thetaReady: 0.2,
-      thetaShoulder: 1.2
-    });
+    expect(onComplete).toHaveBeenCalledWith(
+      expect.objectContaining({
+        thetaReady: 0.2,
+        thetaShoulder: 1.2,
+        readyPose: expect.objectContaining({
+          confirmation: "hold",
+          motion: expect.objectContaining({
+            rotation: expect.objectContaining({ beta: 0.2 })
+          })
+        }),
+        shoulderPose: expect.objectContaining({
+          confirmation: "hold",
+          accelerometer: expect.objectContaining({ y: 0 })
+        })
+      })
+    );
     expect(mockMotionListeners.size).toBe(0);
     expect(mockTiltListeners.size).toBe(0);
   });
@@ -150,10 +162,12 @@ describe("DrawCalibrationScreen", () => {
       mockVolumeListeners.forEach((listener) => listener({ direction: "up" }));
     });
 
-    expect(onComplete).toHaveBeenCalledWith({
-      thetaReady: 0.2,
-      thetaShoulder: 1.2
-    });
+    expect(onComplete).toHaveBeenCalledWith(
+      expect.objectContaining({
+        thetaReady: 0.2,
+        thetaShoulder: 1.2
+      })
+    );
   });
 
   it("shows clock failure and retries on the calibration screen", async () => {

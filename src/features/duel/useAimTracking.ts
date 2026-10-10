@@ -9,26 +9,31 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { DuelChannel } from "../../contracts/duelChannel";
+import type { AimDiagnostics } from "../../contracts/matchAnalytics";
 import { useForegroundRecheck } from "../../lib/useForegroundRecheck";
 import {
   classifyAimZone,
+  aimGeometry,
   isUsableAimPosition,
   type AimPosition
 } from "./aimBearing";
 import type { ShotClassification } from "./pitchZoneClassifier";
 
 type TimedPosition = AimPosition & { accuracy: number; timestamp: number };
-type TimedHeading = { value: number; timestamp: number };
+type TimedHeading = { value: number; accuracy: number; timestamp: number };
 
 export function useAimTracking(
   channel: DuelChannel,
-  clockOffsetMs: number
+  clockOffsetMs: number,
+  onDiagnostics?: (diagnostics: AimDiagnostics) => void
 ): (shot: ShotClassification) => ShotClassification {
   const self = useRef<TimedPosition | null>(null);
   const opponent = useRef<TimedPosition | null>(null);
   const heading = useRef<TimedHeading | null>(null);
   const clockOffsetRef = useRef(clockOffsetMs);
   clockOffsetRef.current = clockOffsetMs;
+  const diagnosticsRef = useRef(onDiagnostics);
+  diagnosticsRef.current = onDiagnostics;
   const [trackingAttempt, setTrackingAttempt] = useState(0);
   const recheckAfterSettings = useCallback(() => {
     setTrackingAttempt((attempt) => attempt + 1);
@@ -128,8 +133,13 @@ export function useAimTracking(
             // SDK54 medium calibration allows <35° uncertainty, wider than our
             // 30° aim cone. Require high calibration (<20°), never magnetic north.
             heading.current =
-              reading.accuracy === 3
-                ? { value: reading.trueHeading, timestamp: Date.now() }
+              Number.isFinite(reading.trueHeading) &&
+              Number.isFinite(reading.accuracy)
+                ? {
+                    value: reading.trueHeading,
+                    accuracy: reading.accuracy,
+                    timestamp: Date.now()
+                  }
                 : null;
           },
           () => {
@@ -165,7 +175,6 @@ export function useAimTracking(
   }, [channel, trackingAttempt]);
 
   return useCallback((shot: ShotClassification): ShotClassification => {
-    if (shot.zone === "miss") return shot;
     const now = Date.now();
     const selfPosition = self.current;
     const opponentPosition = opponent.current;
@@ -173,19 +182,57 @@ export function useAimTracking(
     const opponentAgeMs = opponentPosition
       ? now - (opponentPosition.timestamp - clockOffsetRef.current)
       : NaN;
-    if (
-      !selfPosition ||
-      !opponentPosition ||
-      !compass ||
-      now < compass.timestamp ||
-      now - compass.timestamp > 2000 ||
+    const issues: string[] = [];
+    if (!compass) issues.push("headingMissing");
+    else {
+      if (compass.accuracy !== 3 || compass.value < 0 || compass.value >= 360)
+        issues.push("headingUnreliable");
+      if (now < compass.timestamp || now - compass.timestamp > 2000)
+        issues.push("headingStale");
+    }
+    if (!selfPosition) issues.push("selfPositionMissing");
+    else if (
       now < selfPosition.timestamp ||
-      now - selfPosition.timestamp > 5000 ||
-      !Number.isFinite(clockOffsetRef.current) ||
+      now - selfPosition.timestamp > 5000
+    )
+      issues.push("selfPositionStale");
+    if (!opponentPosition) issues.push("opponentPositionMissing");
+    else if (
       !Number.isFinite(opponentAgeMs) ||
       opponentAgeMs < 0 ||
       opponentAgeMs > 5000
     )
+      issues.push("opponentPositionStale");
+    if (!Number.isFinite(clockOffsetRef.current))
+      issues.push("clockOffsetInvalid");
+    const geometry = aimGeometry(
+      compass?.value ?? null,
+      selfPosition,
+      opponentPosition
+    );
+    diagnosticsRef.current?.({
+      capturedAtMs: now,
+      heading: compass ? { ...compass, ageMs: now - compass.timestamp } : null,
+      self: selfPosition
+        ? { ...selfPosition, ageMs: now - selfPosition.timestamp }
+        : null,
+      opponent: opponentPosition
+        ? {
+            ...opponentPosition,
+            ageMs: Number.isFinite(opponentAgeMs) ? opponentAgeMs : null
+          }
+        : null,
+      bearingDegrees: geometry?.bearingDegrees ?? null,
+      headingErrorDegrees: geometry?.headingErrorDegrees ?? null,
+      separationMeters: geometry?.separationMeters ?? null,
+      bypassedWithinGpsUncertainty:
+        shot.zone !== "miss" &&
+        issues.length === 0 &&
+        (geometry?.bypassedWithinGpsUncertainty ?? false),
+      issues
+    });
+    if (shot.zone === "miss") return shot;
+    if (issues.length || !compass)
       return { zone: "miss", missReason: "trackingUnavailable" };
     return classifyAimZone(shot, compass.value, selfPosition, opponentPosition);
   }, []);
