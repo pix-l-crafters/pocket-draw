@@ -33,6 +33,7 @@ import { MapScreen } from "./src/features/map/MapScreen";
 import type { CurrentUser } from "./src/features/map/types/map.types";
 import { ProfileScreen } from "./src/features/profile/ProfileScreen";
 import type { QrInvitePayload } from "./src/features/qr/types/qr.types";
+import { useAnalyticsQueueSync } from "./src/hooks/useAnalyticsQueueSync";
 import { useMatchResultQueueSync } from "./src/hooks/useMatchResultQueueSync";
 import { useAuthUser } from "./src/lib/useAuthUser";
 import LoginScreen from "./src/screens/LoginScreen";
@@ -98,6 +99,7 @@ export default function App() {
     useState<IncomingChallenge | null>(null);
 
   useMatchResultQueueSync(authLoading ? null : (user?.uid ?? null));
+  useAnalyticsQueueSync(authLoading ? null : (user?.uid ?? null));
 
   const previousUid = useRef(user?.uid);
   useEffect(() => {

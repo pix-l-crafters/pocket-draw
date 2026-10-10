@@ -6,6 +6,7 @@ import { Platform, StyleSheet } from "react-native";
 import { PaperProvider } from "react-native-paper";
 
 import type { DuelChannel, DuelMessage } from "../../contracts/duelChannel";
+import type { ShotDiagnostics } from "../../contracts/matchAnalytics";
 import { appTheme } from "../../theme/appTheme";
 import { FalseStartCoordinator } from "./falseStartCoordinator";
 import type { DuelRole } from "./fireSignalCoordinator";
@@ -118,6 +119,7 @@ async function renderPreRound(
   Platform.OS = platform;
   const sent: DuelMessage[] = [];
   const shots: RoundShots[] = [];
+  const diagnostics: ShotDiagnostics[] = [];
   const retries = jest.fn();
   const handlers = new Set<(message: DuelMessage) => void>();
 
@@ -147,6 +149,7 @@ async function renderPreRound(
         onRetryClockCalibration={retries}
         onCountdownStart={() => undefined}
         onRoundShots={(round) => shots.push(round)}
+        onShotDiagnostics={(shot) => diagnostics.push(shot)}
         peerReady
         role={role}
       />
@@ -199,6 +202,7 @@ async function renderPreRound(
   };
 
   return {
+    diagnostics,
     changeShoulderCalibration,
     completeRitual,
     deliver,
@@ -357,7 +361,7 @@ describe("PreRound countdown and draw", () => {
   it.each(["android", "ios"] as const)(
     "keeps tap-to-fire working on %s",
     async (platform) => {
-      const { completeRitual, deliver, sent, shots, view, wait } =
+      const { completeRitual, deliver, sent, shots, diagnostics, view, wait } =
         await renderPreRound("host", {}, platform);
       await completeRitual(
         platform === "ios" ? { x: 0, y: 1, z: 0 } : undefined
@@ -366,6 +370,14 @@ describe("PreRound countdown and draw", () => {
       expect(view.getByText("FIRE!")).toBeTruthy();
       await wait(400);
       await fireEvent.press(view.getByLabelText("Fire"));
+      expect(diagnostics).toHaveLength(1);
+      expect(diagnostics[0]).toMatchObject({
+        thetaFire: 1,
+        raiseFraction: 1,
+        pitchSampleUsable: true,
+        motion: { rotation: { beta: 1 } },
+        aim: { headingErrorDegrees: 0, issues: [] }
+      });
       await deliver({
         type: "raised",
         atMs: 1,

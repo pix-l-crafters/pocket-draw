@@ -8,6 +8,10 @@ import { IconButton, ProgressBar } from "react-native-paper";
 import { CutCornerButton } from "../../components/CutCornerButton";
 import { PermissionNotice } from "../../components/PermissionNotice";
 import type { DuelChannel, DuelMessage } from "../../contracts/duelChannel";
+import type {
+  AimDiagnostics,
+  ShotDiagnostics
+} from "../../contracts/matchAnalytics";
 import type { MissReason, Zone } from "../../contracts/roundOutcome";
 import { useForegroundRecheck } from "../../lib/useForegroundRecheck";
 import { colors, fonts } from "../../theme/tokens";
@@ -62,6 +66,7 @@ type PreRoundProps = {
   onRetryClockCalibration: () => void;
   onCountdownStart: () => void;
   onRoundShots: (shots: RoundShots) => void;
+  onShotDiagnostics?: (shot: ShotDiagnostics) => void;
 };
 
 export function PreRound({
@@ -77,13 +82,17 @@ export function PreRound({
   clockOffsetMs,
   onRetryClockCalibration,
   onCountdownStart,
-  onRoundShots
+  onRoundShots,
+  onShotDiagnostics
 }: PreRoundProps) {
   const countdownAudio = useAudioPlayer(COUNTDOWN_AUDIO_SOURCE);
   const [phase, setPhase] = useState<Phase>("separate");
   const phaseRef = useRef(phase);
   phaseRef.current = phase;
-  const captureAim = useAimTracking(channel, clockOffsetMs);
+  const latestAimRef = useRef<AimDiagnostics | null>(null);
+  const captureAim = useAimTracking(channel, clockOffsetMs, (diagnostics) => {
+    latestAimRef.current = diagnostics;
+  });
   const pitchMonitor = useMemo(() => new PitchMonitor(), []);
   const [pitchStatus, setPitchStatus] = useState<
     PitchMonitorStartResult | "starting"
@@ -372,17 +381,28 @@ export function PreRound({
     if (!capture) return;
 
     const theta = pitchMonitor.currentTheta();
+    const raiseFraction =
+      theta === null
+        ? null
+        : computeRaiseFraction(
+            theta,
+            calibration.thetaReady,
+            calibration.thetaShoulder
+          );
     const shot = captureAim(
       theta === null
         ? { zone: "miss", missReason: "trackingUnavailable" }
-        : classifyZone(
-            computeRaiseFraction(
-              theta,
-              calibration.thetaReady,
-              calibration.thetaShoulder
-            )
-          )
+        : classifyZone(raiseFraction!)
     );
+    onShotDiagnostics?.({
+      firedAtMs: capture.raisedAtMs,
+      thetaFire: theta,
+      raiseFraction,
+      pitchStatus,
+      pitchSampleUsable: theta !== null,
+      motion: pitchMonitor.snapshot(),
+      aim: latestAimRef.current
+    });
     setSelfZone(shot.zone);
     setSelfMissReason(shot.missReason);
     setSelfReactionMs(capture.reactionMs);
