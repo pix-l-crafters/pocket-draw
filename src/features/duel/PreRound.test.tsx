@@ -189,6 +189,8 @@ async function renderPreRound(
     <PaperProvider theme={appTheme}>
       <PreRound
         channel={channel}
+        matchId="0f9ee81d-68f0-47cb-8977-702fae0d1865"
+        roundNumber={1}
         calibration={{ thetaReady: 0, thetaShoulder }}
         selfPlayerId="host"
         falseStarts={falseStarts}
@@ -560,7 +562,7 @@ describe("PreRound countdown and draw", () => {
   ] as const)(
     "captures one volume %s %s shot during FIRE",
     async (platform, direction) => {
-      const { completeRitual, pressVolume, sent, shots, view, wait } =
+      const { completeRitual, deliver, pressVolume, sent, shots, view, wait } =
         await renderPreRound("host", {}, platform);
       await pressVolume(direction);
       expect(sent).toEqual([]);
@@ -583,6 +585,11 @@ describe("PreRound countdown and draw", () => {
       ]);
 
       await wait(10_000);
+      await deliver({
+        type: "noShot",
+        matchId: "0f9ee81d-68f0-47cb-8977-702fae0d1865",
+        roundNumber: 1
+      });
       await pressVolume(direction);
       expect(shots).toEqual([
         {
@@ -846,13 +853,38 @@ describe("PreRound countdown and draw", () => {
     expect(shots).toHaveLength(0);
   });
 
-  it("scores a player who never fires as no shot at all", async () => {
-    const { completeRitual, shots, view, wait } = await renderPreRound("host");
+  it("waits for the current peer's no-shot confirmation instead of guessing from silence", async () => {
+    const { completeRitual, deliver, sent, shots, view, wait } =
+      await renderPreRound("host");
     await completeRitual();
     await wait(COUNTDOWN_DURATION_MS);
 
     expect(view.getByText("FIRE!")).toBeTruthy();
     await wait(10_000);
+    expect(shots).toEqual([]);
+    expect(view.getByText("SYNCING SHOTS")).toBeTruthy();
+    expect(
+      view.getByRole("button", { name: "Fire", disabled: true })
+    ).toBeTruthy();
+    expect(sent.filter((message) => message.type === "noShot")).toEqual([
+      {
+        type: "noShot",
+        matchId: "0f9ee81d-68f0-47cb-8977-702fae0d1865",
+        roundNumber: 1
+      }
+    ]);
+    await deliver({ type: "noShot", matchId: "another-match", roundNumber: 1 });
+    await deliver({
+      type: "noShot",
+      matchId: "0f9ee81d-68f0-47cb-8977-702fae0d1865",
+      roundNumber: 2
+    });
+    expect(shots).toEqual([]);
+    await deliver({
+      type: "noShot",
+      matchId: "0f9ee81d-68f0-47cb-8977-702fae0d1865",
+      roundNumber: 1
+    });
 
     expect(shots).toEqual([
       {

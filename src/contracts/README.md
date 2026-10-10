@@ -33,6 +33,16 @@ overrides it to `miss` if compass/GPS aim is not valid. Missing or unavailable
 zones never fall back to `bodyshot`. Clock-offset calibration makes reaction
 timing comparable; both clients judge the exchanged actual shots.
 
+A received `raised` retains the captured reaction time, not its network receipt
+time. When a player does not fire within the inclusive 3-second window,
+`noShot` confirms that fact with the current `matchId` and `roundNumber`.
+The other phone waits for `raised` or that scoped confirmation before judging;
+network silence never becomes an opponent miss after a fixed grace period.
+While waiting past its own window, the screen shows `SYNCING SHOTS` and disables
+firing. The ordered, reliable DataChannel carries both messages. Link drops
+still use the existing reconnect/replay flow. Both phones must run this
+protocol version; an older build never sends `noShot`.
+
 `aimPosition` carries `latitude`, `longitude`, GPS `accuracy` in meters, and
 `sampleAtMs`, the actual sender GPS fix timestamp (not send or receipt time).
 The existing calibrated offset is peer clock minus local clock, giving

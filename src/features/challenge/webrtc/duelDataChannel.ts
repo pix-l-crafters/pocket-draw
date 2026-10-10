@@ -61,6 +61,14 @@ export function isDuelMessage(value: unknown): value is DuelMessage {
     case "rematchOffer":
     case "rematchAccept":
       return hasValidMatchId(message);
+    case "noShot":
+      return (
+        hasValidMatchId(message) &&
+        isFiniteNumber(message.roundNumber) &&
+        Number.isInteger(message.roundNumber) &&
+        message.roundNumber >= 1 &&
+        message.roundNumber <= MAX_ROUND_COUNT
+      );
     case "matchSync":
       return (
         hasValidMatchId(message) &&
