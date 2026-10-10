@@ -4,15 +4,73 @@ All notable changes to this project will be documented in this file. See [conven
 
 ---
 
-## [Unreleased]
+## [0.6.0](https://github.com/pix-l-crafters/pocket-draw/compare/v0.5.0..v0.6.0) - 2026-10-10
 
 ### Bug Fixes
 
-- **(duel)** wait for peer shot or no-shot confirmation before judging, preventing delayed packets from splitting match completion and tiebreaker decisions.
+- **(ci)** sync package-lock with oxfmt 0.72 so npm ci passes - ([5821101](https://github.com/pix-l-crafters/pocket-draw/commit/5821101b486d754bda45d45acb9eb324ed36c98c)) - Mobark Bacran
+- **(duel)** cancel false-started attempt and return players to ready - ([9f0de42](https://github.com/pix-l-crafters/pocket-draw/commit/9f0de424c07058c84b097163fa08b462c3c5cc67)) - Mobark Bacran
+- **(duel)** restore the exit button accent background - ([e4c38e4](https://github.com/pix-l-crafters/pocket-draw/commit/e4c38e41052041e25aa905356b9ff357b9cc241f)) - Ethan
+- **(duel)** reflow calibration steps with enlarged text - ([8fff1cb](https://github.com/pix-l-crafters/pocket-draw/commit/8fff1cb4c04416698456f23ce2249ddf93f773b9)) - Ethan
+- **(duel)** explain tracking misses and check tracking before the round - ([47b1d8c](https://github.com/pix-l-crafters/pocket-draw/commit/47b1d8c06356577864e8cd30981e35efe3ac1c68)) - tingyueh
+- **(duel)** synchronize peer shot completion before scoring - ([bf9e2f4](https://github.com/pix-l-crafters/pocket-draw/commit/bf9e2f4e9d33ae7305a60ea456e6fd37d23045b1)) - MRDGH2821
+- **(firebase)** persist challenge request decisions - ([330b250](https://github.com/pix-l-crafters/pocket-draw/commit/330b2508ded3ef6645e76d2519ce2d5555e1d2d2)) - hbeat
+- **(map)** limit nearby count to 500 metres - ([c666f8a](https://github.com/pix-l-crafters/pocket-draw/commit/c666f8adc48d840339fc7f2dce3085e29063fe1d)) - Ethan
+- **(map)** include You in marker overlap avoidance - ([7602831](https://github.com/pix-l-crafters/pocket-draw/commit/760283141cf2cae6b2c67be3be3acff244d6ed8a)) - Ethan
+- **(map)** keep markers visible on iOS Apple Maps - ([ef888b9](https://github.com/pix-l-crafters/pocket-draw/commit/ef888b95b145d591866fa9807cf73f383e61b684)) - Ethan
+- **(qr)** center the invite code in its card - ([7f4f89e](https://github.com/pix-l-crafters/pocket-draw/commit/7f4f89eb299f576670e4a3e648a14c0deca9ccf4)) - tingyueh
+- **(qr)** centre hotspot status and drop empty card space - ([68bcbde](https://github.com/pix-l-crafters/pocket-draw/commit/68bcbde7043295d598a8948010822c091bb09360)) - tingyueh
+- re-encrypt app env secrets in fnox - ([70a68f7](https://github.com/pix-l-crafters/pocket-draw/commit/70a68f7f23174380ec6139ae38ec41f9159e065d)) - Ethan
+
+### Documentation
+
+- log AI-assisted map precision and iOS work - ([3359e02](https://github.com/pix-l-crafters/pocket-draw/commit/3359e0269eb38031856e694fef4a56449cb21ef6)) - Ethan
 
 ### Features
 
-- **(duel)** make gameplay instructions optional from calibration.
+- **(duel)** make gameplay instructions optional from calibration - ([de8c5e7](https://github.com/pix-l-crafters/pocket-draw/commit/de8c5e7a9a5bcfad0284c143c67e5f060600d354)) - MRDGH2821
+- **(duel)** save match sensor analytics to Firestore - ([c4635d5](https://github.com/pix-l-crafters/pocket-draw/commit/c4635d53d10f4999d88ea852dcc64a7e46ee2851)) - hbeat
+- **(duel)** add progressive pose calibration feedback - ([e87b455](https://github.com/pix-l-crafters/pocket-draw/commit/e87b455da2cd239cf0464fc9b5e39507ecf935ed)) - wutianze3
+- **(duel)** make draw calibration scrollable - ([1e935e5](https://github.com/pix-l-crafters/pocket-draw/commit/1e935e5e4e5f2c1cb9b45ec3fb37b3efcac0556c)) - Ethan
+- **(duel)** simplify the exit control - ([056449d](https://github.com/pix-l-crafters/pocket-draw/commit/056449d5a372c9ff08b4525b8dd5759843eacc61)) - Ethan
+- **(duel)** add audio cues for match flow - ([578c94f](https://github.com/pix-l-crafters/pocket-draw/commit/578c94fe4d1ad61360bb42ed52367eaf19f5ac5d)) - Mobark Bacran
+- **(duel)** clarify results and reorder setup - ([c0c4b23](https://github.com/pix-l-crafters/pocket-draw/commit/c0c4b23bfdc0c8da8802f215da1c016ad7913841)) - wutianze3
+- **(map)** cluster overlapping markers by screen distance - ([0c49df3](https://github.com/pix-l-crafters/pocket-draw/commit/0c49df3d0c3c1ba375204d81c809603238e486b9)) - Ethan
+- **(presence)** share location at about 10 m precision - ([bd0a986](https://github.com/pix-l-crafters/pocket-draw/commit/bd0a986a44c5e7b8cdc7dbe19ab0f26b4836a6be)) - Ethan
+
+### Miscellaneous Chores
+
+- **(copier)** update template - ([08847e9](https://github.com/pix-l-crafters/pocket-draw/commit/08847e9e4f5318b146099a30ecf259ab9995f173)) - MRDGH2821
+- **(duel)** merge dev into progressive pose calibration - ([ad88b51](https://github.com/pix-l-crafters/pocket-draw/commit/ad88b51fffdc79a7e6da3e376f86ff1f592f6100)) - MRDGH2821
+- **(duel)** merge dev and resolve information panel conflicts - ([a0bb9fa](https://github.com/pix-l-crafters/pocket-draw/commit/a0bb9fa2a2024d7d230c95c025050678a8aae79c)) - Ethan
+- **(duel)** merge dev and resolve information panel conflicts - ([5dbb962](https://github.com/pix-l-crafters/pocket-draw/commit/5dbb9627c36111efb1f0a0ec8e9866406b07f100)) - Ethan
+- **(qr)** merge latest dev updates - ([6e914e8](https://github.com/pix-l-crafters/pocket-draw/commit/6e914e8089032c8aa5195d5ae42d366e743c0fa2)) - tingyueh
+- **(qr)** hide hotspot button - ([392bbd6](https://github.com/pix-l-crafters/pocket-draw/commit/392bbd6a00d03e3307682ae7081eedb4f78c99f1)) - MRDGH2821
+- merge pull request #136 from pix-l-crafters/mobark/fix/false-start-cancel - ([964138f](https://github.com/pix-l-crafters/pocket-draw/commit/964138fd164f88ca369f2171ebafc1fe05ae2beb)) - Mihir Rabade
+- merge pull request #135 from pix-l-crafters/tingyueh/fix-qr-center-the-invite-code-and-remove-excess - ([fa02a05](https://github.com/pix-l-crafters/pocket-draw/commit/fa02a051ec4605e2c3ad7c3a6d71fe3b5c7e35b6)) - Mihir Rabade
+- merge pull request #140 from pix-l-crafters/hbeat/feature/collect-sensor-data - ([2567f05](https://github.com/pix-l-crafters/pocket-draw/commit/2567f050ea9c96eec9d1d706b2383aff0af5dc9a)) - Mihir Rabade
+- merge pull request #142 from pix-l-crafters/hbeat/hbeat-fix-challenge-request-status - ([d835605](https://github.com/pix-l-crafters/pocket-draw/commit/d835605e1f301219bdc82c2a448ac64c2af8bb7d)) - Mihir Rabade
+- merge latest dev into issue 129 branch - ([3313970](https://github.com/pix-l-crafters/pocket-draw/commit/3313970e7c462928b9bddf41ac01f5287284bddc)) - MRDGH2821
+- merge latest dev into progressive pose calibration - ([d9c7030](https://github.com/pix-l-crafters/pocket-draw/commit/d9c703091436d5374022fb6d1c2898632d4740f6)) - MRDGH2821
+- merge pull request #139 from pix-l-crafters/wutianze3/feat/progressive-pose-calibration - ([9f49883](https://github.com/pix-l-crafters/pocket-draw/commit/9f498838c2c4d08b522a15a7153781c6f18f8e40)) - Mihir Rabade
+- merge latest dev into issue 129 branch - ([b4b8fbd](https://github.com/pix-l-crafters/pocket-draw/commit/b4b8fbdffd7b9d9ce2ba8a259095d0dcb20d9383)) - MRDGH2821
+- merge pull request #143 from pix-l-crafters/ethan/feat/131-accessible-info-panels - ([dbc692e](https://github.com/pix-l-crafters/pocket-draw/commit/dbc692ec7fbae809c41ca2d1a5b8250c8f90641c)) - Mihir Rabade
+- merge current dev into issue 129 branch - ([b7b65d9](https://github.com/pix-l-crafters/pocket-draw/commit/b7b65d988b192945c8b29be12cdce2378cb48c34)) - MRDGH2821
+- merge pull request #141 from pix-l-crafters/MRDGH2821/feat-duel-make-gameplay-instructions-optional-fr - ([15f6625](https://github.com/pix-l-crafters/pocket-draw/commit/15f66253ddf7855ba91cccb8b1c2b9491e814270)) - Mihir Rabade
+- merge pull request #149 from pix-l-crafters/mihir/chore/update-dev-env - ([54c829c](https://github.com/pix-l-crafters/pocket-draw/commit/54c829cb9deecd41fecce0a27e01e2f6b920fb6c)) - Mihir Rabade
+- merge pull request #150 into issue 145 branch - ([180ccda](https://github.com/pix-l-crafters/pocket-draw/commit/180ccda331bedcac8c6349e5f8779cf6249b6919)) - Mobark Bacran
+- merge pull request #151 from pix-l-crafters/mobark/feat/145-audio-cues - ([1c5bfaf](https://github.com/pix-l-crafters/pocket-draw/commit/1c5bfafec81aa6bf3ae445e210c0d75ffb8cc049)) - Mobark Bacran
+- merge pull request #152 from pix-l-crafters/wutianze3/feat/duel-result-start-flow - ([87794ea](https://github.com/pix-l-crafters/pocket-draw/commit/87794eabb599162949d0ba796dd256fe7a45072d)) - Mobark Bacran
+- merge pull request #153 from pix-l-crafters/mobark/fix/lockfile-oxfmt - ([6ed61b9](https://github.com/pix-l-crafters/pocket-draw/commit/6ed61b90c6ec515d9b2da60c992a438f4b2bd678)) - Mobark Bacran
+- merge latest dev into nearby-player branch - ([b6e64f1](https://github.com/pix-l-crafters/pocket-draw/commit/b6e64f1c0f97640cbfcdb8646c74adae449e3a7e)) - Ethan
+- merge pull request #154 from pix-l-crafters/ethan/fix/nearby-player-visibility - ([9f6615d](https://github.com/pix-l-crafters/pocket-draw/commit/9f6615dfcfdbf233afbd8f3939a6f4377f393e3f)) - Mihir Rabade
+- merge pull request #155 from pix-l-crafters/mihir/fix/sync-results - ([354ac9d](https://github.com/pix-l-crafters/pocket-draw/commit/354ac9d18b3ba56b5d1fcc858f2468991f2b09ed)) - Mihir Rabade
+- merge pull request #156 from pix-l-crafters/mihir/chore/hide-hotspot - ([8cf90ed](https://github.com/pix-l-crafters/pocket-draw/commit/8cf90ed05a3ebeac850e043b57f34556762a696a)) - Mihir Rabade
+
+### Build
+
+- **(mise)** add iOS device build and signing tasks - ([48b4044](https://github.com/pix-l-crafters/pocket-draw/commit/48b404409bc1aeb1292c2ef241f9cbf6b1847cd7)) - Ethan
+- **(mise)** update lock files - ([f53d178](https://github.com/pix-l-crafters/pocket-draw/commit/f53d17827eb0a57dcc443030c4d864a608b5dc12)) - MRDGH2821
 
 ---
 
