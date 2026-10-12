@@ -293,29 +293,36 @@ If both phones are on the same Wi-Fi network, the app connects over that network
 
 The figures below come from the repository on the `dev` branch (commit `8b34289`): who opened each merged pull request, who wrote each commit, and how many commits each person made to each file. The submission includes the full commit log as a separate export.
 
+
 == Mihir Rabade, `MRDGH2821`, 178 commits, 21 merged pull requests
 
 Built the pitch and zone scoring classifying headshots, bodyshots, and misses (PR \#65: `pitchZoneClassifier.ts`, `roundJudge.ts`). Built cross-device clock measurement and offset calibration between phones (PRs \#67, \#96, \#103: `clockOffsetCalibrator.ts`). Built DeviceMotion pitch monitoring and platform tilt calibration across iOS and Android (PRs \#69, \#95: `pitchMonitor.ts`, `DrawCalibrationScreen.tsx`). Built animated vector miss explanations (PR \#121: `RoundIllustration.tsx`). Built peer shot completion synchronization before scoring (PR \#155). Built the Firebase write path for match results, offline queue and sync (PRs \#27, \#91, \#155: `matchResultsService.ts`, `matchResultQueue.ts`). Built player statistics and profile draw counts (PR \#93). Built large buttons accessibility (PR \#124) and optional calibration gameplay instructions (PR \#141). Managed build, lint, release, secrets (`fnox`), and copier tooling across the repository (PRs \#20, \#22, \#24, \#55, \#56, \#77, \#78, \#84, \#86 to \#89, \#92, \#149, \#156).
+
 
 == Mobark Walid O Bacran, `MobyScript`, 109 commits, 20 merged pull requests
 
 Architected host single-judge scoring to eliminate race conditions and ties (PR \#158: `roundLoop.ts`, `roundJudge.ts`). Built the match round loop, state machine, and tied-round scoring (PRs \#26, \#31: `roundLoop.ts`, `roundLoop.check.ts`). Built the post-match summary and per-round result screens (PRs \#26, \#127: `MatchSummaryScreen.tsx`, `RoundResultScreen.tsx`). Defined shared contracts and mock implementations in `src/contracts/`, unblocking six members in parallel (PR \#23). Built match audio cues and sound effects for countdown, fire, hit, and false start (PR \#151: `countdownAudio.ts`). Built visual distinction between countdown and the red FIRE cue (PR \#112). Built pre-round ready guidance and pose instructions (PR \#117: `PreRound.tsx`). Built false-start cancellation resetting players to ready (PRs \#112, \#136). Built app permission management (PR \#106: `PermissionStatusScreen.tsx`, `appPermissions.ts`). Built the design system and theme (`src/theme/`, `src/components/`). Led major branch integrations and conflict resolution (PRs \#19, \#21, \#31, \#57, \#76, \#79).
 
+
 == Siheng Ma, `EthanMaMax`, 33 commits, 6 merged pull requests
 
 Set up Firebase services (PR \#2: `firebase.ts`). Built the map screen, foreground GPS location fetching, and permission handling (PR \#6: `MapScreen.tsx`, `useForegroundLocation.ts`). Built live player presence on the map with heartbeats, retry, and privacy toggle (PR \#28: `presenceRepository.ts`, `usePresencePublisher.ts`, `useNearbyPlayers.ts`). Enforced privacy by rounding public presence to ~10 m precision (4 decimal places). Implemented map pin clustering by screen distance to prevent overlapping markers from covering each other (PRs \#134, \#154). Fixed marker visibility for Apple Maps on iOS (PR \#154). Built accessible info dialog panels (PR \#143: `InfoPanel`). Managed Google Maps API key encryption and sharing in `fnox` (PR \#111).
+
 
 == Tanachat Mongkolporn, `hbeat`, 25 commits, 8 merged pull requests
 
 Built match sensor data analytics collection, logging tilt, compass, GPS and calibration angles to Firestore `analytics` (PR \#140: `matchAnalytics.ts`). Built completed match results persistence and receipt tracking in Firestore (PRs \#91, \#101, \#105, \#107, \#108: `matchResultsRepository.ts`, `playerStatsRepository.ts`). Hardened Firestore security rules for production receipts and match records (`firestore.rules`, PR \#108). Built challenge request decision persistence in Firestore (PR \#142: `challengeRequestRepository.ts`). Built the live leaderboard screen and repository fetching real Elo rankings (PR \#97: `LeaderboardScreen.tsx`, `leaderboardRepository.ts`). Built the pre-round ready countdown, haptics, and audio foundation (PR \#29: `PreRound.tsx`). Implemented the Elo rating formula with standard logistic expected score and K = 40 (PR \#29: `elo.ts`). Conducted early Bluetooth trials for the project.
 
+
 == Tingyue He, `tingyueh`, 25 commits, 7 merged pull requests
 
 Configured the initial project setup for Expo SDK 54 (PRs \#1, \#4). Built the complete QR challenge flow: QR generation, camera scanning via `CameraView`, payload validation, and opponent confirmation popup (PR \#25: `QrDisplayScreen.tsx`, `QrScannerScreen.tsx`, `ChallengeScreen.tsx`, `qr.tokens.ts`, `qr.validation.ts`). Built phone-to-phone WebRTC transport over Wi-Fi with native TCP signaling, DataChannel exchange, and IP validation (PRs \#32, \#71, \#74: `nativeWebRtcTransport.ts`, `signalingProtocol.ts`, `webrtcDuelTransport.ts`, `duelDataChannel.ts`, `ip.validation.ts`). Fully cut over to WebRTC and deleted the legacy BLE transport (PR \#102). Built granular tracking failure diagnostics and explanations, splitting tracking unavailable into tilt, compass, own location, and opponent location causes, with pre-round checks (PR \#150: `useAimTracking.ts`, `RoundIllustration.tsx`). Polished QR invite card layout (PR \#135) and added installed app version display on Profile (PR \#100).
 
+
 == Tianze Wu, `wutianze3`, 20 commits, 5 merged pull requests
 
 Built Firebase Authentication screens: Login and Register with validation (PR \#7: `LoginScreen.tsx`, `RegisterScreen.tsx`, `auth.ts`). Built progressive pose calibration feedback providing real-time angle hints during ready and shoulder setup (PR \#139: `DrawCalibrationScreen.tsx`). Built Android volume button firing trigger (PR \#104: `volumeFireTrigger.ts`). Built false start detection with asymmetric scoring: penalising early movers while keeping the opponent's valid shot active (PRs \#30, \#85: `falseStartDetector.ts`, `falseStartCoordinator.ts`). Built three-round match scoring structure (PR \#59). Clarified duel result start flow and reordered setup (PR \#152). Built raise gesture detection primitives and reaction timing (PR \#30: `raiseGestureDetector.ts`, `reactionTimer.ts`). Built connection drop recovery and retry logic (`disconnectRecovery.ts`).
+
 
 == Work owned by several members
 

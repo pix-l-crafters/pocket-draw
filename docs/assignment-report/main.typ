@@ -43,29 +43,23 @@
 // Rubric criterion badge: hidden. Each section heading already names its criterion.
 #let crit(name, bands) = none
 
-
 // ============================================================================
 // COVER
 // ============================================================================
 
 #align(center)[
-  #v(2cm)
-  #text(size: 30pt, weight: "bold")[Pocket Draw]
+  #v(2cm) #text(size: 30pt, weight: "bold")[Pocket Draw]
 
-  #v(0.3cm)
-  #text(
+  #v(0.3cm) #text(
     size: 13pt,
     style: "italic",
   )[A reflex duel for two phones in the same room]
 
-  #v(1.2cm)
-  #text(size: 14pt)[COMP90018, Mobile Computing Systems Programming]
+  #v(1.2cm) #text(size: 14pt)[COMP90018, Mobile Computing Systems Programming]
 
-  #v(0.2cm)
-  #text(size: 14pt, weight: "bold")[Assignment 2: Software Project]
+  #v(0.2cm) #text(size: 14pt, weight: "bold")[Assignment 2: Software Project]
 
-  #v(0.4cm)
-  #text(size: 12pt)[Group T01/05-02, Tutorial 05, Group 2]
+  #v(0.4cm) #text(size: 12pt)[Group T01/05-02, Tutorial 05, Group 2]
 
   #v(1.4cm)
 ]
@@ -100,8 +94,7 @@
   radius: 4pt,
   width: 100%,
 )[
-    Demonstration video: #link("https://www.youtube.com/watch?v=SI0VlwdMGvs")[youtube.com/watch?v=SI0VlwdMGvs]
-
+  Demonstration video: #link("https://www.youtube.com/watch?v=SI0VlwdMGvs")[youtube.com/watch?v=SI0VlwdMGvs]
 
   Source repository: #link("https://github.com/pix-l-crafters/pocket-draw")[github.com/pix-l-crafters/pocket-draw]
 
@@ -114,7 +107,10 @@
 #pagebreak()
 
 // ============================================================================
+
+
 = Overview
+
 // ============================================================================
 
 Pocket Draw is a reflex duel for two players. You play it with the phone, not on the phone. The two players stand together, connect their phones to each other, and hold the phones in a position that each player sets first. Both phones then give a fire signal at the same moment.
@@ -144,10 +140,14 @@ The project holds 306 commits that are not merges, across 50 merged pull request
 // The feedback also said that cross-device timing was the main risk, and that the team must measure it before anything else. The team measured it first, and section #link(<clock>)[5.5] gives the result.
 
 // ============================================================================
+
+
 = Compiling and running the project
+
 // ============================================================================
 
 The app uses Expo, a toolkit built on React Native. Expo generates the `android/` and `ios/` directories from `app.config.ts` and the installed plugins, so those two directories are not in the repository. This is the normal setup for Expo SDK 54. It is also why the instructions below start with a prebuild step, which is the command that generates those directories.
+
 
 == Prerequisites
 
@@ -174,13 +174,14 @@ Install #link("https://mise.jdx.dev/")[Mise] and follow the steps. The entire de
 3. Run the following:
 
 #block(inset: (left: 6pt))[
-```sh
-mise trust
-mise install
-mise run android-setup
-mise run prepare
-```
+  ```sh
+  mise trust
+  mise install
+  mise run android-setup
+  mise run prepare
+  ```
 ]
+
 
 == Running on Android
 
@@ -200,6 +201,7 @@ mise run prepare
 
 To use Android Studio instead, run the prebuild command above first. Then open the generated `android/` directory as an existing project, and build it there. This is also how to produce the screenshot in section #link(<screenshot>)[3].
 
+
 == Running on iOS
 
 #block(inset: (left: 6pt))[
@@ -212,7 +214,6 @@ To use Android Studio instead, run the prebuild command above first. Then open t
 
 == Deploying to TestFlight
 
-
 #block(inset: (left: 6pt))[
   ```sh
   eas build --platform ios --profile production
@@ -221,9 +222,11 @@ To use Android Studio instead, run the prebuild command above first. Then open t
   ```
 ]
 
+
 == Configuration
 
 The app reads the Firebase and Google Maps credentials from the environment. It does not read them from files in the repository. #TODO[confirm with Mihir whether the assessors receive a populated .env file, or whether they must create their own Firebase project. This decides whether an assessor can use the cloud features at all, so the answer must be accurate.]
+
 
 == Running the tests
 
@@ -235,6 +238,7 @@ The app reads the Firebase and Google Maps credentials from the environment. It 
 
 The expected result is 28 test files and 157 tests, all passing, in about 8 seconds.
 
+
 == Playing a duel
 
 A duel needs two phones. On the first phone, sign in and open the Challenge tab. The screen shows a QR code. On the second phone, sign in and scan that code. Then accept the challenge on the first phone. Both players set their ready position and their shoulder position, and the duel starts.
@@ -242,24 +246,35 @@ A duel needs two phones. On the first phone, sign in and open the Challenge tab.
 If both phones are on the same Wi-Fi network, the app connects over that network. If they are not, the Android phone creates a hotspot. The QR code carries the name and the password that the other phone needs to join it.
 
 // ============================================================================
+
+
 = Build screenshot <screenshot>
+
 // ============================================================================
+
 
 == IOS build
 
-#image("iOS expo prebuild.png")
-#block(fill: rgb("#f0f2f5"), inset: 10pt, radius: 3pt, width: auto)[
-mise run build-ios
-]
-#image("build ios.png")
+#image("iOS expo prebuild.png") #block(
+  fill: rgb("#f0f2f5"),
+  inset: 10pt,
+  radius: 3pt,
+  width: auto,
+)[
+  mise run build-ios
+] #image("build ios.png")
+
 
 == Android build
-#image("android expo prebuild.png")
-#block(fill: rgb("#f0f2f5"), inset: 10pt, radius: 3pt, width: auto)[
-mise run build-android-apk
-]
-#image("build android.png")
-#figure(
+
+#image("android expo prebuild.png") #block(
+  fill: rgb("#f0f2f5"),
+  inset: 10pt,
+  radius: 3pt,
+  width: auto,
+)[
+  mise run build-android-apk
+] #image("build android.png") #figure(
   image("android studio build success.png", width: 100%),
   caption: [Android Studio build console showing a successful compilation of Pocket Draw.],
 )
@@ -267,7 +282,9 @@ mise run build-android-apk
 // ============================================================================
 #pagebreak()
 
+
 = Itemised contributions <contrib>
+
 // ============================================================================
 
 // Kept to a single page, as the submission brief requires. Reset after section 4.
@@ -308,8 +325,7 @@ mise run build-android-apk
 #set text(size: 10.5pt)
 #set par(leading: 0.62em)
 
-#pagebreak()= Itemised contributions <contrib>
-// ============================================================================
+#pagebreak()= Itemised contributions <contrib> // ============================================================================
 
 // Kept to a single page, as the submission brief requires. Reset after section 4.
 #set text(size: 9.6pt)
@@ -317,29 +333,36 @@ mise run build-android-apk
 
 The figures below come from the `dev` branch on 12 October 2026: commits that are not merges, and merged pull requests by author. The submission includes the full commit log as a separate export.
 
+
 == Mihir Rabade, `MRDGH2821`, 178 commits, 32 merged pull requests
 
 Built the zone scoring that decides a headshot, a bodyshot or a miss (PR \#65: `pitchZoneClassifier.ts`, `roundJudge.ts`), and joined calibrated zones, false starts and real aiming into the duel (PR \#109). Built the clock measurement between the two phones (PRs \#67, \#96, \#103: `clockOffsetCalibrator.ts`). Built the tilt calibration that reads DeviceMotion, with progressive pose feedback and volume-button confirmation (PRs \#69, \#95, \#124, \#139: `pitchMonitor.ts`, `DrawCalibrationScreen.tsx`). Built the Firebase write path for match results and the offline queue (PRs \#27, \#91), and the synchronisation of results between the two phones (PR \#155). Built the player statistics and profile screens (PR \#93). Owns the build, lint, release and secrets tooling for the whole project (PRs \#20, \#24, \#55, \#56, \#78, \#79, \#86 to \#89, \#92, \#149).
+
 
 == Mobark Walid O Bacran, `MobyScript`, 109 commits, 16 merged pull requests
 
 Built the round loop and the rules that decide a match (PRs \#26, \#31: `roundLoop.ts`), the end-of-match summary (`MatchSummaryScreen.tsx`, `RoundResultScreen.tsx`), and the change that makes the host the single judge of each round (PR \#158). Defined the shared interfaces in `src/contracts/`, which let five people build against the duel connection at the same time (PR \#23). Built the first challenge flow (PR \#32) and kept iPhone and local connections working (PR \#110). Built the permission checks (PR \#106), the audio cues of the duel (PR \#151), and the return to the ready pose after a false start (PR \#136). Built the design system and theme (`src/theme/`, `src/components/`). Ran four merges of the team branches, and during one found and reversed a merge that had dropped thirteen files.
 
+
 == Tingyue He, `tingyueh`, 25 commits, 8 merged pull requests
 
 Set up the project on Expo SDK 54 (PRs \#1, \#4). Built the whole QR challenge flow (PR \#25: `QrDisplayScreen.tsx`, `QrScannerScreen.tsx`, `qr.validation.ts`). Built the direct phone-to-phone connection over shared Wi-Fi and over a hotspot, the largest single feature in the project (PR \#71: `webrtcDuelTransport.ts`, `nativeWebRtcTransport.ts`, `signalingProtocol.ts`), and moved every duel onto it while deleting the Bluetooth transport (PR \#102). Made the result screen explain each tracking miss (PR \#150), and showed the app version on the profile (PR \#100).
+
 
 == Siheng Ma, `EthanMaMax`, 33 commits, 8 merged pull requests
 
 Set up the Firebase services (PR \#2). Built the map screen, the location reading and the permission handling (PR \#6: `MapScreen.tsx`, `useForegroundLocation.ts`). Built live player positions on the map, with a repeat signal, a retry and a switch that turns sharing off (PR \#28: `presenceRepository.ts`, `usePresencePublisher.ts`, `useNearbyPlayers.ts`). Raised the precision of public positions to about 10 m, grouped overlapping markers into clusters, and limited the nearby count to 500 m (PRs \#134, \#154, ADR 0002). Built the profile screen and usernames (PR \#68), made the duel information readable with enlarged text (PR \#143), and moved the Google Maps key out of the repository (PR \#111).
 
+
 == Tianze Wu, `wutianze3`, 20 commits, 6 merged pull requests
 
 Built the Firebase sign-in and sign-up screens (PR \#7: `LoginScreen.tsx`, `RegisterScreen.tsx`, `auth.ts`). Built the detection of the fire signal and of the raise movement (PR \#30: `raiseGestureDetector.ts`, `fireSignalCoordinator.ts`, `reactionTimer.ts`), and firing with the Android volume buttons (PR \#104). Built the three-round scoring rules (PR \#59) and false start detection (PRs \#30, \#85: `falseStartDetector.ts`, `falseStartCoordinator.ts`). Built the recovery path for a connection that drops during a duel (`disconnectRecovery.ts`). Clarified the result screens and reordered the duel setup (PR \#152).
 
+
 == Tanachat Mongkolporn, `hbeat`, 25 commits, 8 merged pull requests
 
 Built the ready sequence that both phones run before a draw, with its vibration and countdown sound (PR \#29: `PreRound.tsx`, `countdownAudio.ts`). Wrote the Elo rating calculation (`elo.ts`) and the leaderboard that reads real ratings from Firebase (PR \#97). Made match results save before the summary opens, save atomically when both phones write at once, and synchronise after the phone goes offline (PRs \#101, \#105, \#107). Built the collection and upload of the sensor data of each match (PR \#140: `matchAnalytics.ts`), and persisted the accept and decline decisions on challenges (PR \#142).
+
 
 == Work owned by several members
 
@@ -350,12 +373,17 @@ Built the ready sequence that both phones run before a draw, with its vibration 
 
 #pagebreak()
 
+// ============================================================================
+
+
+= How each rubric criterion is met <rubric>
 
 // ============================================================================
-= How each rubric criterion is met <rubric>
-// ============================================================================
+
 
 = Implementation
+
+
 == Implementation: quality
 
 #crit("Implementation – Quality", [Excellent 10 · Very Good 7 · Satisfactory 3])
@@ -369,11 +397,12 @@ The sensor code uses the same split. `RaiseGestureDetector` is a plain class. It
 Tooling enforces the standards, so they do not depend on habit. `cocogitto` checks every commit message against the Conventional Commits format. `hk` runs the formatters and the linters before each commit. MegaLinter runs in continuous integration (`.github/workflows/mega-linter.yml`), together with a toolchain check (`mise-check.yml`). TypeScript runs in strict mode.
 
 #block(fill: rgb("#f0f2f5"), inset: 10pt, radius: 3pt, width: 100%)[
-  Test suite: `npx jest --runInBand` gives 28 test files, 157 tests, 0 failures, 8.3 seconds.
-  The tests cover the logic that is hardest to check by hand: `roundLoop`, `roundJudge`, `pitchZoneClassifier`, `clockOffsetCalibrator`, `signalingProtocol`, `matchResultQueue`, `disconnectRecovery` and `qr.validation`.
+  Test suite: `npx jest --runInBand` gives 28 test files, 157 tests, 0 failures, 8.3 seconds. The tests cover the logic that is hardest to check by hand: `roundLoop`, `roundJudge`, `pitchZoneClassifier`, `clockOffsetCalibrator`, `signalingProtocol`, `matchResultQueue`, `disconnectRecovery` and `qr.validation`.
 ]
 
+
 == Implementation: sensors <sensors>
+
 Pocket Draw uses five mobile sensor types including camera, GPS/location, accelerometer, gyroscope, and compass (magnetic field sensor). These support QR-code challenges, nearby player discovery, ready position calibration and false start detection, shot type classification based on how the phone is tilted, and aiming direction validation. The application accesses these input sensors through Expo’s camera, location, and motion APIs, combining sensor readings to connect players’ physical movements with gameplay. Haptic feedback enhances these inputs by providing physical signals during calibration and duels, while audio provides the fire signal and narrative instructions.
 
 *Accelerometer:* reading acceleration to check the phone’s ready orientation and detect *early* movement during the countdown. `PreRound.tsx` requests updates every 150 milliseconds and processes the three axes, `x`, `y`, and `z`. `falseStartDetector.ts` compares the resultant acceleration magnitude with the resting value of 1 g. A deviation of at least 0.25 g triggers early-movement detection. Once the fire signal is recorded, the detector stops accepting movement violations, preventing later samples from invalidating a valid shot.
@@ -385,6 +414,7 @@ Pocket Draw uses five mobile sensor types including camera, GPS/location, accele
 *Compass (magnetometer).* The compass supplies the phone’s heading to help determine whether the player is aiming towards the opponent. `useAimTracking.ts` subscribes to heading updates through `watchHeadingAsync()` and records `trueHeading`. `aimBearing.ts` compares this heading with the geographic bearing towards the opponent, accepting a difference of up to 30 degrees when the directional check applies. The magnetometer is accessed through the heading API rather than a direct raw magnetic-field subscription.
 
 *Camera.* The camera allows players to initiate challenges by scanning an opponent’s QR code. `QrScannerScreen.tsx` uses Expo’s `CameraView`, configured specifically for QR scanning. Its scan handler validates the invitation and extracts the opponent’s identity, match identifier, challenge token, and connection information. After player confirmation, this information is passed into the challenge flow.
+
 
 == Implementation: connectivity <connectivity>
 
@@ -410,7 +440,9 @@ The app uses data from three sources, and each one solves a different problem.
   [The countdown, the fire signal, each shot, the clock measurements and the precise position of the opponent. No server sits in this path.],
 )
 
+
 === Cloud: accounts, player positions and saved results
+
 Firebase Authentication signs a player in with an email address and a password (`lib/auth.ts`). The app stores the session on the phone, so the player stays signed in after a restart. Cloud Firestore, a database that the app reads and writes directly, holds everything else:
 
 #table(
@@ -437,16 +469,20 @@ Firebase Authentication signs a player in with an email address and a password (
   [The sensor readings of each phone for each match: the calibration angles, the tilt at each shot, and the compass and GPS readings behind each aim check (`backend/matchAnalytics.ts`).],
 )
 
+
 === Live positions on the map
-The map does not ask for positions on a timer. `map/services/presenceRepository.ts` opens a Firestore listener, so Firestore pushes each change to the phone as it happens.  When a player moves, joins or stops sharing, every other map shows the change without a refresh. appears on every other map without a refresh. Each phone publishes its position again every 60 seconds, even when the player stands still. The map hides a player whose position is more than three minutes old, so a phone that lost its signal does not leave a pin behind. A failed write is retried after 2, 4 and 8 seconds, and only then does the app show an error.
+
+The map does not ask for positions on a timer. `map/services/presenceRepository.ts` opens a Firestore listener, so Firestore pushes each change to the phone as it happens. When a player moves, joins or stops sharing, every other map shows the change without a refresh. appears on every other map without a refresh. Each phone publishes its position again every 60 seconds, even when the player stands still. The map hides a player whose position is more than three minutes old, so a phone that lost its signal does not leave a pin behind. A failed write is retried after 2, 4 and 8 seconds, and only then does the app show an error.
 
 Position sharing is a privacy decision, so the app limits what it shares. It rounds each position to four decimal places, a cell of about 11 m by 9 m, before the position leaves the phone (`docs/adr/0002-public-presence-precision.md`). It publishes a new position only after the player has moved 10 m, so GPS noise does not cause a stream of writes. A switch on the map turns sharing off, and the app then deletes the position. The precise position never goes to the cloud. It goes only to the opponent, over the duel connection.
+
 
 === Losing the network
 
 People play this game outdoors and on the move, so a lost connection is normal. When a match ends, the app first saves the result and the sensor data on the phone, in `AsyncStorage`, and only then uploads them (`backend/matchResultsService.ts`, `backend/matchAnalytics.ts`). `backend/connectivity.ts` reads the network state with `expo-network`. If the phone is offline, the result waits on the phone. When the network returns, or when the player next signs in, the app uploads the waiting results of that player without being asked. The summary screen says which state the result is in: "Result saved", "Result saved on this device · waiting to sync", or "Could not sync result. Please retry." with a retry button.
 
 Both phones upload the same match, often at the same moment. `backend/matchResultsRepository.ts` writes the result in a Firestore transaction that only creates the record. The second phone finds the record already there, and leaves it alone. The Elo rating and its receipt change in one transaction (`backend/playerStatsRepository.ts`), so a retry can never change a rating twice.
+
 
 === Checks on the server
 
@@ -461,11 +497,13 @@ Two devices normally need a server on the internet to set up a WebRTC connection
 
 The connection uses no server on the internet at all, so a duel needs no internet access once the two phones share a network. Over it, the phones send the countdown, the fire signal, each shot and its zone, false starts, the clock measurements (section 5.5), and the precise GPS position of each phone once a second. The aim check compares the compass heading of the phone with the direction to that position. `webrtc/duelDataChannel.ts` checks every message before the game sees it. A short drop in the connection gets three seconds to recover on its own. If the connection is lost during a match, the phones repeat the handshake with the tokens from the QR code, and continue from the rounds that both phones recorded (`duel/disconnectRecovery.ts`).
 
+
 === Sharing a network
 
 `network/existingWifi.ts` uses `expo-network` to confirm that the host phone is on Wi-Fi, and reads its IPv4 address. It rejects an address that another phone could never reach, such as a loopback address. An invite expires after 60 seconds. A scanned QR code is data from outside the app, so the app checks the whole invite before use: its version, its expiry time, the address and the port, and that it is not the player's own invite (`qr/utils/qr.validation.ts`, `qr/utils/ip.validation.ts`).
 
 The code also contains an Android hotspot path (`network/hotspot.ts`). In it, the host phone creates its own Wi-Fi network, and the QR code carries the network name and the password. The submitted build hides this option, so shared Wi-Fi is the path that an assessor can test.
+
 
 == Implementation: responsiveness
 
@@ -480,7 +518,9 @@ The app reads the accelerometer every 20 milliseconds, so detection takes about 
 
 Outside the duel, the map subscribes to the player positions in Firestore instead of asking for them on a timer, so other players appear and disappear as they move. `PresenceStatusSnackbar` shows the current state of the position sharing. `disconnectRecovery.ts` gives a recovery path when the connection drops during a duel, instead of ending the match with an error.
 
+
 == Implementation: technical depth <clock>
+
 
 === Measuring the clock difference between two phones
 
@@ -492,6 +532,7 @@ Two phones do not share a clock. If each phone records its own draw with `Date.n
 
 Each phone can then convert the timestamps of the other phone into its own clock before it compares them.
 
+
 === Zone scoring against a range that the player sets
 
 Players have different arms, so one fixed angle cannot mean the same thing for everyone. Each player records two reference angles, one with the phone at the ready position and one with the phone at shoulder height. The classifier then works with the fraction of that personal range:
@@ -502,11 +543,14 @@ Players have different arms, so one fixed angle cannot mean the same thing for e
 
 `pitchZoneClassifier.ts` turns $F$ into a bodyshot, a headshot a little above the shoulder reference, or a miss. If the two reference angles are the same, the range is zero, and the code raises an error instead of dividing by zero. The thresholds sit in named constants, and a comment in the source marks them as values that playtesting must set, because no calculation can give them.
 
+
 === Other technical work
 
 `falseStartCoordinator.ts` decides what happens when one player moves early. Since PR \#85, the shot of the other player still counts. `elo.ts` implements the Elo rating, which raises the score of a player more for beating a stronger opponent. It uses the standard logistic expected score and a K-factor of 40, and it updates both players together. Seven design documents in `docs/superpowers/specs/` record the reasoning behind these decisions, including the sensor analysis that the scoring design depends on.
 
+
 = User interface
+
 
 == User interface: Appeal <ui>
 
@@ -522,8 +566,7 @@ Drawings explain what a sentence would explain slowly. The calibration screen sh
 
 The duel is built to be felt as well as seen. During the countdown the screen is black, with one large number in the middle. On the fire signal the whole screen turns red, with "FIRE!" in 72-point type, so a player sees the cue at the edge of their vision. Each event also has its own sound: the start of the game, the countdown, the fire signal, the gunshot, a headshot, a bodyshot, a miss and a false start.
 
-On the map, each other player has one of eight pin colours. The colour comes from the account of that player, so a player keeps the same colour every time. Pins that would cover each other merge into a red bubble with a count, instead of a pile.
-#[
+On the map, each other player has one of eight pin colours. The colour comes from the account of that player, so a player keeps the same colour every time. Pins that would cover each other merge into a red bubble with a count, instead of a pile. #[
   #show figure: set block(breakable: true)
   #figure(
     grid(
@@ -543,6 +586,7 @@ On the map, each other player has one of eight pin colours. The colour comes fro
   ) <appeal-screens>
 ]
 
+
 == User interface: guidelines
 
 #crit(
@@ -560,19 +604,20 @@ Accessibility is also considered through the use of accessibility labels and rol
 
 Overall, the interface combines consistent visual components, familiar navigation patterns, platform-aware layouts and contextual permission requests to support usability across the two mobile platforms.
 
+
 == User interface: flow
-Pocket Draw organises its main features into three labelled navigation tabs: Map, Challenge, and Profile. The Map opens after login, while Challenge provides “My QR” and “Scan” options for pairing players. Profile shows player stats, email, game version and groups account settings, permissions, and the leaderboard. After a match, users can choose to rematch or return to the map. @flow-navigation illustrates these navigation paths using annotated screenshots, showing the controls used to locate and activate each feature.
-#figure(
+
+Pocket Draw organises its main features into three labelled navigation tabs: Map, Challenge, and Profile. The Map opens after login, while Challenge provides “My QR” and “Scan” options for pairing players. Profile shows player stats, email, game version and groups account settings, permissions, and the leaderboard. After a match, users can choose to rematch or return to the map. @flow-navigation illustrates these navigation paths using annotated screenshots, showing the controls used to locate and activate each feature. #figure(
   grid(
     columns: (1fr, 1fr),
     gutter: 25pt,
-        align: horizon,
+    align: horizon,
     image("navigation.png", width: 100%),
     grid(
       columns: (1fr,),
       gutter: 30pt,
       image("navigation 1.png", width: 80%),
-      image("navigation 2.png", width: 1/00%),
+      image("navigation 2.png", width: 1 / 00%),
     ),
   ),
   caption: [Map, Challenge, and Profile navigation.],
@@ -596,17 +641,23 @@ The text in Pocket Draw follows four rules. Each rule can be checked in the app 
   stroke: 0.5pt + rgb("#cccccc"),
   inset: 5pt,
   table.header([*What happened*], [*What the player reads*]),
-  [Raised too high], ["Raised too far: the phone was above the calibrated hit range."],
-  [Not raised enough], ["Raised too little: the phone was below the calibrated hit range."],
+  [Raised too high],
+  ["Raised too far: the phone was above the calibrated hit range."],
+
+  [Not raised enough],
+  ["Raised too little: the phone was below the calibrated hit range."],
+
   [Aimed away], ["Aimed outside the opponent's cone at the moment of firing."],
-  [Compass not ready], ["Compass not ready: it was uncalibrated or not updating, so aim couldn't be checked."],
-  [Moved early], ["False start: movement or fire input was detected before the FIRE cue."],
+  [Compass not ready],
+  ["Compass not ready: it was uncalibrated or not updating, so aim couldn't be checked."],
+
+  [Moved early],
+  ["False start: movement or fire input was detected before the FIRE cue."],
 )
 
 / One vocabulary from start to finish: The words come from the duel: draw, FIRE, ready pose, shoulder pose, headshot, bodyshot, miss and false start. The instructions screen teaches these words, and the duel and the results use the same words, so a player is scored in the words the tutorial taught. Numbers carry their unit and their meaning, as in "Both bodyshots within 100 ms · 1 point each".
 
 / The form of the text fits the moment: During the countdown the player has no time to read a sentence, so the cues are short and in capitals: "GET READY", "FIRE!", "FALSE START — YOUR SHOT IS DISQUALIFIED". Instructions outside the duel are full sentences, such as "Phone at shoulder height, top edge pointing forward." During the ready phase the player is not looking at the screen, so sound and vibration carry the same message. Each outcome has its own sound: countdown, fire, gunshot, headshot, bodyshot, miss and false start.
-
 
 #figure(
   grid(
@@ -622,26 +673,24 @@ The text in Pocket Draw follows four rules. Each rule can be checked in the app 
 )
 
 
-
 == User interface: reactiveness <reactiveness>
+
 The app names every state in which the player waits. While the fonts and the sign-in state load, a loading screen appears instead of an empty frame. Reading the location, sharing the position and connecting to the other phone each have their own display: `LocationStatusCard`, `PresenceStatusSnackbar`, `MapStatusCard` and `ConnectingScreen`. Position sharing retries after a failure, and says that it is retrying.
 
 The map reacts to GPS updates by moving the player’s location marker and recalculating which players are nearby. Live presence updates from Firebase change the other players shown on the map, while outdated presence records are removed automatically.
 
 During a duel, motion readings and messages from the opponent drive changes to the interface. Calibration advances when the required phone pose is detected. Countdown and fire events change the displayed instructions, and firing uses the current phone angle to determine the shot zone. Opponent messages update their reaction time and shot information. Sound and vibration reinforce the countdown and fire cues, allowing players to respond without watching the screen.
 
+
 = Innovation
+
 
 == Innovation: novelty
 
+Pocket Draw turns the smartphone from a touchscreen gaming device into a physical controller for a real-world duel. Unlike conventional mobile games that rely on tapping or swiping, the outcome of each round is determined by the player's physical movement. The accelerometer detects when the player raises the phone, while device orientation is used to evaluate aiming accuracy. The system also identifies false starts, making the timing of each movement important. The game combines these sensor-based interactions with direct communication between two phones. Players must be physically present, calibrate their own ready and aiming positions, and respond to a shared fire signal. This combination of physical movement, personalised calibration and real-time multiplayer interaction is the main novelty of Pocket Draw.
 
-
-Pocket Draw turns the smartphone from a touchscreen gaming device into a physical controller for a real-world duel. Unlike conventional mobile games that rely on tapping or swiping, the outcome of each round is determined by the player's physical movement. The accelerometer detects when the player raises the phone, while device orientation is used to evaluate aiming accuracy. The system also identifies false starts, making the timing of each movement important.
-The game combines these sensor-based interactions with direct communication between two phones. Players must be physically present, calibrate their own ready and aiming positions, and respond to a shared fire signal. This combination of physical movement, personalised calibration and real-time multiplayer interaction is the main novelty of Pocket Draw.
 
 == Innovation: surprise
-
-
 
 An unexpected aspect of Pocket Draw is that the fastest player does not necessarily win. A player may react immediately after the fire signal but still miss if the phone is raised to an incorrect angle. This makes the duel a combination of reaction speed and movement accuracy rather than a simple reflex test.
 
@@ -649,14 +698,13 @@ The false start mechanism adds another layer of uncertainty. Moving before the f
 
 Another distinctive feature is its local connectivity. Instead of requiring a remote game server during the duel, the phones communicate directly over a shared Wi-Fi network or an Android-hosted hotspot. This allows gameplay without continuous internet access once the local connection has been established, making the experience less dependent on traditional online multiplayer infrastructure.
 
+
 == Innovation: technical knowledge
-
-
 
 The project uses methods from outside the usual mobile toolkit. It measures the clock difference between two devices with the method that network time servers use, over a connection that the two phones negotiate themselves. It defines its own TCP message protocol, with authorisation, structure checks and a size limit. It runs WebRTC on React Native over two different networks, one of which a phone creates itself. It reads a combined sensor angle instead of integrating acceleration, and the repository records why. It also builds through the Expo native generation pipeline, with plugins for WebRTC and audio.
 
-== Innovation: cross-disciplinary
 
+== Innovation: cross-disciplinary
 
 Pocket Draw takes ideas from five fields outside computing. The table names each idea and where the app applies it. The paragraphs after it explain how the team adapted each idea instead of copying it.
 
@@ -691,9 +739,7 @@ Pocket Draw takes ideas from five fields outside computing. The table names each
 *A limit the team chose.* The countdown is a fixed 3, 2, 1 (`PreRound.tsx`). Reaction time research shows that a predictable warning period lets people anticipate the signal. A Pocket Draw round therefore measures anticipation and reaction together, not pure reaction time. The team kept the fixed count because it makes the duel feel like a ritual and keeps the two phones in step. A random delay before FIRE is the natural next step if the game is to measure pure reaction time.
 
 
-
 == Innovation: impact
-
 
 Pocket Draw demonstrates how mobile devices can encourage physical activity and face-to-face social interaction rather than keeping players focused entirely on their screens. Both players must be in the same location and perform real movements to participate. Audio and vibration cues allow them to concentrate on the physical duel instead of continuously watching the display.
 
@@ -703,12 +749,16 @@ Although primarily designed for entertainment, Pocket Draw demonstrates the pote
 
 #pagebreak()
 
+
 = AI Declaration
 
 // Work with AI: The tool used and examples of the ways in which you used it must be described and acknowledged in the report.
 
 // ============================================================================
+
+
 == AI tools
+
 // ============================================================================
 The team acknowledge the use of AI coding assistants throughout this project. The repository records that use at the level of each commit.
 
@@ -727,6 +777,7 @@ Every commit written with AI help carries a `Co-authored-by` line that names the
 )
 
 `.agents/logs/` holds work logs. Each log records the instruction that started an AI session, the member who wrote that instruction, the work that followed, and the model used.
+
 
 == How the AI was used
 
