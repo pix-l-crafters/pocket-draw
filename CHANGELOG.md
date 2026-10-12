@@ -4,11 +4,13 @@ All notable changes to this project will be documented in this file. See [conven
 
 ---
 
-## [Unreleased]
+## [0.6.1](https://github.com/pix-l-crafters/pocket-draw/compare/v0.6.0..v0.6.1) - 2026-10-12
 
 ### Bug Fixes
 
-- **(duel)** use the host's calibrated, authoritative round result on both phones so delayed false-start messages cannot split scores.
+- **(duel)** make the host the single judge of round results - ([fa83fd5](https://github.com/pix-l-crafters/pocket-draw/commit/fa83fd5dfc3bee5b755bcf164317eedc6e593f8a)) - Mobark Bacran
+
+---
 
 ## [0.6.0](https://github.com/pix-l-crafters/pocket-draw/compare/v0.5.0..v0.6.0) - 2026-10-10
 
