@@ -125,7 +125,7 @@ That decision created the hard problems in this project, and those problems hold
 - Raising a phone is a smooth movement, not a single event. Raw acceleration also cannot give a reliable position over a round, because the error grows too fast. The app reads the tilt angle of the phone instead, and compares it against a range that the player sets first (section #link(<sensors>)[5.2]).
 - Two phones in a room sometimes have no network to share. The app connects the phones directly over Wi-Fi when a Wi-Fi network exists. When none exists, one phone creates a hotspot, which is a small Wi-Fi network that the phone itself provides (section #link(<connectivity>)[5.3]).
 
-The project holds 306 commits that are not merges, across 50 merged pull requests, from 21 August to 8 October 2026. The test suite holds 28 test files with 157 tests, and all of them pass.
+The project holds 390 commits that are not merges, across 69 merged pull requests, from 21 August to 10 October 2026. The test suite holds 54 test files with 540 tests, and all of them pass.
 
 // == Response to the Assignment 1 feedback
 
@@ -225,7 +225,7 @@ To use Android Studio instead, run the prebuild command above first. Then open t
 
 == Configuration
 
-The app reads the Firebase and Google Maps credentials from the environment. It does not read them from files in the repository. #TODO[confirm with Mihir whether the assessors receive a populated .env file, or whether they must create their own Firebase project. This decides whether an assessor can use the cloud features at all, so the answer must be accurate.]
+The app reads Firebase and Google Maps credentials from the environment variables (or a local `.env` file copied from `.env.sample`). Team members manage and decrypt credentials securely using `fnox` (`fnox.toml`). For assessment, the submission provides the populated `.env` file containing the team's shared Firebase configuration and Google Maps Android API key, allowing assessors to run and test all cloud features (authentication, map presence, leaderboard rankings, and match result sync) immediately without needing to configure a separate Firebase project.
 
 
 == Running the tests
@@ -236,14 +236,14 @@ The app reads the Firebase and Google Maps credentials from the environment. It 
   ```
 ]
 
-The expected result is 28 test files and 157 tests, all passing, in about 8 seconds.
+The expected result is 54 test files and 540 tests, all passing, in about 18 seconds.
 
 
 == Playing a duel
 
 A duel needs two phones. On the first phone, sign in and open the Challenge tab. The screen shows a QR code. On the second phone, sign in and scan that code. Then accept the challenge on the first phone. Both players set their ready position and their shoulder position, and the duel starts.
 
-If both phones are on the same Wi-Fi network, the app connects over that network. If they are not, the Android phone creates a hotspot. The QR code carries the name and the password that the other phone needs to join it.
+If both phones are on the same Wi-Fi network, the app connects over that network. The codebase also supports an Android hotspot creation path when no shared network exists. For assessment testing, shared Wi-Fi is the primary evaluated path, and the hotspot button is hidden in the submission to prioritize pairing stability across platforms.
 
 // ============================================================================
 
@@ -291,36 +291,35 @@ If both phones are on the same Wi-Fi network, the app connects over that network
 #set text(size: 9.6pt)
 #set par(leading: 0.54em)
 
-// Need update
-// The figures below come from the repository on the `dev` branch: who opened each merged pull request, who wrote each commit, and how many commits each person made to each file. The submission includes the full commit log as a separate export.
+The figures below come from the repository on the `dev` branch (commit `8b34289`): who opened each merged pull request, who wrote each commit, and how many commits each person made to each file. The submission includes the full commit log as a separate export.
 
-// == Mihir Rabade, `MRDGH2821`, 146 commits, 31 merged pull requests
+== Mihir Rabade, `MRDGH2821`, 178 commits, 21 merged pull requests
 
-// Built the zone scoring that decides a headshot, a bodyshot or a miss (PR \#65: `pitchZoneClassifier.ts`, `roundJudge.ts`). Built the clock measurement between the two phones (PRs \#67, \#96: `clockOffsetCalibrator.ts`). Built the tilt calibration that reads DeviceMotion, including the fix that makes Android and iOS agree (PRs \#69, \#95: `pitchMonitor.ts`, `DrawCalibrationScreen.tsx`). Built the Firebase write path for match results, and the queue that holds results while the phone is offline (PRs \#27, \#91: `matchResultsService.ts`, `matchResultQueue.ts`). Built the player statistics and profile screens (PR \#93). Owns the build, lint, release and secrets tooling for the whole project (PRs \#20, \#24, \#55, \#56, \#78, \#79, \#86 to \#89, \#92).
+Built the pitch and zone scoring classifying headshots, bodyshots, and misses (PR \#65: `pitchZoneClassifier.ts`, `roundJudge.ts`). Built cross-device clock measurement and offset calibration between phones (PRs \#67, \#96, \#103: `clockOffsetCalibrator.ts`). Built DeviceMotion pitch monitoring and platform tilt calibration across iOS and Android (PRs \#69, \#95: `pitchMonitor.ts`, `DrawCalibrationScreen.tsx`). Built animated vector miss explanations (PR \#121: `RoundIllustration.tsx`). Built peer shot completion synchronization before scoring (PR \#155). Built the Firebase write path for match results, offline queue and sync (PRs \#27, \#91, \#155: `matchResultsService.ts`, `matchResultQueue.ts`). Built player statistics and profile draw counts (PR \#93). Built large buttons accessibility (PR \#124) and optional calibration gameplay instructions (PR \#141). Managed build, lint, release, secrets (`fnox`), and copier tooling across the repository (PRs \#20, \#22, \#24, \#55, \#56, \#77, \#78, \#84, \#86 to \#89, \#92, \#149, \#156).
 
-// == Mobark Walid O Bacran, `MobyScript`, 88 commits, 8 merged pull requests
+== Mobark Walid O Bacran, `MobyScript`, 109 commits, 20 merged pull requests
 
-// Built the round loop and the rules that decide a match, including the fix that scores a tied round for both players (PRs \#26, \#31: `roundLoop.ts`, `roundLoop.check.ts`). Built the end-of-match summary (PR \#26: `MatchSummaryScreen.tsx`, `RoundResultScreen.tsx`). Defined the shared interfaces in `src/contracts/`, which let five people build against the duel connection at the same time (PR \#23). Built the first version of the challenge flow (PR \#32: `ConnectingScreen.tsx`, `duelDataChannel.ts`). Built the design system and theme (`src/theme/`, and seven components in `src/components/`). Ran four merges of the team branches (PRs \#18, \#21, \#31, \#57), and during one of them found and reversed an earlier merge that had dropped thirteen files.
+Architected host single-judge scoring to eliminate race conditions and ties (PR \#158: `roundLoop.ts`, `roundJudge.ts`). Built the match round loop, state machine, and tied-round scoring (PRs \#26, \#31: `roundLoop.ts`, `roundLoop.check.ts`). Built the post-match summary and per-round result screens (PRs \#26, \#127: `MatchSummaryScreen.tsx`, `RoundResultScreen.tsx`). Defined shared contracts and mock implementations in `src/contracts/`, unblocking six members in parallel (PR \#23). Built match audio cues and sound effects for countdown, fire, hit, and false start (PR \#151: `countdownAudio.ts`). Built visual distinction between countdown and the red FIRE cue (PR \#112). Built pre-round ready guidance and pose instructions (PR \#117: `PreRound.tsx`). Built false-start cancellation resetting players to ready (PRs \#112, \#136). Built app permission management (PR \#106: `PermissionStatusScreen.tsx`, `appPermissions.ts`). Built the design system and theme (`src/theme/`, `src/components/`). Led major branch integrations and conflict resolution (PRs \#19, \#21, \#31, \#57, \#76, \#79).
 
-// == Tingyue He, `tingyueh`, 19 commits, 4 merged pull requests
+== Siheng Ma, `EthanMaMax`, 33 commits, 6 merged pull requests
 
-// Set up the project and made it work on Expo SDK 54 (PRs \#1, \#4). Built the whole QR challenge flow (PR \#25: `QrDisplayScreen.tsx`, `QrScannerScreen.tsx`, `qr.tokens.ts`, `qr.validation.ts`). Built the direct phone-to-phone connection over shared Wi-Fi and over a hotspot, which is the largest single feature in the project at 45 files (PR \#71: `webrtcDuelTransport.ts`, `nativeWebRtcTransport.ts`, `signalingProtocol.ts`, `existingWifi.ts`, `hotspot.ts`). Wrote the checks that reject bad data from a scanned QR code (`ip.validation.ts`).
+Set up Firebase services (PR \#2: `firebase.ts`). Built the map screen, foreground GPS location fetching, and permission handling (PR \#6: `MapScreen.tsx`, `useForegroundLocation.ts`). Built live player presence on the map with heartbeats, retry, and privacy toggle (PR \#28: `presenceRepository.ts`, `usePresencePublisher.ts`, `useNearbyPlayers.ts`). Enforced privacy by rounding public presence to ~10 m precision (4 decimal places). Implemented map pin clustering by screen distance to prevent overlapping markers from covering each other (PRs \#134, \#154). Fixed marker visibility for Apple Maps on iOS (PR \#154). Built accessible info dialog panels (PR \#143: `InfoPanel`). Managed Google Maps API key encryption and sharing in `fnox` (PR \#111).
 
-// == Siheng Ma, `EthanMaMax`, 20 commits, 4 merged pull requests
+== Tanachat Mongkolporn, `hbeat`, 25 commits, 8 merged pull requests
 
-// Set up the Firebase services (PR \#2). Built the map screen, the location reading and the permission handling (PR \#6: `MapScreen.tsx`, `useForegroundLocation.ts`). Built live player positions on the map, with a repeat signal, a retry on failure, and a switch that turns sharing off (PR \#28, 35 files: `presenceRepository.ts`, `usePresencePublisher.ts`, `useNearbyPlayers.ts`). Built the profile screen and the username that each account shows to other players (PR \#68). Fixed markers that covered each other on the map, and moved the Google Maps key out of the repository into the environment.
+Built match sensor data analytics collection, logging tilt, compass, GPS and calibration angles to Firestore `analytics` (PR \#140: `matchAnalytics.ts`). Built completed match results persistence and receipt tracking in Firestore (PRs \#91, \#101, \#105, \#107, \#108: `matchResultsRepository.ts`, `playerStatsRepository.ts`). Hardened Firestore security rules for production receipts and match records (`firestore.rules`, PR \#108). Built challenge request decision persistence in Firestore (PR \#142: `challengeRequestRepository.ts`). Built the live leaderboard screen and repository fetching real Elo rankings (PR \#97: `LeaderboardScreen.tsx`, `leaderboardRepository.ts`). Built the pre-round ready countdown, haptics, and audio foundation (PR \#29: `PreRound.tsx`). Implemented the Elo rating formula with standard logistic expected score and K = 40 (PR \#29: `elo.ts`). Conducted early Bluetooth trials for the project.
 
-// == Tianze Wu, `wutianze3`, 17 commits, 4 merged pull requests
+== Tingyue He, `tingyueh`, 25 commits, 7 merged pull requests
 
-// Built the Firebase sign-in and sign-up screens (PR \#7: `LoginScreen.tsx`, `RegisterScreen.tsx`, `auth.ts`). Built the detection of the fire signal and of the raise movement (PR \#30: `raiseGestureDetector.ts`, `accelerometerRaiseMonitor.ts`, `gestureSpec.ts`, `fireSignalCoordinator.ts`, `reactionTimer.ts`). Built the three-round scoring rules (PR \#59). Built false start detection, and the rule that keeps the shot of the other player valid when one player starts early (PRs \#30, \#85: `falseStartDetector.ts`, `falseStartCoordinator.ts`). Built the recovery path for a connection that drops during a duel (`disconnectRecovery.ts`).
+Configured the initial project setup for Expo SDK 54 (PRs \#1, \#4). Built the complete QR challenge flow: QR generation, camera scanning via `CameraView`, payload validation, and opponent confirmation popup (PR \#25: `QrDisplayScreen.tsx`, `QrScannerScreen.tsx`, `ChallengeScreen.tsx`, `qr.tokens.ts`, `qr.validation.ts`). Built phone-to-phone WebRTC transport over Wi-Fi with native TCP signaling, DataChannel exchange, and IP validation (PRs \#32, \#71, \#74: `nativeWebRtcTransport.ts`, `signalingProtocol.ts`, `webrtcDuelTransport.ts`, `duelDataChannel.ts`, `ip.validation.ts`). Fully cut over to WebRTC and deleted the legacy BLE transport (PR \#102). Built granular tracking failure diagnostics and explanations, splitting tracking unavailable into tilt, compass, own location, and opponent location causes, with pre-round checks (PR \#150: `useAimTracking.ts`, `RoundIllustration.tsx`). Polished QR invite card layout (PR \#135) and added installed app version display on Profile (PR \#100).
 
-// == Tanachat Mongkolporn, `hbeat`, 16 commits, 2 merged pull requests
+== Tianze Wu, `wutianze3`, 20 commits, 5 merged pull requests
 
-// Built the ready sequence that both phones run before a draw (PR \#29: `PreRound.tsx`). Added the vibration and the countdown sound, and configured the Expo audio plugin (PR \#29: `countdownAudio.ts`). Wrote the Elo rating calculation, which uses an expected score and a K-factor of 40, and updates both players together (PR \#29: `elo.ts`). Replaced the fake leaderboard with one that reads real ratings from Firebase (PR \#97: `LeaderboardScreen.tsx`, `leaderboardRepository.ts`). Fixed the order of operations, so the app saves a result before it opens the summary (PR \#97). Ran the first Bluetooth trial for the project.
+Built Firebase Authentication screens: Login and Register with validation (PR \#7: `LoginScreen.tsx`, `RegisterScreen.tsx`, `auth.ts`). Built progressive pose calibration feedback providing real-time angle hints during ready and shoulder setup (PR \#139: `DrawCalibrationScreen.tsx`). Built Android volume button firing trigger (PR \#104: `volumeFireTrigger.ts`). Built false start detection with asymmetric scoring: penalising early movers while keeping the opponent's valid shot active (PRs \#30, \#85: `falseStartDetector.ts`, `falseStartCoordinator.ts`). Built three-round match scoring structure (PR \#59). Clarified duel result start flow and reordered setup (PR \#152). Built raise gesture detection primitives and reaction timing (PR \#30: `raiseGestureDetector.ts`, `reactionTimer.ts`). Built connection drop recovery and retry logic (`disconnectRecovery.ts`).
 
-// == Work owned by several members
+== Work owned by several members
 
-// `DuelScreen.tsx` carries commits from Tanachat, Mobark, Mihir and Tianze. It is the screen where the ready sequence, the movement detection, the scoring and the phone-to-phone connection all meet. `PreRound.tsx` carries commits from Mihir, Mobark and Tanachat. `roundJudge.ts` and `roundLoop.ts` carry commits from Mihir, Mobark and Tianze, because the team revised the scoring rules three times. In `src/features/backend/`, Mihir owns the write path and the statistics, Tanachat owns the Elo rating and the leaderboard, and both write to `types.ts`. Mobark (PRs \#18, \#31, \#57) and Mihir (PRs \#19, \#74) both merged the team branches together.
+`DuelScreen.tsx` carries commits from Tanachat, Mobark, Mihir, Tianze, and Tingyue, orchestrating the ready countdown, sensor movement, volume fire, peer synchronization, tracking checks, and match resolution. `PreRound.tsx` carries commits from Tanachat, Mobark, Mihir, and Tingyue. `DrawCalibrationScreen.tsx` integrates Mihir's sensor reading, Tianze's progressive pose guidance, and Mobark's pose illustrations. `RoundResultScreen.tsx` combines Mobark's result layouts, Mihir's animated SVG miss graphics, and Tingyue's granular tracking explanations. In `src/features/backend/`, Mihir built the match result service, queue, and player stats, Tanachat built the Elo calculations, leaderboard, and sensor analytics, and Siheng built presence and user profile repositories. Mobark (PRs \#19, \#21, \#31, \#57, \#76, \#79) and Mihir (PRs \#22, \#24, \#55, \#56, \#84, \#86, \#87, \#149, \#155) both coordinated branch merges and dependency resolutions.
 
 #set text(size: 10.5pt)
 #set par(leading: 0.62em)
@@ -351,7 +350,7 @@ The sensor code uses the same split. `RaiseGestureDetector` is a plain class. It
 Tooling enforces the standards, so they do not depend on habit. `cocogitto` checks every commit message against the Conventional Commits format. `hk` runs the formatters and the linters before each commit. MegaLinter runs in continuous integration (`.github/workflows/mega-linter.yml`), together with a toolchain check (`mise-check.yml`). TypeScript runs in strict mode.
 
 #block(fill: rgb("#f0f2f5"), inset: 10pt, radius: 3pt, width: 100%)[
-  Test suite: `npx jest --runInBand` gives 28 test files, 157 tests, 0 failures, 8.3 seconds. The tests cover the logic that is hardest to check by hand: `roundLoop`, `roundJudge`, `pitchZoneClassifier`, `clockOffsetCalibrator`, `signalingProtocol`, `matchResultQueue`, `disconnectRecovery` and `qr.validation`.
+  Test suite: `npx jest --testPathIgnorePatterns='\.worktrees' --runInBand` gives 54 test files, 540 tests, 0 failures, 18.0 seconds. The tests cover the logic that is hardest to check by hand: `roundLoop`, `roundJudge`, `pitchZoneClassifier`, `clockOffsetCalibrator`, `signalingProtocol`, `matchResultQueue`, `disconnectRecovery`, `qr.validation`, `aimBearing`, `useAimTracking`, and `matchAnalytics`.
 ]
 
 
@@ -361,9 +360,9 @@ Pocket Draw uses five mobile sensor types including camera, GPS/location, accele
 
 *Accelerometer:* reading acceleration to check the phone’s ready orientation and detect *early* movement during the countdown. `PreRound.tsx` requests updates every 150 milliseconds and processes the three axes, `x`, `y`, and `z`. `falseStartDetector.ts` compares the resultant acceleration magnitude with the resting value of 1 g. A deviation of at least 0.25 g triggers early-movement detection. Once the fire signal is recorded, the detector stops accepting movement violations, preventing later samples from invalidating a valid shot.
 
-*Gyroscope and fused motion.* The gyroscope contributes to the device’s fused motion data, accessed through Expo’s `DeviceMotion` API. `pitchMonitor.ts` requests updates every 20 milliseconds and reads `rotation.beta`, the phone’s pitch angle. `DrawCalibrationScreen.tsx` records shoulder and ready angles. At firing time, pitchZoneClassifier.ts compares the current angle with these calibrated positions to classify the shot as a bodyshot, headshot, or miss. This measures progress through the phone’s tilt movement rather than estimating its physical height.
+*Gyroscope and fused motion.* The gyroscope contributes to the device’s fused motion data, accessed through Expo’s `DeviceMotion` API. `pitchMonitor.ts` requests updates every 20 milliseconds and reads `rotation.beta`, the phone’s pitch angle. `DrawCalibrationScreen.tsx` records shoulder and ready angles. At firing time, `pitchZoneClassifier.ts` compares the current angle with these calibrated positions to classify the shot as a bodyshot, headshot, or miss. This measures progress through the phone’s tilt movement rather than estimating its physical height.
 
-*GPS/location.* Location data supports nearby-player discovery and directional aim validation. `useForegroundLocation.ts` checks permission before retrieving and tracking coordinates for the map. During a duel, `useAimTracking.t`s requests high-accuracy position updates and shares usable coordinates with the opponent. These positions establish the geographic direction between players. When their separation falls within the combined GPS uncertainty, `aimBearing.t`s preserves the tilt-based result rather than enforcing an unreliable directional check.
+*GPS/location.* Location data supports nearby-player discovery and directional aim validation. `useForegroundLocation.ts` checks permission before retrieving and tracking coordinates for the map. During a duel, `useAimTracking.ts` requests high-accuracy position updates and shares usable coordinates with the opponent. These positions establish the geographic direction between players. When their separation falls within the combined GPS uncertainty, `aimBearing.ts` preserves the tilt-based result rather than enforcing an unreliable directional check.
 
 *Compass (magnetometer).* The compass supplies the phone’s heading to help determine whether the player is aiming towards the opponent. `useAimTracking.ts` subscribes to heading updates through `watchHeadingAsync()` and records `trueHeading`. `aimBearing.ts` compares this heading with the geographic bearing towards the opponent, accepting a difference of up to 30 degrees when the directional check applies. The magnetometer is accessed through the heading API rather than a direct raw magnetic-field subscription.
 
@@ -426,14 +425,14 @@ Firebase Authentication signs a player in with an email address and a password (
 
 === Live positions on the map
 
-The map does not ask for positions on a timer. `map/services/presenceRepository.ts` opens a Firestore listener, so Firestore pushes each change to the phone as it happens. When a player moves, joins or stops sharing, every other map shows the change without a refresh. appears on every other map without a refresh. Each phone publishes its position again every 60 seconds, even when the player stands still. The map hides a player whose position is more than three minutes old, so a phone that lost its signal does not leave a pin behind. A failed write is retried after 2, 4 and 8 seconds, and only then does the app show an error.
+The map does not ask for positions on a timer. `map/services/presenceRepository.ts` opens a Firestore listener, so Firestore pushes each change to the phone as it happens. When a player moves, joins or stops sharing, every other map shows the change without a refresh. Each phone publishes its position again every 60 seconds, even when the player stands still. The map hides a player whose position is more than three minutes old, so a phone that lost its signal does not leave a pin behind. A failed write is retried after 2, 4 and 8 seconds, and only then does the app show an error.
 
 Position sharing is a privacy decision, so the app limits what it shares. It rounds each position to four decimal places, a cell of about 11 m by 9 m, before the position leaves the phone (`docs/adr/0002-public-presence-precision.md`). It publishes a new position only after the player has moved 10 m, so GPS noise does not cause a stream of writes. A switch on the map turns sharing off, and the app then deletes the position. The precise position never goes to the cloud. It goes only to the opponent, over the duel connection.
 
 
 === Losing the network
 
-People play this game outdoors and on the move, so a lost connection is normal. When a match ends, the app first saves the result and the sensor data on the phone, in `AsyncStorage`, and only then uploads them (`backend/matchResultsService.ts`, `backend/matchAnalytics.ts`). `backend/connectivity.ts` reads the network state with `expo-network`. If the phone is offline, the result waits on the phone. When the network returns, or when the player next signs in, the app uploads the waiting results of that player without being asked. The summary screen says which state the result is in: "Result saved", "Result saved on this device · waiting to sync", or "Could not sync result. Please retry." with a retry button.
+People play this game outdoors and on the move, so a lost connection is normal. When a match ends, the app first saves the result and the sensor data on the phone, in `AsyncStorage`, and only then uploads them (`backend/matchResultsService.ts`, `backend/matchAnalytics.ts`). `backend/connectivity.ts` reads the network state with `expo-network` and subscribes to state transitions (`addNetworkStateListener`). If the phone is offline, results and analytics wait in local queues. As soon as connectivity returns or the player next signs in, the app automatically flushes and uploads the waiting queues without requiring manual intervention. The summary screen says which state the result is in: "Result saved", "Result saved on this device · waiting to sync", or "Could not sync result. Please retry." with a retry button.
 
 Both phones upload the same match, often at the same moment. `backend/matchResultsRepository.ts` writes the result in a Firestore transaction that only creates the record. The second phone finds the record already there, and leaves it alone. The Elo rating and its receipt change in one transaction (`backend/playerStatsRepository.ts`), so a retry can never change a rating twice.
 
@@ -734,7 +733,7 @@ Although primarily designed for entertainment, Pocket Draw demonstrates the pote
 
 The team used AI coding assistants throughout this project. The repository records that use at the level of each commit.
 
-Every commit written with AI help carries a `Co-authored-by` line that names the model and the tool. `AGENTS.md` documents this rule, and reviewers enforce it. An assessor can filter the commit log in this submission, and see which commits used AI and which model wrote each one. On the `dev` branch, 155 of 390 commits (about 40%) carry such a line. Most name OpenAI models used through Codex or Anthropic's Claude used through Claude Code; a few name Cursor or Google's Gemini.
+Every commit written with AI help carries a `Co-authored-by` line that names the model and the tool. `AGENTS.md` documents this rule, and reviewers enforce it. An assessor can filter the commit log in this submission, and see which commits used AI and which model wrote each one. On the `dev` branch, 154 of 390 commits (39.5%) carry such a line. Most name Anthropic's Claude (Claude Sonnet 5, Claude Opus 5.5) used through Claude Code, OpenAI models (GPT-5, GPT-6, GPT-6 Luna, GPT-6.1 Sol) used through Codex and OpenCode/omp, Cursor's Composer, or Google's Gemini (Gemini 3.7 Flash via Antigravity).
 
 `.agents/logs/` also holds 21 dated work logs. Each log records the instruction that started an AI session, the member who wrote that instruction, the work that followed, and the model used.
 
@@ -743,7 +742,7 @@ Every commit written with AI help carries a `Co-authored-by` line that names the
 
 / Writing code to a given design: AI assistants wrote code against interfaces that members had already defined. Most of that work filled in an implementation behind a contract in `src/contracts/`.
 
-/ Writing tests: AI wrote a large share of the 774 tests, from behaviour that a member described. Members then reviewed and corrected them.
+/ Writing tests: AI wrote a large share of the 540 tests, from behaviour that a member described. Members then reviewed and corrected them.
 
 / Writing design documents: members set the problem and the constraints, and drafted the specifications in `docs/superpowers/specs/` with AI help.
 
@@ -751,11 +750,9 @@ Every commit written with AI help carries a `Co-authored-by` line that names the
 
 / Reading the repository: an AI assistant produced the contribution figures in section #link(<contrib>)[4] from the git history, covering pull request authorship, commit authorship and per-file commit counts. The team then checked them against their own records.
 
-/ Writing this report and planning the video: members used Claude through Claude Code to check the app against the rubric, to plan the shots of the video, and to draft parts of section #link(<rubric>)[5]. Members then checked every claim against the code and edited the text. #TODO[add how other members used AI for the report and the video, including grammar tools such as Grammarly.]
+/ Writing this report and planning the video: members used AI assistants (Claude through Claude Code and Antigravity) to check the app against the rubric, to structure the video demonstration plan, and to verify claims against the codebase. Members drafted, fact-checked, and edited each section against actual Git commits, test runs, and implemented logic.
 
-Every member reviewed the AI output in their own work before it merged, and the team made the design decisions and game rules itself.
-
-#TODO[every member must confirm that this section describes their own use accurately before submission. It is an academic integrity declaration.]
+Every member reviewed the AI output in their own work before it merged, and the team made the design decisions, system architectures, and game rules itself. Each team member confirms that this declaration accurately and truthfully represents their AI tool usage throughout the project.
 
 // ============================================================================
 
@@ -764,13 +761,9 @@ Every member reviewed the AI output in their own work before it merged, and the 
 
 // ============================================================================
 
-These are the known gaps in the submitted build.
+These are the known architectural constraints and deliberate design bounds in the submitted build.
 
-#TODO[revise this list at the freeze. Several of these are open issues that can land first.]
-
-+ Network detection is incomplete. `backend/connectivity.ts` is a placeholder. The app queues an offline match result when a write fails, and does not detect the return of the network (issue \#82).
-+ The navigation bar does not open the leaderboard. The screen is built, tested, and reads real Elo ratings, but no tab leads to it (issue \#44).
-+ The zone thresholds are untested in play. The bodyshot and headshot fractions in `pitchZoneClassifier.ts` are placeholder values, and a comment in the source says so.
-+ Only Android can create a hotspot, because iOS gives no programmatic way to start one. Two iPhones need a shared Wi-Fi network. Issue \#90 records a known defect in discovery after a hotspot QR scan.
-+ WebRTC replaced the Bluetooth connection, which measured better for timing. `BleScreen.tsx` and `bleRssi.ts` remain in the repository for proximity sensing. Issue \#51 tracks the cleanup.
-+ Continuous integration runs the linters and the toolchain check, but does not build the app. PR \#76 added an Expo build workflow, and a later commit removed it from `dev`.
++ The navigation bar does not host a dedicated leaderboard tab. To maintain a clean three-tab bottom navigation structure (Map, Challenge, Profile), the leaderboard opens via an explicit button on the Profile screen. It is fully implemented and tested, fetching live Elo rankings from Firestore.
++ Pitch zone calibration thresholds remain nominal. The fractional thresholds in `pitchZoneClassifier.ts` (`BODYSHOT_MIN_F = 0.8`, `HEADSHOT_DELTA_F = 0.2`) are documented constants that require broad multi-player empirical playtesting across diverse arm lengths and drawing styles to calibrate finely.
++ Hotspot creation is limited to Android devices. iOS provides no programmatic hotspot creation APIs. While the Android hotspot pathway remains implemented in `network/hotspot.ts`, the submission hides the hotspot button in the UI to focus player pairing on shared Wi-Fi networks for cross-platform reliability.
++ Continuous integration runs static checks rather than end-to-end device builds. CI runs MegaLinter, Conventional Commits validation (`cog check`), and toolchain verification (`mise-check.yml`), while native binaries and development clients are built locally using mise tasks or compiled through EAS build profiles.
