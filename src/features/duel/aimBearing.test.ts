@@ -138,18 +138,35 @@ describe("classifyAimZone", () => {
       zone: "miss",
       missReason: "offTarget"
     });
-    for (const opponent of [null, { ...self, longitude: 180 }]) {
-      expect(
-        classifyAimZone({ zone: "bodyshot" }, 180, self, opponent)
-      ).toEqual({
-        zone: "miss",
-        missReason: "trackingUnavailable"
-      });
-    }
-    expect(classifyAimZone({ zone: "bodyshot" }, NaN, self, north)).toEqual({
+    // Antipodal fixes have no unique bearing, whichever reading is to blame.
+    expect(
+      classifyAimZone({ zone: "bodyshot" }, 180, self, {
+        ...self,
+        longitude: 180
+      })
+    ).toEqual({ zone: "miss", missReason: "trackingUnavailable" });
+  });
+
+  test("names the unusable reading, own location and compass first", () => {
+    expect(classifyAimZone({ zone: "bodyshot" }, NaN, null, null)).toEqual({
       zone: "miss",
-      missReason: "trackingUnavailable"
+      missReason: "locationUnavailable"
     });
+    for (const heading of [null, NaN, -1, 360]) {
+      expect(
+        classifyAimZone({ zone: "bodyshot" }, heading, self, null)
+      ).toEqual({ zone: "miss", missReason: "compassUnavailable" });
+    }
+    expect(classifyAimZone({ zone: "bodyshot" }, 0, self, null)).toEqual({
+      zone: "miss",
+      missReason: "opponentLocationUnavailable"
+    });
+    expect(
+      classifyAimZone({ zone: "bodyshot" }, 0, self, {
+        ...north,
+        accuracy: null
+      })
+    ).toEqual({ zone: "miss", missReason: "opponentLocationUnavailable" });
   });
 
   test("preserves known pitch misses even with unavailable or misaligned aim", () => {

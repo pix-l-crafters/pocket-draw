@@ -43,6 +43,112 @@ class FakeDataChannel implements RtcDataChannelLike {
 }
 
 describe("WebRTC DuelChannel adapter", () => {
+  it("accepts complete round outcomes and rejects malformed round results", () => {
+    const outcomes = [
+      {
+        kind: "win",
+        winnerId: "host-id",
+        winnerZone: "bodyshot",
+        loserZone: "miss",
+        winnerPoints: 1,
+        loserPoints: 0,
+        reactionMs: 200,
+        opponentReactionMs: 3000,
+        misses: [{ playerId: "guest-id", reason: "noShot" }]
+      },
+      {
+        kind: "tie",
+        zone: "headshot",
+        pointsEach: 2,
+        reactionMs: 200,
+        opponentReactionMs: 250
+      },
+      {
+        kind: "falseStart",
+        playerId: "guest-id",
+        nonOffenderId: "host-id",
+        nonOffenderShot: { reactionMs: 200, zone: "bodyshot", points: 1 }
+      },
+      {
+        kind: "falseStart",
+        playerId: "guest-id",
+        nonOffenderId: "host-id",
+        nonOffenderShot: null
+      }
+    ];
+    for (const outcome of outcomes) {
+      expect(
+        isDuelMessage({
+          type: "roundResult",
+          matchId: MATCH_ID,
+          roundNumber: 1,
+          outcome
+        })
+      ).toBe(true);
+    }
+    const valid = {
+      type: "roundResult",
+      matchId: MATCH_ID,
+      roundNumber: 1,
+      outcome: outcomes[0]
+    };
+    for (const malformed of [
+      { ...valid, matchId: "invalid" },
+      { ...valid, roundNumber: 0 },
+      { ...valid, roundNumber: 5 },
+      { ...valid, roundNumber: 1.5 },
+      { ...valid, outcome: null },
+      { ...valid, outcome: { kind: "unknown" } },
+      { ...valid, outcome: { ...outcomes[0], winnerId: undefined } },
+      { ...valid, outcome: { ...outcomes[0], winnerPoints: NaN } },
+      {
+        ...valid,
+        outcome: {
+          ...outcomes[0],
+          misses: [{ playerId: "guest-id", reason: "invalid" }]
+        }
+      },
+      { ...valid, outcome: { kind: "tie", zone: "headshot", pointsEach: 2 } },
+      {
+        ...valid,
+        outcome: {
+          kind: "falseStart",
+          playerId: "guest-id",
+          nonOffenderId: "host-id",
+          nonOffenderShot: { reactionMs: 200, zone: "invalid", points: 1 }
+        }
+      }
+    ]) {
+      expect(isDuelMessage(malformed)).toBe(false);
+    }
+  });
+
+  it("accepts no-shot confirmations only for a valid match and round", () => {
+    expect(
+      isDuelMessage({ type: "noShot", matchId: MATCH_ID, roundNumber: 1 })
+    ).toBe(true);
+    expect(
+      isDuelMessage({ type: "noShot", matchId: MATCH_ID, roundNumber: 4 })
+    ).toBe(true);
+    for (const roundNumber of [
+      undefined,
+      null,
+      "1",
+      0,
+      5,
+      1.5,
+      NaN,
+      Infinity
+    ]) {
+      expect(
+        isDuelMessage({ type: "noShot", matchId: MATCH_ID, roundNumber })
+      ).toBe(false);
+    }
+    expect(
+      isDuelMessage({ type: "noShot", matchId: "invalid", roundNumber: 1 })
+    ).toBe(false);
+  });
+
   it("rejects incoming raised messages without a valid zone", () => {
     const rtcChannel = new FakeDataChannel();
     const connection = createDuelDataChannelConnection(rtcChannel);
@@ -63,25 +169,31 @@ describe("WebRTC DuelChannel adapter", () => {
     expect(connection.channel.isConnected()).toBe(true);
   });
 
-  it.each(["tooLow", "tooHigh", "offTarget", "trackingUnavailable"] as const)(
-    "transports a fired miss reason %s unchanged",
-    (missReason) => {
-      const rtcChannel = new FakeDataChannel();
-      const connection = createDuelDataChannelConnection(rtcChannel);
-      const received: DuelMessage[] = [];
-      connection.channel.onMessage((message) => received.push(message));
-      const message: DuelMessage = {
-        type: "raised",
-        atMs: 1234,
-        reactionMs: 420,
-        zone: "miss",
-        missReason
-      };
-      connection.channel.send(message);
-      rtcChannel.receive(rtcChannel.sent[0]);
-      expect(received).toEqual([message]);
-    }
-  );
+  it.each([
+    "tooLow",
+    "tooHigh",
+    "offTarget",
+    "tiltUnavailable",
+    "compassUnavailable",
+    "locationUnavailable",
+    "opponentLocationUnavailable",
+    "trackingUnavailable"
+  ] as const)("transports a fired miss reason %s unchanged", (missReason) => {
+    const rtcChannel = new FakeDataChannel();
+    const connection = createDuelDataChannelConnection(rtcChannel);
+    const received: DuelMessage[] = [];
+    connection.channel.onMessage((message) => received.push(message));
+    const message: DuelMessage = {
+      type: "raised",
+      atMs: 1234,
+      reactionMs: 420,
+      zone: "miss",
+      missReason
+    };
+    connection.channel.send(message);
+    rtcChannel.receive(rtcChannel.sent[0]);
+    expect(received).toEqual([message]);
+  });
 
   it.each(["noShot", "invalid", "", null, 1, {}, []])(
     "rejects an invalid fired miss reason %s at the wire boundary",

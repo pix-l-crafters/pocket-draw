@@ -31,6 +31,7 @@ export function mockRoundOutcome(
     kind: "win",
     winnerId,
     winnerZone: "bodyshot",
+    loserZone: "miss",
     winnerPoints: 1,
     loserPoints: 0,
     reactionMs: 220,

@@ -1,28 +1,34 @@
 // Per-round outcome and reaction times; match-level ties are shown separately.
 
+import { setAudioModeAsync, useAudioPlayer } from "expo-audio";
+import { useEffect, useRef } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { CutCornerButton } from "../../components/CutCornerButton";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { StatTile } from "../../components/StatTile";
 import { StatusTag } from "../../components/StatusTag";
-import type { RoundOutcome } from "../../contracts/roundOutcome";
+import type { RoundOutcome, Zone } from "../../contracts/roundOutcome";
 import { colors, fonts } from "../../theme/tokens";
+import { DUEL_CUES } from "./countdownAudio";
 import { RoundIllustration } from "./RoundIllustration";
 import { roundTieDescription } from "./roundTieDescription";
 
 type RoundResultScreenProps = {
+  audioMuted?: boolean;
   continueDisabled?: boolean;
   continueLabel?: string;
   errorMessage?: string;
   onContinue: () => void;
   /** `null` means the opponent never fired inside the window. */
   opponentReactionMs: number | null;
+  opponentZone?: Zone;
   outcome: RoundOutcome;
   playerNames: Record<string, string>;
   roundNumber: number;
   /** `null` means this player never fired inside the window. */
   selfReactionMs: number | null;
+  selfZone?: Zone;
 };
 
 function nameFor(playerNames: Record<string, string>, id: string): string {
@@ -35,7 +41,7 @@ function titleFor(
 ): string {
   switch (outcome.kind) {
     case "win":
-      return `${nameFor(playerNames, outcome.winnerId)} wins`;
+      return `${nameFor(playerNames, outcome.winnerId)} — ${outcome.winnerZone.toUpperCase()} (${outcome.winnerPoints} ${outcome.winnerPoints === 1 ? "pt" : "pts"})`;
     case "tie":
       return "Tie";
     case "falseStart":
@@ -43,17 +49,44 @@ function titleFor(
   }
 }
 
+function zoneLabel(zone: Zone): string {
+  if (zone === "headshot") return "Headshot";
+  if (zone === "bodyshot") return "Body shot";
+  return "Miss";
+}
+
 export function RoundResultScreen({
+  audioMuted = false,
   continueDisabled = false,
   continueLabel = "Next round",
   errorMessage,
   onContinue,
   opponentReactionMs,
+  opponentZone = "miss",
   outcome,
   playerNames,
   roundNumber,
-  selfReactionMs
+  selfReactionMs,
+  selfZone = "miss"
 }: RoundResultScreenProps) {
+  const cue =
+    outcome.kind === "falseStart" ? DUEL_CUES.falseStart : DUEL_CUES[selfZone];
+  const player = useAudioPlayer(cue);
+  const playedRef = useRef(false);
+  useEffect(() => {
+    if (audioMuted || playedRef.current) return;
+    playedRef.current = true;
+    let mounted = true;
+    void setAudioModeAsync({ playsInSilentMode: true }).then(() => {
+      if (!mounted) return;
+      player.seekTo(0);
+      player.play();
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [audioMuted, player]);
+
   return (
     <ScrollView
       contentContainerStyle={styles.content}
@@ -72,42 +105,23 @@ export function RoundResultScreen({
         <StatusTag tone="warning">Round loss</StatusTag>
       )}
 
-      {outcome.kind !== "falseStart" ? (
-        <View style={styles.statsRow}>
-          <StatTile
-            label="Your shot"
-            tint={colors.accent}
-            unit={selfReactionMs === null ? "" : "ms"}
-            value={selfReactionMs === null ? "No shot" : String(selfReactionMs)}
-          />
-          <StatTile
-            label="Their shot"
-            unit={opponentReactionMs === null ? "" : "ms"}
-            value={
-              opponentReactionMs === null
-                ? "No shot"
-                : String(opponentReactionMs)
-            }
-          />
-        </View>
-      ) : (
-        <View style={styles.statsRow}>
-          <StatTile
-            label={nameFor(playerNames, outcome.nonOffenderId)}
-            unit="pts"
-            value={String(outcome.nonOffenderShot?.points ?? 0)}
-          />
-          <StatTile
-            label="Reaction time"
-            unit={outcome.nonOffenderShot ? "ms" : ""}
-            value={
-              outcome.nonOffenderShot
-                ? String(outcome.nonOffenderShot.reactionMs)
-                : "No shot"
-            }
-          />
-        </View>
-      )}
+      <View style={styles.statsRow}>
+        <StatTile
+          detail={zoneLabel(selfZone)}
+          label="Your shot"
+          tint={colors.accent}
+          unit={selfReactionMs === null ? "" : "ms"}
+          value={selfReactionMs === null ? "No shot" : String(selfReactionMs)}
+        />
+        <StatTile
+          detail={zoneLabel(opponentZone)}
+          label="Their shot"
+          unit={opponentReactionMs === null ? "" : "ms"}
+          value={
+            opponentReactionMs === null ? "No shot" : String(opponentReactionMs)
+          }
+        />
+      </View>
 
       {outcome.kind === "falseStart" && (
         <RoundIllustration

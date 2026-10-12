@@ -62,7 +62,7 @@
     ],
     "slug": "pocket-draw",
     "userInterfaceStyle": "light",
-    "version": "0.5.0",
+    "version": "0.6.0",
     "web": {
       "favicon": "./assets/favicon.png"
     }

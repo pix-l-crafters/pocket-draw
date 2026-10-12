@@ -61,9 +61,9 @@ describe("classifyZone", () => {
     [0.8, { zone: "bodyshot" }],
     [1.2, { zone: "headshot" }],
     [1.2001, { zone: "miss", missReason: "tooHigh" }],
-    [NaN, { zone: "miss", missReason: "trackingUnavailable" }],
-    [Infinity, { zone: "miss", missReason: "trackingUnavailable" }],
-    [-Infinity, { zone: "miss", missReason: "trackingUnavailable" }]
+    [NaN, { zone: "miss", missReason: "tiltUnavailable" }],
+    [Infinity, { zone: "miss", missReason: "tiltUnavailable" }],
+    [-Infinity, { zone: "miss", missReason: "tiltUnavailable" }]
   ] as const)(
     "records the calibrated miss cause at fraction %s",
     (fraction, expected) => {

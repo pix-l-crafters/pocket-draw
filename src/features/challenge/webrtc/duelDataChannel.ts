@@ -1,4 +1,5 @@
 import type { DuelChannel, DuelMessage } from "../../../contracts/duelChannel";
+import type { MissReason } from "../../../contracts/roundOutcome";
 import { MAX_ROUND_COUNT } from "../../duel/roundLoop";
 import { hasValidMatchId } from "../../qr/utils/qr.validation";
 import type { DuelTransportConnection } from "../session/duelSessionTransport";
@@ -7,6 +8,23 @@ import type { DuelTransportConnection } from "../session/duelSessionTransport";
 const MAX_ROUND_KEY_LENGTH = 1024;
 /** Upper bound on waiting for a closing DataChannel before closing its peer. */
 const PEER_CLOSE_FALLBACK_MS = 1000;
+/** `noShot` is decided at the window's edge, never fired over the wire. */
+const FIRED_MISS_REASONS: ReadonlySet<unknown> = new Set<
+  Exclude<MissReason, "noShot">
+>([
+  "tooLow",
+  "tooHigh",
+  "offTarget",
+  "tiltUnavailable",
+  "compassUnavailable",
+  "locationUnavailable",
+  "opponentLocationUnavailable",
+  "trackingUnavailable"
+]);
+const MISS_REASONS: ReadonlySet<unknown> = new Set([
+  ...FIRED_MISS_REASONS,
+  "noShot"
+]);
 
 export interface RtcDataChannelLike {
   readyState: string;
@@ -33,6 +51,62 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.length > 0;
 }
 
+function isZone(value: unknown): boolean {
+  return value === "miss" || value === "bodyshot" || value === "headshot";
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isRoundOutcome(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  if (
+    value.misses !== undefined &&
+    (!Array.isArray(value.misses) ||
+      !value.misses.every(
+        (miss: unknown) =>
+          isRecord(miss) &&
+          isNonEmptyString(miss.playerId) &&
+          MISS_REASONS.has(miss.reason)
+      ))
+  )
+    return false;
+  if (value.kind === "win") {
+    return (
+      isNonEmptyString(value.winnerId) &&
+      isZone(value.winnerZone) &&
+      isZone(value.loserZone) &&
+      isFiniteNumber(value.winnerPoints) &&
+      isFiniteNumber(value.loserPoints) &&
+      isFiniteNumber(value.reactionMs) &&
+      isFiniteNumber(value.opponentReactionMs)
+    );
+  }
+  if (value.kind === "tie") {
+    return (
+      isZone(value.zone) &&
+      isFiniteNumber(value.pointsEach) &&
+      isFiniteNumber(value.reactionMs) &&
+      isFiniteNumber(value.opponentReactionMs)
+    );
+  }
+  if (value.kind === "falseStart") {
+    return (
+      isNonEmptyString(value.playerId) &&
+      isNonEmptyString(value.nonOffenderId) &&
+      (value.nonOffenderShot === null ||
+        (isRecord(value.nonOffenderShot) &&
+          isFiniteNumber(value.nonOffenderShot.reactionMs) &&
+          isZone(value.nonOffenderShot.zone) &&
+          (value.nonOffenderShot.points === 0 ||
+            value.nonOffenderShot.points === 1 ||
+            value.nonOffenderShot.points === 2)))
+    );
+  }
+  return false;
+}
+
 export function isDuelMessage(value: unknown): value is DuelMessage {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     return false;
@@ -47,6 +121,16 @@ export function isDuelMessage(value: unknown): value is DuelMessage {
     case "rematchOffer":
     case "rematchAccept":
       return hasValidMatchId(message);
+    case "noShot":
+    case "roundResult":
+      return (
+        hasValidMatchId(message) &&
+        isFiniteNumber(message.roundNumber) &&
+        Number.isInteger(message.roundNumber) &&
+        message.roundNumber >= 1 &&
+        message.roundNumber <= MAX_ROUND_COUNT &&
+        (message.type === "noShot" || isRoundOutcome(message.outcome))
+      );
     case "matchSync":
       return (
         hasValidMatchId(message) &&
@@ -75,10 +159,7 @@ export function isDuelMessage(value: unknown): value is DuelMessage {
           message.zone === "headshot") &&
         (message.missReason === undefined ||
           (message.zone === "miss" &&
-            (message.missReason === "tooLow" ||
-              message.missReason === "tooHigh" ||
-              message.missReason === "offTarget" ||
-              message.missReason === "trackingUnavailable")))
+            FIRED_MISS_REASONS.has(message.missReason)))
       );
     case "aimPosition":
       return (

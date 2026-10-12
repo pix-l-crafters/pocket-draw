@@ -22,6 +22,11 @@ import type { DuelRole } from "./fireSignalCoordinator";
 import type { PitchCalibration } from "./pitchMonitor";
 import type { RoundShots } from "./roundShots";
 
+jest.mock("expo-audio", () => ({
+  setAudioModeAsync: async () => undefined,
+  useAudioPlayer: () => ({ seekTo: () => undefined, play: () => undefined })
+}));
+
 const FIRST_MATCH = "11111111-1111-4111-8111-111111111111";
 const REMATCH = "22222222-2222-4222-8222-222222222222";
 const LATER_REMATCH = "33333333-3333-4333-8333-333333333333";
@@ -242,6 +247,7 @@ async function renderPhones(network = testNetwork()) {
   const host = within(view.getByTestId("host"));
   const guest = within(view.getByTestId("guest"));
   for (const phone of [host, guest]) {
+    await fireEvent.press(phone.getByText("CONTINUE TO CALIBRATION"));
     await fireEvent.press(phone.getByText("Complete calibration"));
   }
   return { host, guest, network, onExit };
@@ -332,7 +338,7 @@ describe("DuelScreen session flows", () => {
     for (const phone of [host, guest]) {
       await fireEvent.press(phone.getByText("Finish round"));
       expect(phone.getByText("Round 2")).toBeTruthy();
-      expect(phone.getByText("Hana wins")).toBeTruthy();
+      expect(phone.getByText("Hana — BODYSHOT (1 pt)")).toBeTruthy();
     }
   });
 

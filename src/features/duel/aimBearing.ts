@@ -28,15 +28,17 @@ export function classifyAimZone(
   opponent: AimPosition | null | undefined
 ): ShotClassification {
   if (shot.zone === "miss") return shot;
+  if (!isUsableAimPosition(self))
+    return { zone: "miss", missReason: "locationUnavailable" };
   if (
     typeof heading !== "number" ||
     !Number.isFinite(heading) ||
     heading < 0 ||
-    heading >= 360 ||
-    !isUsableAimPosition(self) ||
-    !isUsableAimPosition(opponent)
+    heading >= 360
   )
-    return { zone: "miss", missReason: "trackingUnavailable" };
+    return { zone: "miss", missReason: "compassUnavailable" };
+  if (!isUsableAimPosition(opponent))
+    return { zone: "miss", missReason: "opponentLocationUnavailable" };
 
   const geometry = aimGeometry(heading, self, opponent);
   if (!geometry) return { zone: "miss", missReason: "trackingUnavailable" };

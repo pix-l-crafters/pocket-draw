@@ -43,3 +43,23 @@ export type PresencePublishState =
   | { status: "publishing" }
   | { status: "published" }
   | { status: "error"; message: string };
+
+/** The visible map area, matching react-native-maps' `Region`, plus its size. */
+export type MapViewport = {
+  latitude: number;
+  longitude: number;
+  latitudeDelta: number;
+  longitudeDelta: number;
+  /** Map width and height in screen points. */
+  width: number;
+  height: number;
+};
+
+export type PlayerMarkerCluster = {
+  /** Stable key derived from the member uids. */
+  id: string;
+  /** Where to draw the marker; may be offset so it never covers You. */
+  coordinate: Coordinates;
+  /** Members sorted by uid. */
+  players: NearbyPlayer[];
+};
