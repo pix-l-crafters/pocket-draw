@@ -243,7 +243,7 @@ The expected result is 54 test files and 540 tests, all passing, in about 18 sec
 
 A duel needs two phones. On the first phone, sign in and open the Challenge tab. The screen shows a QR code. On the second phone, sign in and scan that code. Then accept the challenge on the first phone. Both players set their ready position and their shoulder position, and the duel starts.
 
-If both phones are on the same Wi-Fi network, the app connects over that network. The codebase also supports an Android hotspot creation path when no shared network exists. For assessment testing, shared Wi-Fi is the primary evaluated path, and the hotspot button is hidden in the submission to prioritize pairing stability across platforms.
+Both phones need to be on same Wi-Fi network for the game to work. We ran into limitations while testing hotspot mode, so while the code exists, hotspot mode is made inaccessible.
 
 // ============================================================================
 
@@ -432,7 +432,7 @@ Firebase Authentication signs a player in with an email address and a password (
 
 === Live positions on the map
 
-The map does not ask for positions on a timer. `map/services/presenceRepository.ts` opens a Firestore listener, so Firestore pushes each change to the phone as it happens. When a player moves, joins or stops sharing, every other map shows the change without a refresh. Each phone publishes its position again every 60 seconds, even when the player stands still. The map hides a player whose position is more than three minutes old, so a phone that lost its signal does not leave a pin behind. A failed write is retried after 2, 4 and 8 seconds, and only then does the app show an error.
+The map does not ask for positions on a timer. `map/services/presenceRepository.ts` opens a Firestore listener, so Firestore pushes each change to the phone as it happens. When a player moves, joins or stops sharing, every other map shows the change without a refresh. appears on every other map without a refresh. Each phone publishes its position again every 60 seconds, even when the player stands still. The map hides a player whose position is more than three minutes old, so a phone that lost its signal does not leave a pin behind. A failed write is retried after 2, 4 and 8 seconds, and only then does the app show an error.
 
 Position sharing is a privacy decision, so the app limits what it shares. It rounds each position to four decimal places, a cell of about 11 m by 9 m, before the position leaves the phone (`docs/adr/0002-public-presence-precision.md`). It publishes a new position only after the player has moved 10 m, so GPS noise does not cause a stream of writes. A switch on the map turns sharing off, and the app then deletes the position. The precise position never goes to the cloud. It goes only to the opponent, over the duel connection.
 

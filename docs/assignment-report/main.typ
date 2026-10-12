@@ -125,7 +125,7 @@ That decision created the hard problems in this project, and those problems hold
 - Raising a phone is a smooth movement, not a single event. Raw acceleration also cannot give a reliable position over a round, because the error grows too fast. The app reads the tilt angle of the phone instead, and compares it against a range that the player sets first (section #link(<sensors>)[5.2]).
 - Two phones in a room sometimes have no network to share. The app connects the phones directly over Wi-Fi when a Wi-Fi network exists. When none exists, one phone creates a hotspot, which is a small Wi-Fi network that the phone itself provides (section #link(<connectivity>)[5.3]).
 
-The project holds 306 commits that are not merges, across 50 merged pull requests, from 21 August to 8 October 2026. The test suite holds 28 test files with 157 tests, and all of them pass.
+The project holds 390 commits that are not merges, across 69 merged pull requests, from 21 August to 10 October 2026. The test suite holds 54 test files with 540 tests, and all of them pass.
 
 // == Response to the Assignment 1 feedback
 
@@ -225,7 +225,7 @@ To use Android Studio instead, run the prebuild command above first. Then open t
 
 == Configuration
 
-The app reads the Firebase and Google Maps credentials from the environment. It does not read them from files in the repository. #TODO[confirm with Mihir whether the assessors receive a populated .env file, or whether they must create their own Firebase project. This decides whether an assessor can use the cloud features at all, so the answer must be accurate.]
+The app reads Firebase and Google Maps credentials from the environment variables (or a local `.env` file copied from `.env.sample`). Team members manage and decrypt credentials securely using `fnox` (`fnox.toml`). For assessment, the submission provides the populated `.env` file containing the team's shared Firebase configuration and Google Maps Android API key, allowing assessors to run and test all cloud features (authentication, map presence, leaderboard rankings, and match result sync) immediately without needing to configure a separate Firebase project.
 
 
 == Running the tests
@@ -236,14 +236,14 @@ The app reads the Firebase and Google Maps credentials from the environment. It 
   ```
 ]
 
-The expected result is 28 test files and 157 tests, all passing, in about 8 seconds.
+The expected result is 54 test files and 540 tests, all passing, in about 18 seconds.
 
 
 == Playing a duel
 
 A duel needs two phones. On the first phone, sign in and open the Challenge tab. The screen shows a QR code. On the second phone, sign in and scan that code. Then accept the challenge on the first phone. Both players set their ready position and their shoulder position, and the duel starts.
 
-If both phones are on the same Wi-Fi network, the app connects over that network. If they are not, the Android phone creates a hotspot. The QR code carries the name and the password that the other phone needs to join it.
+Both phones need to be on same Wi-Fi network for the game to work. We ran into limitations while testing hotspot mode, so while the code exists, hotspot mode is made inaccessible.
 
 // ============================================================================
 
@@ -281,9 +281,6 @@ If both phones are on the same Wi-Fi network, the app connects over that network
 
 // ============================================================================
 #pagebreak()
-
-
-= Itemised contributions <contrib>
 
 // ============================================================================
 
@@ -343,26 +340,21 @@ Built the zone scoring that decides a headshot, a bodyshot or a miss (PR \#65: `
 
 Built the round loop and the rules that decide a match (PRs \#26, \#31: `roundLoop.ts`), the end-of-match summary (`MatchSummaryScreen.tsx`, `RoundResultScreen.tsx`), and the change that makes the host the single judge of each round (PR \#158). Defined the shared interfaces in `src/contracts/`, which let five people build against the duel connection at the same time (PR \#23). Built the first challenge flow (PR \#32) and kept iPhone and local connections working (PR \#110). Built the permission checks (PR \#106), the audio cues of the duel (PR \#151), and the return to the ready pose after a false start (PR \#136). Built the design system and theme (`src/theme/`, `src/components/`). Ran four merges of the team branches, and during one found and reversed a merge that had dropped thirteen files.
 
+== Siheng Ma, `EthanMaMax`, 33 commits, 8 merged pull requests
+
+Set up the Firebase services (PR \#2). Built the map screen, the location reading and the permission handling (PR \#6: `MapScreen.tsx`, `useForegroundLocation.ts`). Built live player positions on the map, with a repeat signal, a retry and a switch that turns sharing off (PR \#28: `presenceRepository.ts`, `usePresencePublisher.ts`, `useNearbyPlayers.ts`). Raised the precision of public positions to about 10 m, grouped overlapping markers into clusters, and limited the nearby count to 500 m (PRs \#134, \#154, ADR 0002). Built the profile screen and usernames (PR \#68), made the duel information readable with enlarged text (PR \#143), and moved the Google Maps key out of the repository (PR \#111).
 
 == Tingyue He, `tingyueh`, 25 commits, 8 merged pull requests
 
 Set up the project on Expo SDK 54 (PRs \#1, \#4). Built the whole QR challenge flow (PR \#25: `QrDisplayScreen.tsx`, `QrScannerScreen.tsx`, `qr.validation.ts`). Built the direct phone-to-phone connection over shared Wi-Fi and over a hotspot, the largest single feature in the project (PR \#71: `webrtcDuelTransport.ts`, `nativeWebRtcTransport.ts`, `signalingProtocol.ts`), and moved every duel onto it while deleting the Bluetooth transport (PR \#102). Made the result screen explain each tracking miss (PR \#150), and showed the app version on the profile (PR \#100).
 
-
-== Siheng Ma, `EthanMaMax`, 33 commits, 8 merged pull requests
-
-Set up the Firebase services (PR \#2). Built the map screen, the location reading and the permission handling (PR \#6: `MapScreen.tsx`, `useForegroundLocation.ts`). Built live player positions on the map, with a repeat signal, a retry and a switch that turns sharing off (PR \#28: `presenceRepository.ts`, `usePresencePublisher.ts`, `useNearbyPlayers.ts`). Raised the precision of public positions to about 10 m, grouped overlapping markers into clusters, and limited the nearby count to 500 m (PRs \#134, \#154, ADR 0002). Built the profile screen and usernames (PR \#68), made the duel information readable with enlarged text (PR \#143), and moved the Google Maps key out of the repository (PR \#111).
-
-
-== Tianze Wu, `wutianze3`, 20 commits, 6 merged pull requests
-
-Built the Firebase sign-in and sign-up screens (PR \#7: `LoginScreen.tsx`, `RegisterScreen.tsx`, `auth.ts`). Built the detection of the fire signal and of the raise movement (PR \#30: `raiseGestureDetector.ts`, `fireSignalCoordinator.ts`, `reactionTimer.ts`), and firing with the Android volume buttons (PR \#104). Built the three-round scoring rules (PR \#59) and false start detection (PRs \#30, \#85: `falseStartDetector.ts`, `falseStartCoordinator.ts`). Built the recovery path for a connection that drops during a duel (`disconnectRecovery.ts`). Clarified the result screens and reordered the duel setup (PR \#152).
-
-
 == Tanachat Mongkolporn, `hbeat`, 25 commits, 8 merged pull requests
 
 Built the ready sequence that both phones run before a draw, with its vibration and countdown sound (PR \#29: `PreRound.tsx`, `countdownAudio.ts`). Wrote the Elo rating calculation (`elo.ts`) and the leaderboard that reads real ratings from Firebase (PR \#97). Made match results save before the summary opens, save atomically when both phones write at once, and synchronise after the phone goes offline (PRs \#101, \#105, \#107). Built the collection and upload of the sensor data of each match (PR \#140: `matchAnalytics.ts`), and persisted the accept and decline decisions on challenges (PR \#142).
 
+== Tianze Wu, `wutianze3`, 20 commits, 6 merged pull requests
+
+Built the Firebase sign-in and sign-up screens (PR \#7: `LoginScreen.tsx`, `RegisterScreen.tsx`, `auth.ts`). Built the detection of the fire signal and of the raise movement (PR \#30: `raiseGestureDetector.ts`, `fireSignalCoordinator.ts`, `reactionTimer.ts`), and firing with the Android volume buttons (PR \#104). Built the three-round scoring rules (PR \#59) and false start detection (PRs \#30, \#85: `falseStartDetector.ts`, `falseStartCoordinator.ts`). Built the recovery path for a connection that drops during a duel (`disconnectRecovery.ts`). Clarified the result screens and reordered the duel setup (PR \#152).
 
 == Work owned by several members
 
@@ -397,7 +389,7 @@ The sensor code uses the same split. `RaiseGestureDetector` is a plain class. It
 Tooling enforces the standards, so they do not depend on habit. `cocogitto` checks every commit message against the Conventional Commits format. `hk` runs the formatters and the linters before each commit. MegaLinter runs in continuous integration (`.github/workflows/mega-linter.yml`), together with a toolchain check (`mise-check.yml`). TypeScript runs in strict mode.
 
 #block(fill: rgb("#f0f2f5"), inset: 10pt, radius: 3pt, width: 100%)[
-  Test suite: `npx jest --runInBand` gives 28 test files, 157 tests, 0 failures, 8.3 seconds. The tests cover the logic that is hardest to check by hand: `roundLoop`, `roundJudge`, `pitchZoneClassifier`, `clockOffsetCalibrator`, `signalingProtocol`, `matchResultQueue`, `disconnectRecovery` and `qr.validation`.
+  Test suite: `npx jest --testPathIgnorePatterns='\.worktrees' --runInBand` gives 54 test files, 540 tests, 0 failures, 18.0 seconds. The tests cover the logic that is hardest to check by hand: `roundLoop`, `roundJudge`, `pitchZoneClassifier`, `clockOffsetCalibrator`, `signalingProtocol`, `matchResultQueue`, `disconnectRecovery`, `qr.validation`, `aimBearing`, `useAimTracking`, and `matchAnalytics`.
 ]
 
 
@@ -407,9 +399,9 @@ Pocket Draw uses five mobile sensor types including camera, GPS/location, accele
 
 *Accelerometer:* reading acceleration to check the phone’s ready orientation and detect *early* movement during the countdown. `PreRound.tsx` requests updates every 150 milliseconds and processes the three axes, `x`, `y`, and `z`. `falseStartDetector.ts` compares the resultant acceleration magnitude with the resting value of 1 g. A deviation of at least 0.25 g triggers early-movement detection. Once the fire signal is recorded, the detector stops accepting movement violations, preventing later samples from invalidating a valid shot.
 
-*Gyroscope and fused motion.* The gyroscope contributes to the device’s fused motion data, accessed through Expo’s `DeviceMotion` API. `pitchMonitor.ts` requests updates every 20 milliseconds and reads `rotation.beta`, the phone’s pitch angle. `DrawCalibrationScreen.tsx` records shoulder and ready angles. At firing time, pitchZoneClassifier.ts compares the current angle with these calibrated positions to classify the shot as a bodyshot, headshot, or miss. This measures progress through the phone’s tilt movement rather than estimating its physical height.
+*Gyroscope and fused motion.* The gyroscope contributes to the device’s fused motion data, accessed through Expo’s `DeviceMotion` API. `pitchMonitor.ts` requests updates every 20 milliseconds and reads `rotation.beta`, the phone’s pitch angle. `DrawCalibrationScreen.tsx` records shoulder and ready angles. At firing time, `pitchZoneClassifier.ts` compares the current angle with these calibrated positions to classify the shot as a bodyshot, headshot, or miss. This measures progress through the phone’s tilt movement rather than estimating its physical height.
 
-*GPS/location.* Location data supports nearby-player discovery and directional aim validation. `useForegroundLocation.ts` checks permission before retrieving and tracking coordinates for the map. During a duel, `useAimTracking.t`s requests high-accuracy position updates and shares usable coordinates with the opponent. These positions establish the geographic direction between players. When their separation falls within the combined GPS uncertainty, `aimBearing.t`s preserves the tilt-based result rather than enforcing an unreliable directional check.
+*GPS/location.* Location data supports nearby-player discovery and directional aim validation. `useForegroundLocation.ts` checks permission before retrieving and tracking coordinates for the map. During a duel, `useAimTracking.ts` requests high-accuracy position updates and shares usable coordinates with the opponent. These positions establish the geographic direction between players. When their separation falls within the combined GPS uncertainty, `aimBearing.ts` preserves the tilt-based result rather than enforcing an unreliable directional check.
 
 *Compass (magnetometer).* The compass supplies the phone’s heading to help determine whether the player is aiming towards the opponent. `useAimTracking.ts` subscribes to heading updates through `watchHeadingAsync()` and records `trueHeading`. `aimBearing.ts` compares this heading with the geographic bearing towards the opponent, accepting a difference of up to 30 degrees when the directional check applies. The magnetometer is accessed through the heading API rather than a direct raw magnetic-field subscription.
 
@@ -522,32 +514,42 @@ Outside the duel, the map subscribes to the player positions in Firestore instea
 == Implementation: technical depth <clock>
 
 
-=== Measuring the clock difference between two phones
+The table below lists the formulas that Pocket Draw computes during play. Every threshold in it is a named constant in the code, such as `BODYSHOT_MIN_F` in `pitchZoneClassifier.ts`, `TIE_WINDOW_MS` in `roundJudge.ts` and `AIM_TOLERANCE_DEGREES` in `aimBearing.ts`, so the table and the app cannot drift apart. Together, the formulas turn raw sensor and network readings into a result: the tilt decides the zone, the accelerometer catches a false start, the clock offset aligns the two phones before reaction times are compared, and GPS with the compass checks the aim.
+#[
+  #set text(size: 8.5pt)
+  #set par(justify: false)
+  #table(
+    columns: (auto, 1fr),
+    stroke: 0.5pt + rgb("#cccccc"),
+    inset: (x: 5pt, y: 3.5pt),
+    align: horizon,
+    table.header([*Formula*], [*Use in Pocket Draw · parameters · example*]),
 
-The Assignment 1 feedback named this as the main risk in the project.
+    [*Raise fraction* \ $F = (theta_"fire" - theta_"ready") / (theta_"shoulder" - theta_"ready")$],
+    [Scores a shot: bodyshot if $0.8 <= F <= 1.0$, headshot if $1.0 < F <= 1.2$, else a miss. $theta$: pitch in radians at the calibrated ready pose, the calibrated shoulder pose and the shot. E.g. ready $0.2$, shoulder $1.2$, shot $1.1$ give $F = 0.9$, a bodyshot.],
 
-Two phones do not share a clock. If each phone records its own draw with `Date.now()`, the difference between the two numbers includes the difference between the two system clocks. That difference can be large, and it changes over time. A duel is decided by tens of milliseconds, so an uncorrected clock difference changes who wins.
+    [*Movement before FIRE* \ $A = sqrt(a_x^2 + a_y^2 + a_z^2), quad D = abs(A - 1)$],
+    [False start when $D >= 0.25 "g"$. $a_x, a_y, a_z$: acceleration along the phone axes in g; at rest $A = 1 "g"$. E.g. $A = 1.3 "g"$ gives $D = 0.3 "g"$, a false start.],
 
-`clockOffsetCalibrator.ts` measures the difference over the duel connection itself. It uses the same method as a network time server. One phone sends a `clockPing`. The other phone answers with a `clockPong` that carries its own timestamps. The first phone repeats this five times, and keeps the measurement from the fastest round trip, because a fast round trip has had less chance to be distorted by delays in the network. Each attempt has a timeout, so a lost message cannot stall the duel, and the calibrator detaches cleanly when the duel ends.
+    [*Reaction time* \ $T_"react" = T_"press" - T_"FIRE"$],
+    [Both times on the same clock; a shot must land within 3,000 ms. E.g. $10350 - 10000 = 350$ ms.],
 
-Each phone can then convert the timestamps of the other phone into its own clock before it compares them.
+    [*Clock offset* \ $O = ((t_1 - t_0) + (t_2 - t_3)) / 2, quad T_"local" = T_"peer" - O$],
+    [Aligns the timestamps of the two phones. $t_0$: ping sent; $t_1$: peer receives it; $t_2$: peer replies; $t_3$: reply received. E.g. $t_0 ... t_3 = 1000, 1120, 1130, 1050$ give $O = 100$ ms: the peer clock is ahead.],
 
+    [*Distance (haversine)* \ $a = sin^2 (Delta phi \/ 2) + cos phi_1 cos phi_2 sin^2 (Delta lambda \/ 2)$ \ $d = 2R arcsin sqrt(a)$],
+    [Player separation, for the 500 m nearby count and the GPS uncertainty check. $phi$: latitude; $lambda$: longitude, both in radians; $R = 6371$ km. E.g. a player at $d = 300$ m is nearby.],
 
-=== Zone scoring against a range that the player sets
+    [*Bearing and aim error* \ $x = cos phi_1 sin phi_2 - sin phi_1 cos phi_2 cos Delta lambda$ \ $y = sin Delta lambda cos phi_2, quad B = "atan2"(y, x) mod 360 degree$ \ $e = abs(((H - B + 540) mod 360) - 180)$],
+    [Checks that the phone points at the opponent: aim passes if $e <= 30 degree$. $B$: bearing to the opponent; $H$: compass heading; $e$: smallest angle between them. E.g. $B = 350 degree$, $H = 10 degree$ give $e = 20 degree$, so aim passes.],
 
-Players have different arms, so one fixed angle cannot mean the same thing for everyone. Each player records two reference angles, one with the phone at the ready position and one with the phone at shoulder height. The classifier then works with the fraction of that personal range:
+    [*Round and match points* \ $P_"miss" = 0, P_"body" = 1, P_"head" = 2$ \ $Delta T = abs(T_A - T_B), quad "total" = sum P$],
+    [If $Delta T <= 100$ ms, both shots score. Otherwise the faster hit scores, and the slower shot scores only if the faster one misses. Match points are summed over the rounds. E.g. a bodyshot at 300 ms and a headshot at 350 ms: $Delta T = 50$ ms, so they score 1 and 2.],
 
-#align(center)[
-  $ F = (theta_"fire" - theta_"ready") / (theta_"shoulder" - theta_"ready") $
+    [*Elo rating* \ $E = 1 / (1 + 10^((R_"opp" - R_"self") \/ 400))$ \ $R' = "round"(R_"self" + K(S - E))$],
+    [Updates both ratings after a match. $K = 40$; $S$: 1 win, 0.5 draw, 0 loss. E.g. two players at 1,500 have $E = 0.5$; the winner moves to 1,520 and the loser to 1,480.],
+  )
 ]
-
-`pitchZoneClassifier.ts` turns $F$ into a bodyshot, a headshot a little above the shoulder reference, or a miss. If the two reference angles are the same, the range is zero, and the code raises an error instead of dividing by zero. The thresholds sit in named constants, and a comment in the source marks them as values that playtesting must set, because no calculation can give them.
-
-
-=== Other technical work
-
-`falseStartCoordinator.ts` decides what happens when one player moves early. Since PR \#85, the shot of the other player still counts. `elo.ts` implements the Elo rating, which raises the score of a player more for beating a stronger opponent. It uses the standard logistic expected score and a K-factor of 40, and it updates both players together. Seven design documents in `docs/superpowers/specs/` record the reasoning behind these decisions, including the sensor analysis that the scoring design depends on.
-
 
 = User interface
 
@@ -617,7 +619,7 @@ Pocket Draw organises its main features into three labelled navigation tabs: Map
       columns: (1fr,),
       gutter: 30pt,
       image("navigation 1.png", width: 80%),
-      image("navigation 2.png", width: 1 / 00%),
+      image("navigation 2.png", width: 100%),
     ),
   ),
   caption: [Map, Challenge, and Profile navigation.],
@@ -754,12 +756,9 @@ Although primarily designed for entertainment, Pocket Draw demonstrates the pote
 
 // Work with AI: The tool used and examples of the ways in which you used it must be described and acknowledged in the report.
 
-// ============================================================================
-
 
 == AI tools
 
-// ============================================================================
 The team acknowledge the use of AI coding assistants throughout this project. The repository records that use at the level of each commit.
 
 Every commit written with AI help carries a `Co-authored-by` line that names the model and the tool. `AGENTS.md` documents this rule, and reviewers enforce it. The commit log in this submission can tell which commits used AI and which model wrote each one. The following are models and tools used in the project:
@@ -783,15 +782,15 @@ Every commit written with AI help carries a `Co-authored-by` line that names the
 
 *Writing code to a given design*: AI assistants wrote code against interfaces that members had already defined. Most of that work filled in an implementation behind a contract in `src/contracts/`.
 
-/ Writing tests: AI wrote a large share of the 774 tests, from behaviour that a member described. Members then reviewed and corrected them.
+*Writing tests*: AI wrote a large share of the 774 tests, from behaviour that a member described. Members then reviewed and corrected them.
 
-/ Writing design documents: members set the problem and the constraints, and drafted the specifications in `docs/superpowers/specs/` with AI help.
+*Writing design documents*: members set the problem and the constraints, and drafted the specifications in `docs/superpowers/specs/` with AI help.
 
-/ Reviewing merges: AI review of the branch merges found real defects. One merge had dropped thirteen files without warning.
+*Reviewing merges*: AI review of the branch merges found real defects. One merge had dropped thirteen files without warning.
 
-/ Reading the repository: an AI assistant produced the contribution figures in section #link(<contrib>)[4] from the git history, covering pull request authorship, commit authorship and per-file commit counts. The team then checked them against their own records.
+*Reading the repository*: an AI assistant produced the contribution figures in section #link(<contrib>)[4] from the git history, covering pull request authorship, commit authorship and per-file commit counts. The team then checked them against their own records.
 
-/ Writing this report: AI helped members draft parts of the report. Members then reviewed the drafts, checked their claims against the code, and revised the text by hand.
+*Writing this report*: AI helped members draft parts of the report. Members then reviewed the drafts, checked their claims against the code, and revised the text by hand.
 
 // #TODO[every member must confirm that this section describes their own use accurately before submission. It is an academic integrity declaration.]
 
