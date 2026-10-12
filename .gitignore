@@ -4,6 +4,7 @@
 .agents/mcp_config.json
 .agents/skills
 .claude/agents
+.claude/rules
 .claude/settings.json
 .claude/settings.local.json
 .claude/skills

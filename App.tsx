@@ -26,13 +26,17 @@ import {
   type Challenger
 } from "./src/features/challenge/IncomingChallengeScreen";
 import { releaseHotspotNetworks } from "./src/features/challenge/network/hotspot";
-import { challengeRequestRepository } from "./src/features/challenge/services/challengeRequestRepository";
+import {
+  challengeRequestRepository,
+  type SendChallengeResult
+} from "./src/features/challenge/services/challengeRequestRepository";
 import { DuelScreen, type DuelPlayer } from "./src/features/duel/DuelScreen";
 import type { DuelRole } from "./src/features/duel/fireSignalCoordinator";
 import { MapScreen } from "./src/features/map/MapScreen";
 import type { CurrentUser } from "./src/features/map/types/map.types";
 import { ProfileScreen } from "./src/features/profile/ProfileScreen";
 import type { QrInvitePayload } from "./src/features/qr/types/qr.types";
+import { useAnalyticsQueueSync } from "./src/hooks/useAnalyticsQueueSync";
 import { useMatchResultQueueSync } from "./src/hooks/useMatchResultQueueSync";
 import { useAuthUser } from "./src/lib/useAuthUser";
 import LoginScreen from "./src/screens/LoginScreen";
@@ -90,14 +94,16 @@ export default function App() {
   const { displayName, loading: authLoading, user } = useAuthUser();
   const [showRegister, setShowRegister] = useState(false);
   const [activeTab, setActiveTab] = useState<AppTab>("map");
-  const [pendingHandoff, setPendingHandoff] = useState<ChallengeHandoff | null>(
-    null
-  );
+  const [pendingHandoff, setPendingHandoff] = useState<{
+    handoff: ChallengeHandoff;
+    request: Promise<SendChallengeResult | null>;
+  } | null>(null);
   const [activeDuel, setActiveDuel] = useState<ActiveDuel | null>(null);
   const [incomingChallenge, setIncomingChallenge] =
     useState<IncomingChallenge | null>(null);
 
   useMatchResultQueueSync(authLoading ? null : (user?.uid ?? null));
+  useAnalyticsQueueSync(authLoading ? null : (user?.uid ?? null));
 
   const previousUid = useRef(user?.uid);
   useEffect(() => {
@@ -257,7 +263,8 @@ export default function App() {
                   ) : pendingHandoff ? (
                     <ConnectingScreen
                       currentUser={{ displayName, uid: user.uid }}
-                      handoff={pendingHandoff}
+                      handoff={pendingHandoff.handoff}
+                      request={pendingHandoff.request}
                       onConnected={onGuestConnected}
                       onExit={() => {
                         void releaseHotspotNetworks();
@@ -272,15 +279,16 @@ export default function App() {
                         const handoff: ChallengeHandoff = {
                           ...opponent
                         };
-                        setPendingHandoff(handoff);
-                        void challengeRequestRepository
+                        const request = challengeRequestRepository
                           .sendChallenge(handoff)
-                          .catch((error) =>
+                          .catch((error) => {
                             console.error(
                               "Failed to send challenge request:",
                               error
-                            )
-                          );
+                            );
+                            return null;
+                          });
+                        setPendingHandoff({ handoff, request });
                       }}
                     />
                   )}

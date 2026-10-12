@@ -28,6 +28,7 @@ const win = (winnerId: string, reactionMs = 200) => ({
   kind: "win" as const,
   winnerId,
   winnerZone: "bodyshot" as const,
+  loserZone: "miss" as const,
   winnerPoints: 1,
   loserPoints: 0,
   reactionMs,

@@ -45,13 +45,14 @@ class VolumeFireModule : Module() {
   private fun installCallback() {
     if (!observing) return
     val window = appContext.currentActivity?.window ?: return
-    if (wrappedWindow === window) return
+    if (wrappedWindow === window && window.callback === buttonCallback) return
     restoreCallback()
 
     val original = window.callback ?: return
     val wrapper = object : Window.Callback by original {
       override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        if (observing && (event.keyCode == KeyEvent.KEYCODE_VOLUME_UP ||
+        if (observing && buttonCallback === this &&
+            (event.keyCode == KeyEvent.KEYCODE_VOLUME_UP ||
               event.keyCode == KeyEvent.KEYCODE_VOLUME_DOWN)) {
           if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
             val direction = if (event.keyCode == KeyEvent.KEYCODE_VOLUME_UP) "up" else "down"

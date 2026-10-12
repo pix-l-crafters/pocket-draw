@@ -5,12 +5,14 @@ import { CutCornerSurface } from "./CutCornerSurface";
 
 type CutCornerButtonProps = {
   disabled?: boolean;
+  fillAvailableHeight?: boolean;
   label: string;
   onPress: () => void;
 };
 
 export function CutCornerButton({
   disabled = false,
+  fillAvailableHeight = false,
   label,
   onPress
 }: CutCornerButtonProps) {
@@ -20,6 +22,7 @@ export function CutCornerButton({
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
+        fillAvailableHeight && styles.fillAvailableHeight,
         disabled && styles.disabled,
         pressed && styles.pressed
       ]}
@@ -27,7 +30,10 @@ export function CutCornerButton({
       <CutCornerSurface
         corner="medium"
         fill={colors.accent}
-        style={styles.surface}
+        style={[
+          styles.surface,
+          fillAvailableHeight && styles.fillAvailableHeight
+        ]}
       >
         <Text style={styles.label}>{label}</Text>
       </CutCornerSurface>
@@ -39,8 +45,12 @@ const styles = StyleSheet.create({
   surface: {
     alignItems: "center",
     justifyContent: "center",
+    minHeight: 64,
     paddingVertical: 17,
     width: "100%"
+  },
+  fillAvailableHeight: {
+    flex: 1
   },
   label: {
     color: colors.background,

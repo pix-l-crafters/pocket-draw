@@ -9,6 +9,7 @@ import type { AccelerationSample } from "./raiseGestureDetector";
 export type FalseStartOutcome = {
   kind: "falseStart" | "warning";
   playerId: string;
+  atMs: number;
 };
 
 export class FalseStartCoordinator {
@@ -35,7 +36,11 @@ export class FalseStartCoordinator {
         Number.isFinite(message.atMs) &&
         message.atMs >= 0
       ) {
-        this.acceptViolation(this.opponentPlayerId, message.count ?? 2);
+        this.acceptViolation(
+          this.opponentPlayerId,
+          message.count ?? 2,
+          message.atMs
+        );
       }
     });
   }
@@ -80,6 +85,16 @@ export class FalseStartCoordinator {
     return this.violations.get(playerId) === 2;
   }
 
+  discardViolation(playerId: string, kind?: FalseStartOutcome["kind"]): void {
+    const count =
+      this.violations.get(playerId) ??
+      (kind === "warning" ? 1 : kind === "falseStart" ? 2 : undefined);
+    if (!count) return;
+    this.warningCounts[playerId] = count === 1 ? 0 : 1;
+    this.violations.delete(playerId);
+    if (this.outcome?.playerId === playerId) this.outcome = null;
+  }
+
   getWarningCount(playerId: string): number {
     return this.warningCounts[playerId] ?? 0;
   }
@@ -109,7 +124,7 @@ export class FalseStartCoordinator {
     // A button press must also disarm movement detection for this round.
     this.detector.reset();
     const count: 1 | 2 = this.getWarningCount(this.localPlayerId) === 0 ? 1 : 2;
-    const outcome = this.acceptViolation(this.localPlayerId, count)!;
+    const outcome = this.acceptViolation(this.localPlayerId, count, atMs)!;
     if (this.channel.isConnected()) {
       this.channel.send({
         type: "falseStart",
@@ -142,14 +157,15 @@ export class FalseStartCoordinator {
 
   private acceptViolation(
     playerId: string,
-    count: 1 | 2
+    count: 1 | 2,
+    atMs: number
   ): FalseStartOutcome | null {
     if (this.violations.has(playerId)) return null;
     this.violations.set(playerId, count);
     const outcome: FalseStartOutcome =
       count === 1
-        ? { kind: "warning", playerId }
-        : { kind: "falseStart", playerId };
+        ? { kind: "warning", playerId, atMs }
+        : { kind: "falseStart", playerId, atMs };
     this.warningCounts[playerId] = 1;
     if (
       !this.outcome ||

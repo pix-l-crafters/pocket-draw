@@ -12,6 +12,7 @@ import type { MatchResult } from "../../contracts/matchResult";
 import type { PlayerStats } from "../../contracts/playerStats";
 import { colors, fonts } from "../../theme/tokens";
 import { scoreFromRounds } from "../duel/roundLoop";
+import { roundTieDescription } from "../duel/roundTieDescription";
 
 type MatchSummaryScreenProps = {
   matchResult: MatchResult;
@@ -21,6 +22,8 @@ type MatchSummaryScreenProps = {
   playerStats?: Record<string, PlayerStats>;
   saveStatus?: "saving" | "written" | "queued" | "error";
   onRetrySave?: () => void;
+  analyticsSaveStatus?: "waiting" | "saving" | "written" | "queued" | "error";
+  onRetryAnalytics?: () => void;
   /** A rematch needs both players, so the offer can be pending or gone. */
   rematchDisabled?: boolean;
   rematchLabel?: string;
@@ -35,7 +38,7 @@ function reactionSummary(
     case "win":
       return `${playerNames[outcome.winnerId] ?? "Player"} · ${outcome.reactionMs}ms`;
     case "tie":
-      return `Tie · ${outcome.reactionMs}ms`;
+      return `Tie · ${roundTieDescription(outcome)} · ${outcome.reactionMs}/${outcome.opponentReactionMs}ms (first/second)`;
     case "falseStart":
       return `${playerNames[outcome.playerId] ?? "Player"} false start`;
   }
@@ -49,6 +52,8 @@ export function MatchSummaryScreen({
   playerStats,
   saveStatus,
   onRetrySave,
+  analyticsSaveStatus,
+  onRetryAnalytics,
   rematchDisabled = false,
   rematchLabel = "Rematch",
   rematchNote
@@ -67,6 +72,11 @@ export function MatchSummaryScreen({
         kicker="Match complete"
         title={title}
       />
+      {!winnerId && (
+        <StatusTag>
+          {`Equal total points after ${matchResult.rounds.length} rounds`}
+        </StatusTag>
+      )}
       {/* Both phones show the same id, which is how testers confirm a
           rematch was agreed under one fresh match. */}
       <Text style={styles.matchId}>
@@ -111,6 +121,27 @@ export function MatchSummaryScreen({
       </View>
 
       <View style={styles.actions}>
+        {analyticsSaveStatus && (
+          <StatusTag>
+            {analyticsSaveStatus === "waiting"
+              ? "Sensor data waiting for opponent confirmation"
+              : analyticsSaveStatus === "written"
+                ? "Sensor data saved"
+                : analyticsSaveStatus === "queued"
+                  ? "Sensor data saved on this device · waiting to sync"
+                  : analyticsSaveStatus === "error"
+                    ? "Could not save sensor data. Please retry."
+                    : "Saving sensor data…"}
+          </StatusTag>
+        )}
+        {(analyticsSaveStatus === "queued" ||
+          analyticsSaveStatus === "error") &&
+          onRetryAnalytics && (
+            <CutCornerButton
+              label="Retry saving sensor data"
+              onPress={onRetryAnalytics}
+            />
+          )}
         {saveStatus ? (
           <StatusTag>
             {saveStatus === "written"

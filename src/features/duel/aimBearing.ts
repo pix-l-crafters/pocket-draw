@@ -1,5 +1,5 @@
-import type { Zone } from "../../contracts/roundOutcome";
 import type { Coordinates } from "../map/types/map.types";
+import type { ShotClassification } from "./pitchZoneClassifier";
 
 // Hardware/playtesting knob: an inclusive cone around the geographic bearing.
 export const AIM_TOLERANCE_DEGREES = 30;
@@ -22,22 +22,40 @@ export function isUsableAimPosition(
 }
 
 export function classifyAimZone(
-  zone: Zone,
+  shot: ShotClassification,
   heading: number | null | undefined,
   self: AimPosition | null | undefined,
   opponent: AimPosition | null | undefined
-): Zone {
+): ShotClassification {
+  if (shot.zone === "miss") return shot;
+  if (!isUsableAimPosition(self))
+    return { zone: "miss", missReason: "locationUnavailable" };
   if (
-    zone === "miss" ||
     typeof heading !== "number" ||
     !Number.isFinite(heading) ||
     heading < 0 ||
-    heading >= 360 ||
-    !isUsableAimPosition(self) ||
-    !isUsableAimPosition(opponent)
+    heading >= 360
   )
-    return "miss";
+    return { zone: "miss", missReason: "compassUnavailable" };
+  if (!isUsableAimPosition(opponent))
+    return { zone: "miss", missReason: "opponentLocationUnavailable" };
 
+  const geometry = aimGeometry(heading, self, opponent);
+  if (!geometry) return { zone: "miss", missReason: "trackingUnavailable" };
+  if (geometry.bypassedWithinGpsUncertainty) return shot;
+  if (geometry.headingErrorDegrees === null)
+    return { zone: "miss", missReason: "trackingUnavailable" };
+  return geometry.headingErrorDegrees <= AIM_TOLERANCE_DEGREES
+    ? shot
+    : { zone: "miss", missReason: "offTarget" };
+}
+
+export function aimGeometry(
+  heading: number | null,
+  self: AimPosition | null,
+  opponent: AimPosition | null
+) {
+  if (!isUsableAimPosition(self) || !isUsableAimPosition(opponent)) return null;
   const radians = Math.PI / 180;
   const latitude = self.latitude * radians;
   const opponentLatitude = opponent.latitude * radians;
@@ -48,9 +66,6 @@ export function classifyAimZone(
       Math.cos(opponentLatitude) *
       Math.cos(longitudeDifference);
   const y = Math.sin(longitudeDifference) * Math.cos(opponentLatitude);
-  // Coincident and antipodal points have no unique initial bearing.
-  if (Math.hypot(x, y) < 1e-12) return "miss";
-
   const haversine =
     Math.sin((opponentLatitude - latitude) / 2) ** 2 +
     Math.cos(latitude) *
@@ -58,9 +73,25 @@ export function classifyAimZone(
       Math.sin(longitudeDifference / 2) ** 2;
   const separation =
     2 * 6_371_000 * Math.asin(Math.sqrt(Math.min(1, haversine)));
-  if (separation <= self.accuracy + opponent.accuracy) return "miss";
-
-  const bearing = (Math.atan2(y, x) / radians + 360) % 360;
-  const difference = Math.abs(((heading - bearing + 540) % 360) - 180);
-  return difference <= AIM_TOLERANCE_DEGREES ? zone : "miss";
+  // A few paces is usually inside phone GPS uncertainty. The bearing cannot
+  // verify aim there, so keep the calibrated pitch result.
+  const bypassedWithinGpsUncertainty =
+    separation <= self.accuracy + opponent.accuracy;
+  // Coincident and antipodal points have no unique initial bearing.
+  const bearingDegrees =
+    Math.hypot(x, y) < 1e-12 ? null : (Math.atan2(y, x) / radians + 360) % 360;
+  const headingErrorDegrees =
+    bearingDegrees !== null &&
+    heading !== null &&
+    Number.isFinite(heading) &&
+    heading >= 0 &&
+    heading < 360
+      ? Math.abs(((heading - bearingDegrees + 540) % 360) - 180)
+      : null;
+  return {
+    bearingDegrees,
+    headingErrorDegrees,
+    separationMeters: separation,
+    bypassedWithinGpsUncertainty
+  };
 }

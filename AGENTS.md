@@ -2,6 +2,73 @@
 
 This file provides guidance for AI coding assistants working with this project.
 
+## Andrej Karpathy's Guidelines
+
+**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
+
+### 1. Think Before Coding
+
+**Don't assume. Don't hide confusion. Surface tradeoffs.**
+
+Before implementing:
+
+- State your assumptions explicitly. If uncertain, ask.
+- If multiple interpretations exist, present them - don't pick silently.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, stop. Name what's confusing. Ask.
+
+### 2. Simplicity First
+
+**Minimum code that solves the problem. Nothing speculative.**
+
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility" or "configurability" that wasn't requested.
+- No error handling for impossible scenarios.
+- If you write 200 lines and it could be 50, rewrite it.
+
+Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
+
+### 3. Surgical Changes
+
+**Touch only what you must. Clean up only your own mess.**
+
+When editing existing code:
+
+- Don't "improve" adjacent code, comments, or formatting.
+- Don't refactor things that aren't broken.
+- Match existing style, even if you'd do it differently.
+- If you notice unrelated dead code, mention it - don't delete it.
+
+When your changes create orphans:
+
+- Remove imports/variables/functions that YOUR changes made unused.
+- Don't remove pre-existing dead code unless asked.
+
+The test: Every changed line should trace directly to the user's request.
+
+### 4. Goal-Driven Execution
+
+**Define success criteria. Loop until verified.**
+
+Transform tasks into verifiable goals:
+
+- "Add validation" → "Write tests for invalid inputs, then make them pass"
+- "Fix the bug" → "Write a test that reproduces it, then make it pass"
+- "Refactor X" → "Ensure tests pass before and after"
+
+For multi-step tasks, state a brief plan:
+
+```text
+1. [Step] → verify: [check]
+2. [Step] → verify: [check]
+3. [Step] → verify: [check]
+```
+
+Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+
+**These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+
 ## MANDATORY: AI Co-authored-by Trailer
 
 > **Every commit made with AI assistance MUST include a `Co-authored-by` trailer. No exceptions.**
@@ -9,10 +76,12 @@ This file provides guidance for AI coding assistants working with this project.
 **Format:**
 
 ```txt
-Co-authored-by: <Model Name> via <Tool> <noreply@provider-domain>
+Co-authored-by: <Model full Name and version> via <Harness> <noreply@provider-domain>
 ```
 
-**Provider noreply addresses:**
+**Provider attribution addresses:**
+
+Choose the address for the model provider. The harness can come from a different provider.
 
 <!-- smt -->
 
@@ -26,6 +95,10 @@ Co-authored-by: <Model Name> via <Tool> <noreply@provider-domain>
 | Mistral                 | `noreply@mistral.ai`     |
 | OpenAI (GPT / o-series) | `noreply@openai.com`     |
 | xAI (Grok)              | `noreply@x.ai`           |
+
+If the provider is not listed, search its official documentation or public repositories
+for a documented attribution email address. Use that address rather than guessing one
+from the provider's domain.
 
 **Examples:**
 
@@ -43,27 +116,31 @@ Co-authored-by: GPT-4o via Cursor <noreply@openai.com>
 
 **Rules:**
 
-- Use the **exact model name and version** you are running as (e.g. `Claude Sonnet 4.6`, not just `Claude`)
-- Use the **tool name** as it is commonly known (e.g. `opencode`, `Cursor`, `Copilot`, `Zed`)
-- If the model version is unknown, use the model family name (e.g. `Claude Sonnet`)
+- Use the **full model name and version** supplied by the current session (e.g. `Claude Sonnet 4.6`, not just `Claude`)
+- Use the **harness name** as it is commonly known (e.g. `Codex`, `opencode`, `Cursor`, `Copilot`, `Zed`). The harness is the application or CLI running the model.
+- If the exact model version is unavailable, use the most specific known model name (e.g. `Claude Sonnet`). Do not guess a version.
 - One trailer per AI model involved
 - **Never omit this trailer** when the commit was AI-assisted — this is how git history stays honest
 
 ## Setup: skills and MCP
 
-Before substantive work, ensure project skills and MCP servers are installed.
+Tools and tasks are managed by **mise**. Prefer an existing `mise run <task>`
+over an ad-hoc command. Inspect `mise.toml` and command `--help` output before
+assuming a task or option exists.
 
-1. From the repository root, run `mise run ai-setup`, or:
+If `capabilities.yaml` exists and project skills or MCP tools are missing or
+stale:
 
-   ```sh
-   capa install
-   ```
+1. From the repository root, run `mise run ai-setup` (or `capa install --yes`).
+2. Reload the agent session so installed skills and MCP servers are picked up.
 
-2. **Reload the agent** (new chat / restart the agent session) so installed skills and MCP servers are picked up.
-
-Configuration lives in `capabilities.yaml`. Do not skip this when skills or MCP tools are missing or stale.
+If the project omits `capabilities.yaml`, use the available tools and instructions.
 
 ## Project Context
+
+Read `README.md`, dependency manifests, and relevant source files to learn the
+project's purpose, architecture, and commands. The application language and
+framework depend on the generated project.
 
 - **Project Type**: Project scaffolded from [copier-mr-mise](https://github.com/MRDGH2821/copier-mr-mise)
 - **Key Technologies**: mise, hk, MegaLinter, cspell, capa
@@ -102,41 +179,17 @@ References:
 
 ## Branch naming strategy
 
-Since many people will be contributing to this repository, we use a branching strategy that allows for parallel development while keeping the main branch stable.
-
-Use the following branching strategy:
-
-`<human first name>/<work type>/<work name>`
-
-For example:
-
-- `john/feat/add-packages`
-- `jane/fix/ui-bugs`
-- `joy/refactor/payment`
-
-`<human first name>` - will be derived from `git config user.name` or the author's first name. Ask the author for their first name if it's not available.
-`<work type>` - the type of work being done (e.g., `feat`, `fix`, `refactor`). Should match commit types from conventional commits.
-`<work name>` - the name of the work being done (e.g., `add-packages`, `ui-bugs`, `payment`)
+Before creating a branch, follow the
+[branch naming strategy in CONTRIBUTING.md](CONTRIBUTING.md#branch-naming-strategy).
 
 ## General Guidelines
 
-### Communication
-
-- Explain what you're doing and why before making changes
-- Ask for clarification when requirements are ambiguous
-- Provide context for decisions, especially when multiple approaches exist
-
-### Code Quality
-
-- Follow existing code style and conventions in the project
-- Run linters and formatters before committing changes
-- Ensure all changes pass git hooks (`hk run pre-commit`)
-
-### File Operations
-
-- Always check if a file exists before attempting to modify it
-- Use appropriate tools to search for files rather than guessing paths
-- Preserve file formatting and structure unless explicitly asked to change it
+- Explain the intended change, state material assumptions, and clarify ambiguous requirements.
+- Read the relevant code and configuration before editing; reuse existing functionality.
+- Inspect the working tree and preserve changes made by the user or other agents.
+- Match existing style and keep every changed line within the requested scope.
+- Define how to verify the change, run the relevant checks, and review the final diff.
+- Report what changed, which checks ran, and any failures or checks you could not run.
 
 ### AI-Assisted Work Documentation
 
@@ -162,56 +215,50 @@ For example:
 
 ### mise & hk
 
-Use the configured mise mcp server. If mise's mcp tools are not available, tell the user to fix by referring the following:
+Use the configured mise and hk MCP tools when available. If their configuration
+is missing, report it and refer to:
 
-- For mise - <https://mise.jdx.dev/mcp.html>
-- For hk - <https://hk.jdx.dev/agents.html#mcp>
+- mise: <https://mise.jdx.dev/mcp.html>
+- hk: <https://hk.jdx.dev/agents.html#mcp>
 
 ### Using hk from a coding agent
 
-Inspect and plan before running. Scope checks to changed files with `--files0-from` and use `--cd` to select the project root. Prefer `--safe`, inspect command effects, and require approval for unknown or destructive commands.
+Inspect the configuration and plan before running. Scope checks to changed files
+with `--files0-from` and use `--cd` to select the project root. Prefer `--safe`,
+review command effects, and require approval for unknown or destructive commands.
+Use `--no-stage` when formatting. Use `--stash none` when checking an explicit
+file list in the working tree without stashing changes.
 
-Consume JSON or JSONL diagnostics while retaining raw output, and always review the diff produced by a fix.
-
-MCP clients should use `inspect_project`, `plan`, safe run tools, paged output, and `get_diff` rather than invoking arbitrary shell commands.
+Consume JSON or JSONL diagnostics while retaining raw output, and review the
+diff produced by a fix. MCP clients should use `inspect_project`, `plan`, safe
+run tools, paged output, and `get_diff`.
 
 ### MegaLinter
 
-- Config: `.mega-linter.yml`
-- Use the MegaLinter skill when it is installed
-- Reports: `megalinter-reports/`
-- Not all linters need to pass — some are informational
+Read `.mega-linter.yml` and the selected CI configuration to determine which
+checks block CI. Use the installed MegaLinter skill when available. Reports live
+in `megalinter-reports/`; distinguish failures from informational reports.
 
 ### CSpell
 
-- Config: `.config/cspell.json`
-- Add project-specific words to the `words` array
-- Don't disable spell checking without good reason
-- Run with `mise run cspell`
+Use the hk `cspell` step to check affected files. Its command and options live
+in `.config/hk.pkl`. Correct spelling errors and add legitimate project-specific
+terms to the `words` array in `.config/cspell.json` rather than disabling checks.
 
 ### Formatting and Hooks (hk)
 
-- Run `hk run fix` or `mise run fmt` before committing to format all supported file types
-- `hk` integrates formatters and linters in `.config/hk.pkl` for staged files and hook checks
+Before committing, format affected files with `hk fix --no-stage` and run
+`hk run pre-commit --check` with the same file scope. Resolve failures and retry
+without skipping hooks. The `mise run fmt` task formats the full repository;
+review its scope before using it.
 
 ## Commit Messages
 
-### Format
+Follow Conventional Commits: `<type>(<scope>): <description>`.
+Consult `cog.toml` for valid scopes and release hooks; it is the source of truth.
 
-- Follow Conventional Commits format: `<type>(<scope>): <description>` as given here - <https://www.conventionalcommits.org/en/v1.0.0/>
-- Valid types: `build`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`, `refactor`, `revert`, `style`, `test`
-- For valid scopes, refer to the `scopes` array in `cog.toml` — it is the source of truth.
-
-### Examples
-
-```txt
-feat(pre-commit): add spell checking to commit messages
-fix(cspell): resolve configuration issue
-docs: update AGENTS.md with guidelines
-chore(cspell): add technical terms to dictionary
-```
-
-Version bumps use cocogitto (`cog bump`); pre-bump hooks update `package.json` and `CHANGELOG.md` (git-cliff).
+Version bumps use cocogitto (`cog bump`). Inspect the configured hooks before
+running a release command.
 
 ## Troubleshooting
 
@@ -221,7 +268,7 @@ Version bumps use cocogitto (`cog bump`); pre-bump hooks update `package.json` a
 
 - Read the error message — it usually points directly to the fix
 - Try to fix the issue and retry the commit; do not skip hooks
-- Fix formatting first (`hk run fix` or `mise run fmt`)
+- Fix formatting first (`hk fix` or `mise run fmt`)
 - Then address spell checking and linting
 
 **Spell check failures:**
@@ -244,14 +291,15 @@ Version bumps use cocogitto (`cog bump`); pre-bump hooks update `package.json` a
 
 ### When Adding Dependencies
 
-- Prefer tools that don't require heavy installation; add them via `mise.toml` when they should be shared
+- Prefer tools that don't require heavy installation; add development tools via `mise.toml`
+- Use the project's package manager for application dependencies and keep lockfiles consistent.
 - Document installation steps clearly
 - Consider cross-platform compatibility
 - Update relevant configuration files
 
 ### Testing Changes
 
-- Verify the project structure is correct
+- Run relevant tests and configured checks; if no test command exists, verify the affected behavior directly.
 - Ensure documentation is updated
 
 ## Agent skills

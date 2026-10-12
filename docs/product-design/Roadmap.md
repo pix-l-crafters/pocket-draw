@@ -101,7 +101,7 @@ retains an Exit action through the existing duel leave path.
 Aim requires true-north heading accuracy level 3 within a tunable ±30° cone, fresh
 heading (2 seconds) and GPS (5 seconds), and separation beyond combined GPS
 uncertainty. Unavailable/stale/overlapping readings miss, with no bodyshot fallback.
-Public map presence is ~110 m rounded and removed on map exit, so it cannot supply
+Public map presence is ~10 m rounded (ADR 0002) and removed on map exit, so it cannot supply
 close-range bearing. Precise GPS is intentionally shared only with the accepted
 peer over `DuelChannel`, not written precisely to Firestore; public-location privacy
 is unchanged. `sampleAtMs` is the actual sender GPS fix timestamp, not send time.

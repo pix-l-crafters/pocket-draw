@@ -14,14 +14,29 @@ type MapStatusCardProps = {
   presenceState: PresencePublishState;
 };
 
-function getNearbyHeadline(nearbyPlayersState: NearbyPlayersState) {
+function getNearbyHeadline(
+  locationState: LocationState,
+  nearbyPlayersState: NearbyPlayersState
+) {
+  if (locationState.status === "loading") {
+    return "Finding your location...";
+  }
+
+  if (locationState.status !== "granted") {
+    return "Nearby players unavailable";
+  }
+
   switch (nearbyPlayersState.status) {
     case "loading":
       return "Players nearby";
     case "error":
       return "Couldn't load nearby players";
     case "ready": {
-      const count = nearbyPlayersState.players.length;
+      if (nearbyPlayersState.nearbyPlayers === null) {
+        return "Finding your location...";
+      }
+
+      const count = nearbyPlayersState.nearbyPlayers.length;
 
       if (count === 0) {
         return "No players nearby";
@@ -84,7 +99,7 @@ export function MapStatusCard({
         MAP PREVIEW
       </Text>
       <Text variant="headlineSmall">
-        {getNearbyHeadline(nearbyPlayersState)}
+        {getNearbyHeadline(locationState, nearbyPlayersState)}
       </Text>
       <Text
         style={styles.subtitle}

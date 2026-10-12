@@ -1,11 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { Modal, Platform, StyleSheet, Text, View } from "react-native";
+import { IconButton } from "react-native-paper";
 
 import { CutCornerButton } from "../../components/CutCornerButton";
+import { ScreenHeader } from "../../components/ScreenHeader";
 import type { DuelMessage } from "../../contracts/duelChannel";
 import type { DuelLink } from "../../contracts/duelLink";
+import type {
+  MatchAnalytics,
+  RoundAnalytics,
+  ShotDiagnostics
+} from "../../contracts/matchAnalytics";
 import type { MatchResult } from "../../contracts/matchResult";
 import type { RoundOutcome } from "../../contracts/roundOutcome";
+import { useMatchAnalytics } from "../../hooks/useMatchAnalytics";
+import { colors } from "../../theme/tokens";
 import {
   subscribeMatchResultStatus,
   submitMatchResult
@@ -13,6 +22,7 @@ import {
 import type { SubmitMatchResultOutcome } from "../backend/types";
 import { MatchSummaryScreen } from "../postmatch/MatchSummaryScreen";
 import { generateMatchId } from "../qr/utils/qr.tokens";
+import { AIM_TOLERANCE_DEGREES } from "./aimBearing";
 import { ClockOffsetCalibrator } from "./clockOffsetCalibrator";
 import { DuelDisconnectRecovery } from "./disconnectRecovery";
 import { DrawCalibrationScreen } from "./DrawCalibrationScreen";
@@ -20,10 +30,16 @@ import {
   DuelConnectionScreen,
   type DuelConnectionState
 } from "./DuelConnectionScreen";
+import { DuelExitButton } from "./DuelExitButton";
 import { FalseStartCoordinator } from "./falseStartCoordinator";
 import type { DuelRole } from "./fireSignalCoordinator";
 import { GameInstructionsScreen } from "./GameInstructionsScreen";
 import type { PitchCalibration } from "./pitchMonitor";
+import {
+  BODYSHOT_MIN_F,
+  BODYSHOT_MAX_F,
+  HEADSHOT_DELTA_F
+} from "./pitchZoneClassifier";
 import { PreRound } from "./PreRound";
 import {
   applyRoundOutcome,
@@ -76,9 +92,17 @@ export function DuelScreen({
   self
 }: DuelScreenProps) {
   const { channel } = link;
-  const [instructionsSeen, setInstructionsSeen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [separationConfirmed, setSeparationConfirmed] = useState(false);
   const [calibration, setCalibration] = useState<PitchCalibration | null>(null);
+  const analyticsRoundsRef = useRef<RoundAnalytics[]>([]);
+  const pendingShotRef = useRef<ShotDiagnostics | null>(null);
+  const [confirmedAnalyticsHistory, setConfirmedAnalyticsHistory] = useState<
+    string | null
+  >(null);
   const [matchId, setMatchId] = useState(firstMatchId);
+  const [audioMuted, setAudioMuted] = useState(false);
+  const gameBeginStartedForMatchRef = useRef<string | null>(null);
   const falseStarts = useMemo(
     () => new FalseStartCoordinator(channel, self.id, opponent.id),
     [channel, self.id, opponent.id, matchId]
@@ -131,10 +155,22 @@ export function DuelScreen({
       });
   }, []);
   useEffect(() => {
-    if (instructionsSeen) runClockCalibration();
-  }, [instructionsSeen, runClockCalibration]);
+    runClockCalibration();
+  }, [runClockCalibration]);
 
   const [roundResult, setRoundResult] = useState<RoundOutcome | null>(null);
+  const [roundShots, setRoundShots] = useState<RoundShots | null>(null);
+  const [waitingForRoundResult, setWaitingForRoundResult] = useState(false);
+  const pendingGuestShotsRef = useRef<{
+    matchId: string;
+    roundNumber: number;
+    shots: RoundShots;
+  } | null>(null);
+  const hostRoundResultRef = useRef<{
+    matchId: string;
+    roundNumber: number;
+    outcome: RoundOutcome;
+  } | null>(null);
   // Lives above PreRound on purpose: the opponent can finish their ritual
   // while this device is still on the previous round's result screen, and a
   // latch scoped to one round would drop that message.
@@ -178,6 +214,13 @@ export function DuelScreen({
       setMatchId(nextMatchId);
       setLoop(fresh);
       setRoundResult(null);
+      setRoundShots(null);
+      pendingGuestShotsRef.current = null;
+      hostRoundResultRef.current = null;
+      setWaitingForRoundResult(false);
+      analyticsRoundsRef.current = [];
+      pendingShotRef.current = null;
+      setConfirmedAnalyticsHistory(null);
       setPeerReady(false);
       setRematch({ status: "idle" });
     },
@@ -328,12 +371,30 @@ export function DuelScreen({
             reply: true
           });
         }
+        const localKeys = roundKeys(loopRef.current);
+        if (
+          isMatchDecided(loopRef.current) &&
+          JSON.stringify(message.roundKeys) === JSON.stringify(localKeys)
+        ) {
+          setConfirmedAnalyticsHistory(
+            JSON.stringify([matchIdRef.current, localKeys])
+          );
+        }
         if (!syncingRef.current) return;
 
         syncingRef.current = false;
         const resumed = reconcileRounds(loopRef.current, message.roundKeys);
+        analyticsRoundsRef.current = analyticsRoundsRef.current.slice(
+          0,
+          resumed.rounds.length
+        );
+        pendingShotRef.current = null;
+        pendingGuestShotsRef.current = null;
+        hostRoundResultRef.current = null;
+        setWaitingForRoundResult(false);
         falseStarts.syncPeerWarningCount(message.warningCounts?.[opponent.id]);
         if (resumed !== loopRef.current) {
+          setConfirmedAnalyticsHistory(null);
           loopRef.current = resumed;
           setLoop(resumed);
           setRoundResult(null);
@@ -385,15 +446,84 @@ export function DuelScreen({
     onExit?.();
   };
 
+  const applyGuestRoundResult = useCallback(() => {
+    const pending = pendingGuestShotsRef.current;
+    const result = hostRoundResultRef.current;
+    if (
+      !pending ||
+      !result ||
+      pending.matchId !== result.matchId ||
+      pending.roundNumber !== result.roundNumber ||
+      pending.matchId !== matchIdRef.current ||
+      pending.roundNumber !== loopRef.current.rounds.length + 1
+    )
+      return;
+    pendingGuestShotsRef.current = null;
+    hostRoundResultRef.current = null;
+    setLoop((state) => applyRoundOutcome(state, result.outcome));
+    setRoundShots(pending.shots);
+    setRoundResult(result.outcome);
+    setWaitingForRoundResult(false);
+  }, []);
+
+  useEffect(
+    () =>
+      channel.onMessage((message) => {
+        if (
+          role !== "guest" ||
+          message.type !== "roundResult" ||
+          message.matchId !== matchIdRef.current ||
+          message.roundNumber !== loopRef.current.rounds.length + 1
+        )
+          return;
+        hostRoundResultRef.current = message;
+        applyGuestRoundResult();
+      }),
+    [channel, role, applyGuestRoundResult]
+  );
+
   const handleRoundShots = useCallback(
     (shots: RoundShots) => {
-      // Both devices judge the same captured shot zones and reaction times,
-      // so they reach the same outcome without either side being the scorer.
+      const roundNumber = loopRef.current.rounds.length + 1;
+      analyticsRoundsRef.current = [
+        ...analyticsRoundsRef.current.slice(0, roundNumber - 1),
+        {
+          roundNumber,
+          reactionMs: shots.selfReactionMs,
+          zone: shots.selfZone,
+          missReason:
+            shots.falseStartPlayer === "self"
+              ? null
+              : shots.selfReactionMs === null
+                ? "noShot"
+                : (shots.selfMissReason ?? null),
+          falseStarted: shots.falseStartPlayer === "self",
+          shot: pendingShotRef.current
+        }
+      ];
+      pendingShotRef.current = null;
+      if (role === "guest") {
+        pendingGuestShotsRef.current = {
+          matchId: matchIdRef.current,
+          roundNumber,
+          shots
+        };
+        setWaitingForRoundResult(true);
+        applyGuestRoundResult();
+        return;
+      }
       const outcome = judgeRoundShots(self, opponent, shots);
       setLoop((state) => applyRoundOutcome(state, outcome));
+      setRoundShots(shots);
       setRoundResult(outcome);
+      safeSend({
+        type: "roundResult",
+        matchId: matchIdRef.current,
+        roundNumber,
+        outcome
+      });
     },
-    [opponent, self]
+    [applyGuestRoundResult, opponent, role, safeSend, self]
   );
 
   const consumePeerReady = useCallback(() => setPeerReady(false), []);
@@ -405,6 +535,63 @@ export function DuelScreen({
   const completedResult = useMemo(
     () => (matchDecided ? toMatchResult(loop, matchId) : null),
     [loop, matchDecided, matchId]
+  );
+  const analytics = useMemo<MatchAnalytics | null>(
+    () =>
+      completedResult && calibration
+        ? {
+            schemaVersion: 1,
+            matchId: completedResult.matchId,
+            playerId: self.id,
+            participantIds: completedResult.participantIds,
+            completedAt: completedResult.completedAt,
+            platform: Platform.OS,
+            clockOffsetMs,
+            calibration,
+            thresholds: {
+              bodyshotMinF: BODYSHOT_MIN_F,
+              bodyshotMaxF: BODYSHOT_MAX_F,
+              headshotMaxF: BODYSHOT_MAX_F + HEADSHOT_DELTA_F,
+              aimToleranceDegrees: AIM_TOLERANCE_DEGREES
+            },
+            rounds: analyticsRoundsRef.current.slice()
+          }
+        : null,
+    [completedResult, calibration, self.id, clockOffsetMs]
+  );
+  const completedHistory = completedResult
+    ? JSON.stringify([matchId, roundKeys(loop)])
+    : null;
+  // A locally judged final round may be discarded after a drop. Do not persist
+  // immutable diagnostics until the peer confirms this exact completed history.
+  useEffect(() => {
+    if (
+      !completedResult ||
+      confirmedAnalyticsHistory === completedHistory ||
+      connection.status !== "live"
+    )
+      return;
+    const ask = () =>
+      safeSend({
+        type: "matchSync",
+        matchId: completedResult.matchId,
+        roundKeys: roundKeys(loopRef.current),
+        warningCounts: falseStarts.getWarningCounts(),
+        reply: false
+      });
+    ask();
+    const timer = setInterval(ask, MATCH_SYNC_RETRY_MS);
+    return () => clearInterval(timer);
+  }, [
+    completedResult,
+    completedHistory,
+    confirmedAnalyticsHistory,
+    connection.status,
+    falseStarts,
+    safeSend
+  ]);
+  const analyticsSave = useMatchAnalytics(
+    confirmedAnalyticsHistory === completedHistory ? analytics : null
   );
   const [saveState, setSaveState] = useState<{
     result: MatchResult;
@@ -458,26 +645,65 @@ export function DuelScreen({
     );
   }
 
-  const exitControl = onExit && (
+  const exitControl = onExit ? (
     <View style={styles.exitRow}>
-      <CutCornerButton
-        label="Exit"
-        onPress={exit}
+      <DuelExitButton onPress={exit} />
+    </View>
+  ) : null;
+
+  const setupControls = (
+    <View style={styles.setupControls}>
+      <IconButton
+        accessibilityLabel="Help"
+        icon="help-circle-outline"
+        iconColor={colors.textMuted60}
+        onPress={() => setHelpOpen(true)}
       />
+      {onExit ? <DuelExitButton onPress={exit} /> : null}
     </View>
   );
+  const helpModal = (
+    <Modal
+      onRequestClose={() => setHelpOpen(false)}
+      visible={helpOpen}
+    >
+      <GameInstructionsScreen onClose={() => setHelpOpen(false)} />
+    </Modal>
+  );
 
-  if (!instructionsSeen || !calibration) {
+  if (!separationConfirmed) {
     return (
       <View style={styles.container}>
-        {!instructionsSeen ? (
-          <GameInstructionsScreen
-            onContinue={() => setInstructionsSeen(true)}
+        {setupControls}
+        <View style={styles.separationContent}>
+          <ScreenHeader
+            kicker="Duel setup"
+            subtitle="Face your opponent from a few paces away. The phones cannot measure this distance, so confirm when both players are ready."
+            title="STAND APART"
           />
-        ) : (
-          <DrawCalibrationScreen onComplete={setCalibration} />
-        )}
-        {exitControl}
+          <View style={styles.separationAction}>
+            <CutCornerButton
+              label="CONTINUE TO CALIBRATION"
+              onPress={() => setSeparationConfirmed(true)}
+            />
+          </View>
+        </View>
+        {helpModal}
+      </View>
+    );
+  }
+
+  if (!calibration) {
+    return (
+      <View style={styles.container}>
+        {setupControls}
+        <DrawCalibrationScreen
+          clockCalibrationStatus={clockCalibrationStatus}
+          onComplete={setCalibration}
+          onRetryClockCalibration={runClockCalibration}
+          paused={helpOpen}
+        />
+        {helpModal}
       </View>
     );
   }
@@ -485,6 +711,8 @@ export function DuelScreen({
   if (completedResult && !roundResult) {
     return (
       <MatchSummaryScreen
+        analyticsSaveStatus={analyticsSave.status ?? "waiting"}
+        onRetryAnalytics={() => void analyticsSave.retry()}
         matchResult={completedResult}
         saveStatus={saveStatus}
         onRetrySave={() => void saveResult()}
@@ -513,6 +741,7 @@ export function DuelScreen({
   if (roundResult) {
     return (
       <RoundResultScreen
+        audioMuted={audioMuted}
         continueDisabled={matchDecided && saveStatus === "saving"}
         continueLabel={
           !matchDecided
@@ -529,8 +758,12 @@ export function DuelScreen({
         onContinue={() => {
           if (!matchDecided || saveStatus !== "saving") setRoundResult(null);
         }}
+        opponentReactionMs={roundShots?.opponentReactionMs ?? null}
+        opponentZone={roundShots?.opponentZone ?? "miss"}
         outcome={roundResult}
         playerNames={playerNames}
+        selfReactionMs={roundShots?.selfReactionMs ?? null}
+        selfZone={roundShots?.selfZone ?? "miss"}
         roundNumber={loop.rounds.length}
       />
     );
@@ -538,11 +771,15 @@ export function DuelScreen({
 
   return (
     <View style={styles.container}>
+      {exitControl}
       {/* Keyed on the match, round and resume: a fresh PreRound is the round
           reset. */}
       <PreRound
+        audioMuted={audioMuted}
         key={`${matchId}:${loop.rounds.length}:${resumeCount}`}
         channel={channel}
+        matchId={matchId}
+        roundNumber={loop.rounds.length + 1}
         calibration={calibration}
         selfPlayerId={self.id}
         falseStarts={falseStarts}
@@ -551,12 +788,29 @@ export function DuelScreen({
         clockCalibrationStatus={clockCalibrationStatus}
         clockOffsetMs={clockOffsetMs}
         onCountdownStart={consumePeerReady}
+        onGameBeginStart={() => {
+          gameBeginStartedForMatchRef.current = matchId;
+        }}
+        onToggleAudioMuted={() => setAudioMuted((muted) => !muted)}
+        onHelp={() => setHelpOpen(true)}
         onRetryClockCalibration={runClockCalibration}
         onRoundShots={handleRoundShots}
+        onShotDiagnostics={(shot) => {
+          pendingShotRef.current = shot;
+        }}
         peerReady={peerReady}
+        playGameBegin={
+          loop.rounds.length === 0 &&
+          gameBeginStartedForMatchRef.current !== matchId
+        }
         role={role}
       />
-      {exitControl}
+      {waitingForRoundResult && (
+        <View style={styles.syncingResult}>
+          <Text style={styles.syncingResultText}>SYNCING RESULT</Text>
+        </View>
+      )}
+      {helpModal}
     </View>
   );
 }
@@ -565,9 +819,35 @@ const styles = StyleSheet.create({
   container: {
     flex: 1
   },
+  setupControls: {
+    alignItems: "center",
+    backgroundColor: colors.background,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 8,
+    paddingTop: 8
+  },
+  separationContent: {
+    flex: 1,
+    padding: 24
+  },
+  separationAction: {
+    marginTop: "auto"
+  },
   exitRow: {
-    position: "absolute",
-    right: 16,
-    top: 16
+    alignItems: "flex-end",
+    backgroundColor: colors.background,
+    paddingHorizontal: 24,
+    paddingTop: 8
+  },
+  syncingResult: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    backgroundColor: colors.background,
+    justifyContent: "center"
+  },
+  syncingResultText: {
+    color: colors.text,
+    fontSize: 24
   }
 });

@@ -20,6 +20,11 @@ plugins:
     id: megalinter
     type: github
   - def:
+      description: Matt Pocock's agent skills for real engineering (grilling, spec/ticket flows, TDD, code review, domain modelling and more).
+      repo: mattpocock/skills
+    id: mattpocock-skills
+    type: github
+  - def:
       description: Frontend design taste skills including brutalist, minimalist, soft, redesign, stitch, and more
       repo: Leonxlnx/taste-skill
     id: taste-skill
@@ -28,11 +33,6 @@ plugins:
       description: Official Expo skills for building, deploying, upgrading, and debugging Expo apps.
       repo: expo/skills::plugins/expo
     id: expo
-    type: github
-  - def:
-      description: Matt Pocock's agent skills for real engineering — grilling, spec/ticket flows, TDD, code review, domain modelling and more.
-      repo: mattpocock/skills
-    id: mattpocock-skills
     type: github
 providers:
   # keep-sorted start

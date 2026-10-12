@@ -16,6 +16,10 @@ import {
   withNetworkPreparation,
   withReconnectPreparation
 } from "./network/hotspot";
+import {
+  challengeRequestRepository,
+  type SendChallengeResult
+} from "./services/challengeRequestRepository";
 import { createDuelLink } from "./session/duelLink";
 import { DUEL_CONNECT_MAX_AUTO_RETRIES } from "./session/duelSession.constants";
 import type { DuelSessionParams } from "./session/duelSession.types";
@@ -29,6 +33,7 @@ type ChallengeApproval = "pending" | "accepted" | "declined";
 type ConnectingScreenProps = {
   currentUser: { displayName: string; uid: string };
   handoff: ChallengeHandoff;
+  request: Promise<SendChallengeResult | null>;
   /** The host accepted: the duel now owns this session. */
   onConnected: (link: DuelLink, handoff: ChallengeHandoff) => void;
   onExit: () => void;
@@ -37,6 +42,7 @@ type ConnectingScreenProps = {
 export function ConnectingScreen({
   currentUser,
   handoff,
+  request,
   onConnected,
   onExit
 }: ConnectingScreenProps) {
@@ -82,9 +88,32 @@ export function ConnectingScreen({
     }
 
     const { channel } = state.connection;
+    let answered = false;
     const unsubscribe = channel.onMessage((message) => {
-      if (message.type === "challengeAccepted") setApproval("accepted");
-      if (message.type === "challengeDeclined") setApproval("declined");
+      if (
+        answered ||
+        (message.type !== "challengeAccepted" &&
+          message.type !== "challengeDeclined")
+      )
+        return;
+      answered = true;
+      const decision =
+        message.type === "challengeAccepted" ? "accepted" : "declined";
+      // This attempt owns its creation promise. Keep the write alive after
+      // handoff/unmount, including when the host answers before addDoc resolves.
+      void request
+        .then((result) =>
+          result
+            ? challengeRequestRepository.updateStatus(
+                result.requestId,
+                decision
+              )
+            : undefined
+        )
+        .catch((error) =>
+          console.error("Failed to update challenge request:", error)
+        );
+      setApproval(decision);
     });
 
     const announce = () => {
@@ -105,7 +134,7 @@ export function ConnectingScreen({
       unsubscribe();
       clearInterval(interval);
     };
-  }, [approval, currentUser.displayName, currentUser.uid, state]);
+  }, [approval, currentUser.displayName, currentUser.uid, request, state]);
 
   useEffect(() => {
     if (state.status === "connected" && approval === "accepted") {
