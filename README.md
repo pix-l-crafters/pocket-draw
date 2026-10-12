@@ -99,8 +99,11 @@ EAS environment variables instead of `.env`.
 ### Android hotspot pairing
 
 Hotspot invites use a unique IPv4 address added when Pocket Draw starts the
-hotspot, excluding addresses belonging to existing Android networks. If no
-unique address is found, setup fails instead of displaying a misleading QR code.
+hotspot, excluding preexisting and upstream-network addresses. On Android 15
+and newer, the app also reads device-hosted local Wi-Fi addresses from Android's
+network information when the interface scan cannot see them. It waits up to
+five seconds for the address to become available without blocking the UI.
+Missing or ambiguous addresses fail setup instead of displaying a misleading QR code.
 An already-running hotspot shared with another app is rejected; stop it before
 hosting from Pocket Draw.
 

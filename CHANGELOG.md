@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file. See [conven
 ### Bug Fixes
 
 - **(qr)** identify Android hotspot addresses without advertising preexisting network addresses; reject missing or ambiguous hotspot addresses.
+- **(qr)** wait for Android hotspot address publication and use hosted local Wi-Fi network addresses when interface enumeration omits the hotspot.
 
 ### Features
 

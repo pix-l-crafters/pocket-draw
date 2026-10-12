@@ -2,10 +2,12 @@ package expo.modules.localonlyhotspot
 
 import android.content.Context
 import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import expo.modules.kotlin.Promise
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
@@ -50,6 +52,8 @@ class LocalOnlyHotspotModule : Module() {
         // ponytail: a shared hotspot already running before this request is
         // rejected; supporting it needs platform hotspot-interface identification.
         val addressesBeforeStart = localIpv4Addresses()
+        addressesBeforeStart.addAll(connectedIpv4Addresses(connectivityManager).keys)
+        val handler = Handler(Looper.getMainLooper())
         wifiManager.startLocalOnlyHotspot(
           object : WifiManager.LocalOnlyHotspotCallback() {
             override fun onStarted(hotspotReservation: WifiManager.LocalOnlyHotspotReservation) {
@@ -63,28 +67,53 @@ class LocalOnlyHotspotModule : Module() {
                 return
               }
               val credentials = credentialsFrom(hotspotReservation)
-              val hostIp = selectHotspotIpv4(
-                addressesBeforeStart,
-                localIpv4Addresses(),
-                connectedIpv4Addresses(connectivityManager)
-              )
-              if (credentials == null || hostIp == null) {
+              if (credentials == null) {
                 hotspotReservation.close()
                 promise.reject(
                   "ERR_HOTSPOT_DETAILS",
-                  "Android created a hotspot but its credentials or a unique hotspot IPv4 address were unavailable.",
+                  "Android created a hotspot but its credentials were unavailable.",
                   null
                 )
                 return
               }
 
               reservation = hotspotReservation
-              activeNetwork = mapOf(
-                "ssid" to credentials.first,
-                "password" to credentials.second,
-                "hostIp" to hostIp
-              )
-              promise.resolve(activeNetwork)
+              val deadline = SystemClock.elapsedRealtime() + 5000
+              // The callback can precede publication of the interface address.
+              val resolveAddress = object : Runnable {
+                override fun run() {
+                  if (stopRequested || reservation !== hotspotReservation) {
+                    hotspotReservation.close()
+                    promise.reject("ERR_HOTSPOT_CANCELLED", "Hotspot creation was cancelled.", null)
+                    return
+                  }
+                  val hostIp = selectHotspotIpv4(
+                    addressesBeforeStart,
+                    localIpv4Addresses(),
+                    connectedIpv4Addresses(connectivityManager)
+                  )
+                  if (hostIp != null) {
+                    activeNetwork = mapOf(
+                      "ssid" to credentials.first,
+                      "password" to credentials.second,
+                      "hostIp" to hostIp
+                    )
+                    promise.resolve(activeNetwork)
+                    return
+                  }
+                  if (SystemClock.elapsedRealtime() >= deadline) {
+                    stopHotspot()
+                    promise.reject(
+                      "ERR_HOTSPOT_DETAILS",
+                      "Android created a hotspot but a unique hotspot IPv4 address was unavailable.",
+                      null
+                    )
+                    return
+                  }
+                  handler.postDelayed(this, 100)
+                }
+              }
+              resolveAddress.run()
             }
 
             override fun onStopped() {
@@ -100,7 +129,7 @@ class LocalOnlyHotspotModule : Module() {
               )
             }
           },
-          Handler(Looper.getMainLooper())
+          handler
         )
       } catch (error: SecurityException) {
         promise.reject(
@@ -140,9 +169,9 @@ class LocalOnlyHotspotModule : Module() {
     }
   }
 
-  private fun localIpv4Addresses(): Set<Inet4Address> {
-    val interfaces = NetworkInterface.getNetworkInterfaces() ?: return emptySet()
+  private fun localIpv4Addresses(): MutableSet<Inet4Address> {
     val result = mutableSetOf<Inet4Address>()
+    val interfaces = NetworkInterface.getNetworkInterfaces() ?: return result
     while (interfaces.hasMoreElements()) {
       val networkInterface = interfaces.nextElement()
       if (!networkInterface.isUp || networkInterface.isLoopback) continue
@@ -157,15 +186,19 @@ class LocalOnlyHotspotModule : Module() {
     return result
   }
 
-  // These are one-shot snapshots, not a network-change subscription.
+  // Local Wi-Fi networks publish the host's own addresses, not upstream addresses.
   @Suppress("DEPRECATION")
-  private fun connectedIpv4Addresses(manager: ConnectivityManager): Set<Inet4Address> {
-    val result = mutableSetOf<Inet4Address>()
+  private fun connectedIpv4Addresses(manager: ConnectivityManager): Map<Inet4Address, Boolean> {
+    val result = mutableMapOf<Inet4Address, Boolean>()
     for (network in manager.allNetworks) {
+      val capabilities = manager.getNetworkCapabilities(network)
+      val isHostedWifiNetwork = Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM &&
+        capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true &&
+        capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_LOCAL_NETWORK)
       val properties = manager.getLinkProperties(network) ?: continue
       for (linkAddress in properties.linkAddresses) {
         val address = linkAddress.address
-        if (address is Inet4Address) result.add(address)
+        if (address is Inet4Address) result[address] = isHostedWifiNetwork
       }
     }
     return result
