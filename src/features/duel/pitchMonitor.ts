@@ -4,8 +4,9 @@ import type {
   AnalyticsCalibration,
   MotionSnapshot
 } from "../../contracts/matchAnalytics";
+import type { SensorRecording } from "./sensorRecording";
 
-const SENSOR_UPDATE_INTERVAL_MS = 20;
+export const SENSOR_UPDATE_INTERVAL_MS = 20;
 const MAX_SAMPLE_AGE_MS = 2_000;
 
 export type PitchMonitorStartResult =
@@ -58,7 +59,10 @@ export class PitchMonitor {
   private generation = 0;
   private starting: Promise<PitchMonitorStartResult> | null = null;
 
-  constructor(private readonly onPitch?: (theta: number | null) => void) {}
+  constructor(
+    private readonly onPitch?: (theta: number | null) => void,
+    private readonly recording?: SensorRecording
+  ) {}
 
   start(): Promise<PitchMonitorStartResult> {
     if (this.subscription) {
@@ -94,12 +98,14 @@ export class PitchMonitor {
       DeviceMotion.setUpdateInterval(SENSOR_UPDATE_INTERVAL_MS);
       const subscription = DeviceMotion.addListener((reading) => {
         if (generation !== this.generation) return;
+        const receivedAtMs = Date.now();
+        this.recording?.sample("deviceMotion", reading, receivedAtMs);
         const theta = reading.rotation?.beta;
         this.latestTheta =
           typeof theta === "number" && Number.isFinite(theta) ? theta : null;
-        this.latestAtMs = this.latestTheta === null ? null : Date.now();
+        this.latestAtMs = this.latestTheta === null ? null : receivedAtMs;
         this.latestMotion = {
-          receivedAtMs: Date.now(),
+          receivedAtMs,
           ageMs: 0,
           rotation: rotation(reading.rotation),
           rotationRate: rotation(reading.rotationRate),

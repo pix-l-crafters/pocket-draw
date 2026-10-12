@@ -1,3 +1,11 @@
+import { Share } from "react-native";
+
+import { SensorRecording, shareLatestSensorRecording } from "./sensorRecording";
+
+jest.mock("@react-native-async-storage/async-storage", () =>
+  require("@react-native-async-storage/async-storage/jest/async-storage-mock")
+);
+
 import { PitchMonitor } from "./pitchMonitor";
 
 type MotionReading = {
@@ -85,6 +93,36 @@ function setPitch(beta: number | null) {
 }
 
 describe("PitchMonitor", () => {
+  it("records the original callback sequence using its one subscription and ignores removed callbacks", async () => {
+    const recording = new SensorRecording();
+    recording.start("calibration", {});
+    const monitor = new PitchMonitor(undefined, recording);
+    await monitor.start();
+    const removed = [...mockListeners][0];
+    expect(mockListeners.size).toBe(1);
+    setPitch(1.2);
+    jest.advanceTimersByTime(20);
+    setPitch(1.3);
+    monitor.stop();
+    await recording.finish("completed");
+    recording.start("round", {});
+    await monitor.start();
+    removed(reading(99));
+    setPitch(0.2);
+    await recording.finish("completed");
+    const share = jest
+      .spyOn(Share, "share")
+      .mockResolvedValue({ action: Share.sharedAction });
+    await shareLatestSensorRecording();
+    const json = JSON.parse(share.mock.calls[0][0].message!);
+    expect(json.samples).toHaveLength(1);
+    expect(json.samples[0].reading).toEqual(reading(0.2));
+    expect(json.samples[0].receivedAtMs).toBe(10020);
+    expect(mockListeners.size).toBe(1);
+    monitor.stop();
+    share.mockRestore();
+  });
+
   it("retains a firing snapshot with raw motion and sample age, including stale readings", async () => {
     const monitor = new PitchMonitor();
     await monitor.start();

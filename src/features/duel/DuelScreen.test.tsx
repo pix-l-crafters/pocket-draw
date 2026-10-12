@@ -1,5 +1,9 @@
+jest.mock("@react-native-async-storage/async-storage", () =>
+  require("@react-native-async-storage/async-storage/jest/async-storage-mock")
+);
+
 import { act, fireEvent, render } from "@testing-library/react-native";
-import { Platform } from "react-native";
+import { AppState, Platform } from "react-native";
 import { PaperProvider } from "react-native-paper";
 
 import { createMockDuelChannelPair } from "../../contracts/mocks/mockDuelChannel";
@@ -99,7 +103,9 @@ jest.mock("./volumeFireTrigger", () => ({
 }));
 
 describe("DuelScreen clock calibration", () => {
+  const initialAppState = AppState.currentState;
   beforeEach(() => {
+    AppState.currentState = "active";
     Platform.OS = "ios";
     mockNowMs = 10_000;
     jest.spyOn(Date, "now").mockImplementation(() => mockNowMs);
@@ -110,7 +116,10 @@ describe("DuelScreen clock calibration", () => {
     mockMotionGranted = true;
   });
 
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => {
+    AppState.currentState = initialAppState;
+    jest.restoreAllMocks();
+  });
 
   it("calibrates before enabling play and disposes its channel listener with the session", async () => {
     const [duelChannel, peerChannel] = createMockDuelChannelPair();

@@ -1,9 +1,13 @@
+jest.mock("@react-native-async-storage/async-storage", () =>
+  require("@react-native-async-storage/async-storage/jest/async-storage-mock")
+);
+
 // Real calibration, sensor capture, wire exchange, judgment and match loop.
 // Only native hardware, the in-memory transport and backend persistence are fake.
 import { act, fireEvent, render, within } from "@testing-library/react-native";
 import type { LocationHeadingObject, LocationObject } from "expo-location";
 import type { DeviceMotionMeasurement } from "expo-sensors";
-import { Platform, StyleSheet, View } from "react-native";
+import { AppState, Platform, StyleSheet, View } from "react-native";
 import { PaperProvider } from "react-native-paper";
 
 import type { MatchResult } from "../../contracts/matchResult";
@@ -395,7 +399,9 @@ async function renderPhones(guestShotDelayMs = 0, guestClockSkewMs = 0) {
 
 describe("DuelScreen real two-phone gameplay", () => {
   const originalPlatform = Platform.OS;
+  const initialAppState = AppState.currentState;
   beforeEach(() => {
+    AppState.currentState = "active";
     Platform.OS = "android";
     jest.useFakeTimers();
     jest.setSystemTime(100_000);
@@ -413,6 +419,7 @@ describe("DuelScreen real two-phone gameplay", () => {
     }
   });
   afterEach(() => {
+    AppState.currentState = initialAppState;
     Platform.OS = originalPlatform;
     jest.useRealTimers();
   });

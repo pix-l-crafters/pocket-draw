@@ -1,5 +1,10 @@
+jest.mock("@react-native-async-storage/async-storage", () =>
+  require("@react-native-async-storage/async-storage/jest/async-storage-mock")
+);
+
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { act, fireEvent, render, within } from "@testing-library/react-native";
-import { AppState, type AppStateStatus, Linking } from "react-native";
+import { AppState, type AppStateStatus, Linking, Share } from "react-native";
 import { PaperProvider } from "react-native-paper";
 
 import { appTheme } from "../../theme/appTheme";
@@ -93,21 +98,47 @@ async function hold(beta: number, x: number, y: number, z: number, ms = 2_000) {
   }
 }
 
+async function volumeUp() {
+  await act(() =>
+    mockVolumeListeners.forEach((listener) => listener({ direction: "up" }))
+  );
+}
+async function motionSequence(values: number[], y: number) {
+  for (const beta of values) {
+    await act(() => {
+      mockTiltListeners.forEach((listener) =>
+        listener({ x: 0, y, z: y ? 0 : 0.95 })
+      );
+      mockMotionListeners.forEach((listener) =>
+        listener({ rotation: { beta } })
+      );
+      jest.advanceTimersByTime(20);
+    });
+  }
+}
+
 async function renderCalibration(
   clockCalibrationStatus: "calibrating" | "ready" | "failed" = "ready"
 ) {
   const onComplete = jest.fn();
   const onRetryClockCalibration = jest.fn();
-  const view = await render(
+  const screen = (paused = false) => (
     <PaperProvider theme={appTheme}>
       <DrawCalibrationScreen
+        paused={paused}
         clockCalibrationStatus={clockCalibrationStatus}
         onComplete={onComplete}
         onRetryClockCalibration={onRetryClockCalibration}
       />
     </PaperProvider>
   );
-  return { view, onComplete, onRetryClockCalibration };
+  const view = await render(screen());
+  return {
+    view,
+    onComplete,
+    onRetryClockCalibration,
+    setPaused: (paused: boolean) => view.rerender(screen(paused))
+  };
 }
 
 describe("DrawCalibrationScreen", () => {
@@ -324,6 +355,7 @@ describe("DrawCalibrationScreen", () => {
       );
     });
     expect(view.queryByText("Ready pose")).toBeNull();
+    await motionSequence([1.2, 1.2, 1.2], 0);
     await act(() =>
       mockVolumeListeners.forEach((listener) => listener({ direction: "up" }))
     );
@@ -339,13 +371,8 @@ describe("DrawCalibrationScreen", () => {
     expect(
       view.getByText(/lower the phone from shoulder height first/)
     ).toBeTruthy();
-    await act(() => {
-      mockMotionListeners.forEach((listener) =>
-        listener({ rotation: { beta: 0.2 } })
-      );
-      mockTiltListeners.forEach((listener) => listener({ x: 0, y: 0.9, z: 0 }));
-      mockVolumeListeners.forEach((listener) => listener({ direction: "up" }));
-    });
+    await motionSequence([0.2, 0.2, 0.2], 0.9);
+    await volumeUp();
     expect(view.getByText("Calibration passed")).toBeTruthy();
     expect(mockVolumeListeners.size).toBe(1);
     await act(() => {
@@ -366,6 +393,180 @@ describe("DrawCalibrationScreen", () => {
     );
     expect(view.getByTestId("ready-pose-illustration")).toBeTruthy();
     expect(view.getByTestId("shoulder-pose-illustration")).toBeTruthy();
+  });
+
+  it("saves the same recent median for manual confirmation while snapshots retain the outlier", async () => {
+    const { view, onComplete } = await renderCalibration();
+    await fireEvent.press(view.getByText("Start calibration"));
+    await motionSequence([1.2, 1.21, 9], 0);
+    await volumeUp();
+    expect(view.getByText("Ready pose")).toBeTruthy();
+    await motionSequence([0.1, 0.2, 0.3, 0.4], 0.9);
+    await volumeUp();
+    await volumeUp();
+    expect(onComplete).toHaveBeenCalledWith(
+      expect.objectContaining({
+        thetaShoulder: 1.21,
+        thetaReady: 0.25,
+        shoulderPose: expect.objectContaining({
+          motion: expect.objectContaining({
+            rotation: expect.objectContaining({ beta: 9 })
+          })
+        })
+      })
+    );
+  });
+
+  it("asks for a brief hold when fewer than three motion callbacks qualify", async () => {
+    const { view } = await renderCalibration();
+    await fireEvent.press(view.getByText("Start calibration"));
+    await motionSequence([1.2, 1.2], 0);
+    await volumeUp();
+    expect(view.getByText(/Hold the pose briefly/)).toBeTruthy();
+    expect(view.getByText("Shoulder pose")).toBeTruthy();
+  });
+
+  it("uses a median for automatic holds without synthesizing the original snapshot", async () => {
+    const { view, onComplete } = await renderCalibration();
+    await fireEvent.press(view.getByText("Start calibration"));
+    await hold(1.2, 0, 0, 0.95, 1900);
+    await act(() => {
+      mockMotionListeners.forEach((listener) =>
+        listener({ rotation: { beta: 1.3 } })
+      );
+      mockTiltListeners.forEach((listener) =>
+        listener({ x: 0, y: 0, z: 0.95 })
+      );
+    });
+    expect(view.getByText("Ready pose")).toBeTruthy();
+    await hold(0.2, 0, 0.9, 0);
+    await volumeUp();
+    expect(onComplete).toHaveBeenCalledWith(
+      expect.objectContaining({
+        thetaShoulder: 1.2,
+        shoulderPose: expect.objectContaining({
+          confirmation: "hold",
+          motion: expect.objectContaining({
+            rotation: expect.objectContaining({ beta: 1.3 })
+          })
+        })
+      })
+    );
+  });
+
+  it("validates the minimum arc against the saved medians", async () => {
+    const { view } = await renderCalibration();
+    await fireEvent.press(view.getByText("Start calibration"));
+    await motionSequence([1.2, 1.2, 1.2], 0);
+    await volumeUp();
+    await motionSequence([1.14, 1.26, 1.14, 1.26], 0.9);
+    await volumeUp();
+    expect(view.getByText("Ready pose")).toBeTruthy();
+    expect(view.queryByText("Calibration passed")).toBeNull();
+    expect(
+      view.getByText(/lower the phone from shoulder height first/)
+    ).toBeTruthy();
+  });
+
+  it.each([
+    "invalidPose",
+    "invalidPitch",
+    "stalePose",
+    "stalePitch",
+    "pause",
+    "background"
+  ])("clears eligibility after %s and requires new samples", async (reason) => {
+    const states: ((state: AppStateStatus) => void)[] = [];
+    jest
+      .spyOn(AppState, "addEventListener")
+      .mockImplementation((_event, listener) => {
+        states.push(listener);
+        return { remove: () => undefined };
+      });
+    const { view, setPaused } = await renderCalibration();
+    await fireEvent.press(view.getByText("Start calibration"));
+    await motionSequence([1.2, 1.2, 1.2], 0);
+    if (reason === "pause") {
+      await setPaused(true);
+      await setPaused(false);
+    } else
+      await act(() => {
+        if (reason === "background") {
+          states.forEach((listener) => listener("background"));
+          states.forEach((listener) => listener("active"));
+        }
+        if (reason === "invalidPose")
+          mockTiltListeners.forEach((listener) =>
+            listener({ x: NaN, y: 0, z: 1 })
+          );
+        if (reason === "invalidPitch")
+          mockMotionListeners.forEach((listener) =>
+            listener({ rotation: { beta: NaN } })
+          );
+        if (reason === "stalePose" || reason === "stalePitch")
+          jest.advanceTimersByTime(351);
+        if (reason === "stalePose")
+          mockMotionListeners.forEach((listener) =>
+            listener({ rotation: { beta: 1.2 } })
+          );
+      });
+    await volumeUp();
+    expect(view.getByText("Shoulder pose")).toBeTruthy();
+    await motionSequence([1.2, 1.2], 0);
+    await volumeUp();
+    expect(view.getByText("Shoulder pose")).toBeTruthy();
+    await motionSequence([1.2], 0);
+    await volumeUp();
+    expect(view.getByText("Ready pose")).toBeTruthy();
+    // The next pose cannot inherit shoulder samples.
+    await motionSequence([0.2], 0.9);
+    await volumeUp();
+    expect(view.getByText("Ready pose")).toBeTruthy();
+  });
+
+  it("ignores removed callbacks and starts a new sensor session with no prior samples", async () => {
+    const first = await renderCalibration();
+    await fireEvent.press(first.view.getByText("Start calibration"));
+    await motionSequence([1.2, 1.2, 1.2], 0);
+    const oldMotion = [...mockMotionListeners][0];
+    const oldTilt = [...mockTiltListeners][0];
+    await first.view.unmount();
+    const second = await renderCalibration();
+    await fireEvent.press(second.view.getByText("Start calibration"));
+    await act(() => {
+      oldTilt({ x: 0, y: 0, z: 1 });
+      oldMotion({ rotation: { beta: 9 } });
+    });
+    await motionSequence([1.2, 1.2], 0);
+    await volumeUp();
+    expect(second.view.getByText("Shoulder pose")).toBeTruthy();
+  });
+
+  it("keeps calibration playable when local save or share fails", async () => {
+    jest.spyOn(AsyncStorage, "setItem").mockRejectedValue(new Error("full"));
+    jest.spyOn(Share, "share").mockRejectedValue(new Error("failed"));
+    const { view, onComplete } = await renderCalibration();
+    await fireEvent.press(view.getByText("Start calibration"));
+    await motionSequence([1.2, 1.2, 1.2], 0);
+    await volumeUp();
+    await motionSequence([0.2, 0.2, 0.2], 0.9);
+    await volumeUp();
+    await fireEvent.press(view.getByText("Share latest sensor JSON"));
+    await volumeUp();
+    expect(onComplete).toHaveBeenCalledWith(
+      expect.objectContaining({ thetaShoulder: 1.2, thetaReady: 0.2 })
+    );
+  });
+
+  it("does not expose sensor export controls in production", async () => {
+    const original = __DEV__;
+    try {
+      (globalThis as any).__DEV__ = false;
+      const { view } = await renderCalibration();
+      expect(view.queryByText("Share latest sensor JSON")).toBeNull();
+    } finally {
+      (globalThis as any).__DEV__ = original;
+    }
   });
 
   it("keeps Settings and permission recovery in the scrollable content", async () => {
