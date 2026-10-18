@@ -8,6 +8,8 @@ extend-exclude = [
   "**/.mise/**",
   "**/locks/**",
   "*.lock",
+  # The generated commit index preserves historical subjects verbatim.
+  ".agents/assessment/all-authors/main-commits.log",
   "go.sum",
   "npm-shrinkwrap.json",
   "package-lock.json",

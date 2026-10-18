@@ -1,0 +1,533 @@
+b7153c565ce39902fc4dbec886e5cdce15100310	2026-10-12T17:53:10+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	Merge branch 'dev'
+73787f78494448defe4ae6620f03fb6a4b9f0cc9	2026-10-12T17:52:12+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore(version): v0.6.1
+8b342894301dfe32849c3860d22ed1c802b60fe4	2026-10-10T19:38:01+11:00	Mobark Bacran	Mobark.bacran@gmail.com	Merge pull request #158 from pix-l-crafters/moby/fix/sync-result-reliably
+fa83fd5dfc3bee5b755bcf164317eedc6e593f8a	2026-10-10T19:29:43+11:00	Mobark Bacran	Mobark.bacran@gmail.com	fix(duel): make the host the single judge of round results
+13b9b34c842c9698818b0b2bf114baee60d984fd	2026-10-10T18:36:39+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore(version): v0.6.0
+8cf90ed05a3ebeac850e043b57f34556762a696a	2026-10-10T18:30:44+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #156 from pix-l-crafters/mihir/chore/hide-hotspot
+92c97f9594a0b469a084305f7c79d049d3777fbf	2026-10-10T18:30:32+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	Merge branch 'dev' into mihir/chore/hide-hotspot
+392bbd6a00d03e3307682ae7081eedb4f78c99f1	2026-10-10T18:28:49+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore(qr): hide hotspot button
+354ac9d18b3ba56b5d1fcc858f2468991f2b09ed	2026-10-10T18:27:20+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #155 from pix-l-crafters/mihir/fix/sync-results
+bf9e2f4e9d33ae7305a60ea456e6fd37d23045b1	2026-10-10T18:22:49+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	fix(duel): synchronize peer shot completion before scoring
+9f6615dfcfdbf233afbd8f3939a6f4377f393e3f	2026-10-10T18:00:54+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #154 from pix-l-crafters/ethan/fix/nearby-player-visibility
+b6e64f1c0f97640cbfcdb8646c74adae449e3a7e	2026-10-10T17:59:05+11:00	Ethan	sihengm@student.unimelb.edu.au	chore: merge latest dev into nearby-player branch
+3359e0269eb38031856e694fef4a56449cb21ef6	2026-10-10T17:52:38+11:00	Ethan	sihengm@student.unimelb.edu.au	docs: log AI-assisted map precision and iOS work
+48b404409bc1aeb1292c2ef241f9cbf6b1847cd7	2026-10-10T17:52:34+11:00	Ethan	sihengm@student.unimelb.edu.au	build(mise): add iOS device build and signing tasks
+ef888b95b145d591866fa9807cf73f383e61b684	2026-10-10T17:51:35+11:00	Ethan	sihengm@student.unimelb.edu.au	fix(map): keep markers visible on iOS Apple Maps
+0c49df3d0c3c1ba375204d81c809603238e486b9	2026-10-10T17:51:19+11:00	Ethan	sihengm@student.unimelb.edu.au	feat(map): cluster overlapping markers by screen distance
+bd0a986a44c5e7b8cdc7dbe19ab0f26b4836a6be	2026-10-10T17:50:21+11:00	Ethan	sihengm@student.unimelb.edu.au	feat(presence): share location at about 10 m precision
+70a68f7f23174380ec6139ae38ec41f9159e065d	2026-10-10T17:49:43+11:00	Ethan	sihengm@student.unimelb.edu.au	fix: re-encrypt app env secrets in fnox
+6ed61b90c6ec515d9b2da60c992a438f4b2bd678	2026-10-10T17:24:55+11:00	Mobark Bacran	Mobark.bacran@gmail.com	chore: merge pull request #153 from pix-l-crafters/mobark/fix/lockfile-oxfmt
+5821101b486d754bda45d45acb9eb324ed36c98c	2026-10-10T17:22:58+11:00	Mobark Bacran	Mobark.bacran@gmail.com	fix(ci): sync package-lock with oxfmt 0.72 so npm ci passes
+87794eabb599162949d0ba796dd256fe7a45072d	2026-10-10T17:22:14+11:00	Mobark Bacran	Mobark.bacran@gmail.com	chore: merge pull request #152 from pix-l-crafters/wutianze3/feat/duel-result-start-flow
+c0c4b23bfdc0c8da8802f215da1c016ad7913841	2026-10-10T17:16:54+11:00	wutianze3	2436271041@qq.com	feat(duel): clarify results and reorder setup
+1c5bfafec81aa6bf3ae445e210c0d75ffb8cc049	2026-10-10T17:00:54+11:00	Mobark Bacran	Mobark.bacran@gmail.com	chore: merge pull request #151 from pix-l-crafters/mobark/feat/145-audio-cues
+180ccda331bedcac8c6349e5f8779cf6249b6919	2026-10-10T16:58:15+11:00	Mobark Bacran	Mobark.bacran@gmail.com	chore: merge pull request #150 into issue 145 branch
+578c94fe4d1ad61360bb42ed52367eaf19f5ac5d	2026-10-10T16:56:37+11:00	Mobark Bacran	Mobark.bacran@gmail.com	feat(duel): add audio cues for match flow
+47b1d8c06356577864e8cd30981e35efe3ac1c68	2026-10-10T16:44:00+11:00	tingyueh	tingyueh@student.unimelb.edu.au	fix(duel): explain tracking misses and check tracking before the round
+54c829cb9deecd41fecce0a27e01e2f6b920fb6c	2026-10-10T16:32:59+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #149 from pix-l-crafters/mihir/chore/update-dev-env
+f53d17827eb0a57dcc443030c4d864a608b5dc12	2026-10-10T16:32:21+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	build(mise): update lock files
+08847e9e4f5318b146099a30ecf259ab9995f173	2026-10-10T16:26:15+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore(copier): update template
+760283141cf2cae6b2c67be3be3acff244d6ed8a	2026-10-10T16:15:03+11:00	Ethan	sihengm@student.unimelb.edu.au	fix(map): include You in marker overlap avoidance
+15f66253ddf7855ba91cccb8b1c2b9491e814270	2026-10-10T14:11:56+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #141 from pix-l-crafters/MRDGH2821/feat-duel-make-gameplay-instructions-optional-fr
+b7b65d988b192945c8b29be12cdce2378cb48c34	2026-10-10T14:10:29+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: merge current dev into issue 129 branch
+dbc692ec7fbae809c41ca2d1a5b8250c8f90641c	2026-10-10T14:04:27+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #143 from pix-l-crafters/ethan/feat/131-accessible-info-panels
+b4b8fbdffd7b9d9ce2ba8a259095d0dcb20d9383	2026-10-10T14:04:13+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: merge latest dev into issue 129 branch
+5dbb9627c36111efb1f0a0ec8e9866406b07f100	2026-10-10T13:59:54+11:00	Ethan	sihengm@student.unimelb.edu.au	chore(duel): merge dev and resolve information panel conflicts
+3313970e7c462928b9bddf41ac01f5287284bddc	2026-10-10T13:58:22+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: merge latest dev into issue 129 branch
+9f498838c2c4d08b522a15a7153781c6f18f8e40	2026-10-10T13:54:32+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #139 from pix-l-crafters/wutianze3/feat/progressive-pose-calibration
+a0bb9fa2a2024d7d230c95c025050678a8aae79c	2026-10-10T13:54:22+11:00	Ethan	sihengm@student.unimelb.edu.au	chore(duel): merge dev and resolve information panel conflicts
+d9c703091436d5374022fb6d1c2898632d4740f6	2026-10-10T13:52:25+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: merge latest dev into progressive pose calibration
+d835605e1f301219bdc82c2a448ac64c2af8bb7d	2026-10-10T13:48:26+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #142 from pix-l-crafters/hbeat/hbeat-fix-challenge-request-status
+8fff1cb4c04416698456f23ce2249ddf93f773b9	2026-10-10T13:43:24+11:00	Ethan	sihengm@student.unimelb.edu.au	fix(duel): reflow calibration steps with enlarged text
+330b2508ded3ef6645e76d2519ce2d5555e1d2d2	2026-10-10T13:37:08+11:00	hbeat	49186507+hbeat@users.noreply.github.com	fix(firebase): persist challenge request decisions
+ad88b51fffdc79a7e6da3e376f86ff1f592f6100	2026-10-10T13:41:48+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore(duel): merge dev into progressive pose calibration
+2567f050ea9c96eec9d1d706b2383aff0af5dc9a	2026-10-10T13:38:08+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #140 from pix-l-crafters/hbeat/feature/collect-sensor-data
+de8c5e7a9a5bcfad0284c143c67e5f060600d354	2026-10-10T13:37:43+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	feat(duel): make gameplay instructions optional from calibration
+c4635d53d10f4999d88ea852dcc64a7e46ee2851	2026-10-10T13:34:46+11:00	hbeat	49186507+hbeat@users.noreply.github.com	feat(duel): save match sensor analytics to Firestore
+e4c38e41052041e25aa905356b9ff357b9cc241f	2026-10-10T13:28:28+11:00	Ethan	sihengm@student.unimelb.edu.au	fix(duel): restore the exit button accent background
+309f0d148051bace7f3b99d413559cd925d42f50	2026-10-10T13:24:58+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #137 from pix-l-crafters/wutianze3/feat/progressive-pose-calibration
+fa02a051ec4605e2c3ad7c3a6d71fe3b5c7e35b6	2026-10-10T13:24:04+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #135 from pix-l-crafters/tingyueh/fix-qr-center-the-invite-code-and-remove-excess
+79c8ea6e4a5d6dde222986a4a60895393ec2fa94	2026-10-10T13:23:51+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	Merge branch 'dev' into tingyueh/fix-qr-center-the-invite-code-and-remove-excess
+964138fd164f88ca369f2171ebafc1fe05ae2beb	2026-10-10T13:23:21+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #136 from pix-l-crafters/mobark/fix/false-start-cancel
+68bcbde7043295d598a8948010822c091bb09360	2026-10-10T13:21:19+11:00	tingyueh	tingyueh@student.unimelb.edu.au	fix(qr): centre hotspot status and drop empty card space
+e87b455da2cd239cf0464fc9b5e39507ecf935ed	2026-10-10T13:17:39+11:00	wutianze3	2436271041@qq.com	feat(duel): add progressive pose calibration feedback
+056449d5a372c9ff08b4525b8dd5759843eacc61	2026-10-10T13:17:13+11:00	Ethan	sihengm@student.unimelb.edu.au	feat(duel): simplify the exit control
+d80920c835f1d8074f5c043be9c3569af2d630a1	2026-10-10T13:16:58+11:00	Mobark Bacran	Mobark.bacran@gmail.com	Merge remote-tracking branch 'origin/dev' into mobark/fix/false-start-cancel
+6e914e8089032c8aa5195d5ae42d366e743c0fa2	2026-10-10T13:15:52+11:00	tingyueh	tingyueh@student.unimelb.edu.au	chore(qr): merge latest dev updates
+9f0de424c07058c84b097163fa08b462c3c5cc67	2026-10-10T13:09:49+11:00	Mobark Bacran	Mobark.bacran@gmail.com	fix(duel): cancel false-started attempt and return players to ready
+1e935e5e4e5f2c1cb9b45ec3fb37b3efcac0556c	2026-10-10T13:05:41+11:00	Ethan	sihengm@student.unimelb.edu.au	feat(duel): make draw calibration scrollable
+d10fcce908500d87fbcebfab69f068a7b4c6ef81	2026-10-10T13:02:47+11:00	Ethan	sihengm@student.unimelb.edu.au	Merge pull request #134 from pix-l-crafters/ethan/fix/nearby-player-visibility
+80bcd297c006a5f9530166dcff32a7c7f212e6a7	2026-10-10T12:58:14+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore(version): v0.5.0
+7f4f89eb299f576670e4a3e648a14c0deca9ccf4	2026-10-10T12:56:37+11:00	tingyueh	tingyueh@student.unimelb.edu.au	fix(qr): center the invite code in its card
+c666f8adc48d840339fc7f2dce3085e29063fe1d	2026-10-10T12:01:39+11:00	Ethan	sihengm@student.unimelb.edu.au	fix(map): limit nearby count to 500 metres
+2854a1abc69d728800063d0ecc1720ddab2a891c	2026-10-09T19:58:59+11:00	Mobark Bacran	Mobark.bacran@gmail.com	chore: merge pull request #126 from pix-l-crafters/mobark/fix/duel-results-and-fire
+92928249751dc3cca398a1ac9258a402bfac2f6e	2026-10-09T18:38:16+11:00	Mobark Bacran	Mobark.bacran@gmail.com	Merge pull request #127 from pix-l-crafters/mobark/fix/round-result-shot-labels
+5797913173c58899360d2d29c0935bfd64eecac4	2026-10-09T18:34:31+11:00	Mobark Bacran	Mobark.bacran@gmail.com	fix(duel): label round result times as your shot and their shot
+f1ef7c4be586f90c6dc8eecd15e1d02e22fe8354	2026-10-09T16:38:24+11:00	Mobark Bacran	Mobark.bacran@gmail.com	Merge branch 'mobark/feat/fire-state-distinct' into dev
+cd3d238465ea64f44f7a95c5308cf5fba3c3ebb9	2026-10-09T16:30:17+11:00	Mobark Bacran	Mobark.bacran@gmail.com	feat(duel): distinguish FIRE from countdown visually
+67170a6081872510ad382d4e50b4b8a0c771ad50	2026-10-09T16:29:57+11:00	Mobark Bacran	Mobark.bacran@gmail.com	Merge branch 'mobark/fix/duel-tie-result' into dev
+75ae8f8ec5aa2795f096c7c0932492c449bf2075	2026-10-09T16:10:51+11:00	Mobark Bacran	Mobark.bacran@gmail.com	fix(duel): score calibrated shots at close range
+4a5edf3e1128904d515984e03bb4dfa8b2f68bd6	2026-10-09T13:58:20+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #124 from pix-l-crafters/mihir/feat/big-buttons
+38f65abcdf8dbdbd1cc36d4e1227789e773273ef	2026-10-09T13:56:12+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore(duel): merge latest dev updates
+bd45561339acb034cbd4ae9d49e944ea8033247f	2026-10-09T13:48:08+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #121 from pix-l-crafters/MRDGH2821/feat/animated-miss-explanations
+ac59b249e734992a538aa122a0d5c6e3896f508b	2026-10-09T13:45:41+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	feat(duel): illustrate false-start penalties
+fd77b0897546610948861f76da364a650d5cfdcd	2026-10-09T13:43:24+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	feat(duel): continue draw calibration with volume up
+ea9e935bdd87729e504069d7f4aa44c544333525	2026-10-09T13:19:06+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	feat(duel): support pre-round volume confirmation
+7c571575a79b15daee897f38f71e752b8c6e0704	2026-10-09T12:53:55+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs(duel): document recorded miss explanations
+871cc939d7374beac002f69595095e87213ac560	2026-10-09T12:52:59+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	feat(duel): animate recorded miss illustrations
+6e6129b5b8def9bf0abb7532d7a981d0563c9079	2026-10-09T12:52:45+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	feat(duel): capture and preserve shot miss causes
+ea11ed52b9482f2079a69ceff6389f701178e263	2026-10-09T12:07:11+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	fix(duel): explain round ties and final match draws
+c2ecfeee167fa0670c422437d587654cec186d7d	2026-10-09T11:11:45+11:00	Mobark Bacran	ask.mrdgh2821@outlook.com	chore: merge pull request #117 from pix-l-crafters/mobark/fix/calibration-pose-guidance
+e7cf7fda9cb3aa8fa7c3c4c3f9642ea158abe7aa	2026-10-09T01:53:58+11:00	Mobark Bacran	Mobark.bacran@gmail.com	fix(duel): keep iOS volume observer as fallback
+789e972935947b291582141d79e095c09da1e53d	2026-10-09T01:51:42+11:00	Mobark Bacran	Mobark.bacran@gmail.com	fix(duel): register iOS volume presses at bounds
+877cbb7e9276c862dc3014fa30278f5c5a5c2157	2026-10-09T01:42:31+11:00	Mobark Bacran	Mobark.bacran@gmail.com	fix(duel): confirm calibration with volume up
+0c10ebf1d9522d3372e3ae596f72bbdb9e0981cd	2026-10-09T01:12:49+11:00	Mobark Bacran	Mobark.bacran@gmail.com	fix(duel): guide and auto-confirm calibration poses
+b2101e651f30c8710626aac45b9ff25c634bf85a	2026-10-09T01:09:55+11:00	Mobark Bacran	Mobark.bacran@gmail.com	fix(duel): restore Android volume fire callback when replaced
+dacbc292797942684e12b548adfc66fa99bbaa9b	2026-10-09T00:51:24+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore(version): v0.4.0
+c6f0066c4d471ecc9244e65db5efc1d677155e16	2026-10-09T00:49:31+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: fix linter errors
+09301e1a68e53dc6af6e3d02152027fed0ee556c	2026-10-09T00:47:26+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs(github): document triage labels
+128df8afb08dc6e2fae895c50d58faffbf64f2e4	2026-10-09T00:16:27+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #110 from pix-l-crafters/mobark/fix/iphone-expo-connection
+d493228c65a37c1356425f4b2c508c2fdedeae21	2026-10-09T00:09:32+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	Merge branch 'dev' into mobark/fix/iphone-expo-connection
+9ae92856985e6df14a720562436407a1525b2959	2026-10-08T23:57:21+11:00	Mobark Bacran	ask.mrdgh2821@outlook.com	chore: merge pull request #112 from pix-l-crafters/mobark/feat/duel-fire-and-false-start
+5f314cff524f2219e203a9f15bfed51c80bb5770	2026-10-08T23:56:20+11:00	Mobark Bacran	Mobark.bacran@gmail.com	Merge remote-tracking branch 'origin/MRDGH2821/feat/real-aim-live-gameplay' into mobark/feat/duel-fire-and-false-start
+27dc1f1c1ff8c3df5bac54fc0c381d39bbf939b9	2026-10-08T23:08:32+11:00	Mobark Bacran	Mobark.bacran@gmail.com	chore(duel): merge volume fire fix with false-start warning
+3b12b80af302a970ececd7bced709ce21b3cfc64	2026-10-08T23:39:55+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: merge branch 'dev' into MRDGH2821/feat/real-aim-live-gameplay
+75b97e80a1baa50ea27e61815f9965ae84341b6d	2026-10-08T23:25:08+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore(version): v0.3.1
+5a9bbddf2f90a0103b287d167102a3f72c61fdea	2026-10-08T23:24:28+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: ignore native android modules
+4e0e903aa2abe53ecc825a2f42565a9f7ca16b00	2026-10-08T23:22:03+11:00	Ethan	sihengm@student.unimelb.edu.au	Merge pull request #111 from pix-l-crafters/ethan/chore/share-map-api-key
+571ab5000e0b8125eeb0f258282011d4dd16d6d2	2026-10-08T23:13:41+11:00	Ethan	sihengm@student.unimelb.edu.au	chore(map): share encrypted Android Maps API key
+171c5124059e8f0173a7edd7738b7be13845c296	2026-10-08T23:07:32+11:00	Mobark Bacran	Mobark.bacran@gmail.com	refactor(duel): keep false-start warnings in match coordinator
+1ea5e0a68e31b82b8d23e3b76da719c546aa8362	2026-10-08T23:02:10+11:00	Mobark Bacran	Mobark.bacran@gmail.com	feat(duel): warn and restart round on first false start
+106c903fd75a65cec4dcdabcfa9dcac5647b39cd	2026-10-08T23:01:27+11:00	Mobark Bacran	Mobark.bacran@gmail.com	fix(duel): keep volume fire handler current
+3e43214ed8b361b4c05e0d250cfc35d70a1025b1	2026-10-08T20:05:18+11:00	Mobark Bacran	Mobark.bacran@gmail.com	chore(duel): merge connection lifecycle into iPhone fix
+3597949a1244a407c38b104d6d977e8b2c198290	2026-10-08T19:52:34+11:00	Mobark Bacran	Mobark.bacran@gmail.com	docs(expo): document working iPhone tunnel setup
+3623dc657626a043796fb6e8c4fa611b87e438b6	2026-10-08T19:40:38+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore(version): v0.3.0
+c4bcabbd57f20fb3ed9d812a149fb5cb4e514701	2026-10-08T19:32:21+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs(duel): record feature branch rename
+d3fe5ce8e4a20b7fb7a8c1b49ff3e955e0c7e285	2026-10-08T19:27:24+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs(duel): record live gameplay contracts and verification
+336664278c9ec5b96714d525e9dd080aa07fb9c1	2026-10-08T19:26:48+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	feat(duel): wire calibrated aim, shot zones, and false starts
+4047ee173f39a0470ebec09e99189bd6a622f796	2026-10-08T19:26:05+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	feat(duel): classify calibrated shots against opponent bearing
+7b0b9a393b0939b8c41fd9de9ede3fd4af79b7ec	2026-10-08T19:25:37+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	feat(duel): capture reliable ready and shoulder pitch calibration
+f0b51e78ffd28760484182052d8a31a047101abd	2026-10-08T18:23:46+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #106 from pix-l-crafters/mobark/feat/check-and-request-missing-app-permissions
+ce5f26f8cf68dd64ded3be8bbf5d52a806decaef	2026-10-08T18:20:53+11:00	Mobark Bacran	Mobark.bacran@gmail.com	chore: merge dev volume-button fire into the permissions branch
+540974c2aec0be70076c8a6e8737cd4a6b64b148	2026-10-08T18:11:41+11:00	Mobark Bacran	Mobark.bacran@gmail.com	feat(profile): add read-only permission status page
+31b60d0275dab8e98fb1ebb10efecbd21a0b5b8e	2026-10-08T18:07:11+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #108 from pix-l-crafters/hbeat/hbeat-feat-persist-completed-live-duels-and-synchronize-the
+8aae5b2bfabfc71a906adf7aa10ea0790ed66ff4	2026-10-08T18:06:53+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	Merge branch 'dev' into hbeat/hbeat-feat-persist-completed-live-duels-and-synchronize-the
+84efafa106de494402f33d4b184dfbcfa2af676b	2026-10-08T18:06:22+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #104 from pix-l-crafters/wutianze3/feat/android-volume-fire
+136b072bab6fc09b3c33cd86a958a68e65ff4ecd	2026-10-08T17:58:33+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: merge origin/dev into volume-fire branch
+1556f3443bfe94f6f26fdf8152985add22415926	2026-10-08T17:57:54+11:00	Mobark Bacran	Mobark.bacran@gmail.com	docs: record the dev merges and Bluetooth removal
+fedd1e6673c396e5c98d5b1c3aa3364def4ddbbe	2026-10-08T17:53:58+11:00	hbeat	49186507+hbeat@users.noreply.github.com	fix(firebase): remove roundCount from persisted duel data
+80c10d43445353a1ec303e21a130ec0e1187ebdf	2026-10-08T17:52:31+11:00	Mobark Bacran	Mobark.bacran@gmail.com	chore: merge dev result synchronization into the permissions branch
+7c9a703993d5fd3364f0e0e3d7a158613b210504	2026-10-08T17:49:24+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #107 from pix-l-crafters/hbeat/hbeat-feat-persist-completed-live-duels-and-synchronize-the
+b81b756da382e5a3d73b14c2e5081d85bab7b7ae	2026-10-08T17:47:12+11:00	hbeat	49186507+hbeat@users.noreply.github.com	docs(firebase): record production receipt rules deployment
+ae41c166391d1630187de89883d6f56d40bd57e2	2026-10-08T17:44:49+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	feat(duel): add iOS volume-change fire input
+c91b89758e20b9b3fc68626b55d99cd7e506d494	2026-10-08T17:43:50+11:00	Mobark Bacran	Mobark.bacran@gmail.com	chore: merge dev and drop Bluetooth permission handling
+7b7c6b08bf85e440240aa4b7cf05f106f3f39e42	2026-10-08T17:34:19+11:00	Mobark Bacran	Mobark.bacran@gmail.com	fix(duel): recover guest and map permissions
+5fdfb4b703062fbb69043490277c002d353bdfd1	2026-10-08T17:32:10+11:00	hbeat	49186507+hbeat@users.noreply.github.com	fix(firebase): preserve matches collection for result uploads
+5e30c45b3758355ec349661948e8ee376db360bd	2026-10-08T17:22:54+11:00	hbeat	49186507+hbeat@users.noreply.github.com	feat(duel): synchronize completed match results
+55916d187f077a5daabea44e36ffb0ca59197e7e	2026-10-08T17:18:57+11:00	Mobark Bacran	Mobark.bacran@gmail.com	fix(duel): check motion access before the pre-round tilt gate
+5b660382c71d262dc458ce67a6bf5a516f178226	2026-10-08T16:58:45+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #102 from pix-l-crafters/tingyueh/cut-over-to-webrtc-and-delete-ble-transport
+385ba28f66af4c60e498569b4cc3ff57ec84f6aa	2026-10-08T16:58:30+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	Merge branch 'dev' into tingyueh/cut-over-to-webrtc-and-delete-ble-transport
+801c9edd6e90b3ffd9ee5bb709fa0222f212a6e8	2026-10-08T16:56:36+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore(version): v0.2.0
+7f171da3a6d2323b6e5d2483dc89ae131937fb80	2026-10-08T16:53:54+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #105 from pix-l-crafters/hbeat/feature/fix-save-result
+247cb917074f0ea149ec58f84886e4dd80024d44	2026-10-08T16:51:28+11:00	hbeat	49186507+hbeat@users.noreply.github.com	docs(firebase): record device tests and rules deployment
+34444faf9be44eeebce9d4d5d39512c64e5abc9a	2026-10-08T16:37:34+11:00	Mobark Bacran	Mobark.bacran@gmail.com	feat(app): check and request missing permissions per flow
+cf4cdf4f27ce8692c48eb5382395e04b4d7ec5e5	2026-10-08T15:50:54+11:00	wutianze3	2436271041@qq.com	feat(duel): fire with Android volume buttons
+ec9e0fff45a1ccc064ec5d5d506aeb7e7d2b0252	2026-10-08T15:43:09+11:00	hbeat	49186507+hbeat@users.noreply.github.com	fix(firebase): save concurrent match results atomically
+c7d2e2070efd3a92e2503dae4354deea2b7f8bd7	2026-10-08T15:37:06+11:00	tingyueh	tingyueh@student.unimelb.edu.au	chore: merge branch 'dev' into tingyueh/cut-over-to-webrtc-and-delete-ble-transport
+4b1e559636fb7f8c725afa9b99448cac14e37db4	2026-10-08T14:23:37+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #103 from pix-l-crafters/mrdgh2821/fix/clock-calibration
+985e8f965e33e1eeb58582afd94b923d487910c7	2026-10-08T14:20:54+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: record clock calibration PR
+911b0535844e018450017d1a46e539b147ab9063	2026-10-08T14:18:21+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	fix(duel): support Hermes clock calibration
+cb0cb9c6f01cbe4346603561cce1f5c3f9506095	2026-10-08T13:23:55+11:00	tingyueh	tingyueh@student.unimelb.edu.au	feat(duel): cut over to WebRTC sessions and delete the BLE transport
+1bfab0b184a7530e45d46ef0bf2775c612fe93cc	2026-10-08T12:59:48+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: update lock file
+dd077f454ce69cf3798c58ee6d6effe24016d2f7	2026-10-08T12:49:29+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	style: format files
+c0a7c56682ac9b760aadbc7fad10f0fc3bda1b5e	2026-10-08T12:49:17+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	build(mise): update task
+359d3aec17f97a5cb1be74fc3946e30c6e2219f0	2026-10-08T12:43:15+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #100 from pix-l-crafters/tingyueh/display-the-game-version-on-the-profile-screen
+008d44b1f364c6765c3ad29d7f11e424467c4c90	2026-10-08T12:42:36+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	Merge branch 'dev' into tingyueh/display-the-game-version-on-the-profile-screen
+6d897ffed7e153a6b2a202a55ac750f32e3dd667	2026-10-08T12:41:10+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #101 from pix-l-crafters/hbeat/fix/save-result
+26fe9358280e07d7e4a1f02b066317548aafe367	2026-10-08T12:24:26+11:00	hbeat	49186507+hbeat@users.noreply.github.com	fix(duel): save results before opening match summary
+257a33f8c2200cbbe2bfdeb5e479c7e12b862ec5	2026-10-08T12:17:37+11:00	tingyueh	tingyueh@student.unimelb.edu.au	feat(profile): display the installed app version
+e3d58abfd75d98a9074316d6b3a62fc6edbcf938	2026-10-08T11:38:09+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #96 from pix-l-crafters/MRDGH2821/fix/clock-offset-calibration-for-reaction-timing
+94bb6e9f1fb92cbc6b5c84c4aa1d0400cab45d88	2026-10-08T11:37:42+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #97 from pix-l-crafters/hbeat/leaderboard-screen-shows-real-rankings
+6a484416c43fc95c1121395c06bb6bfc4b6cb5e1	2026-10-08T11:36:07+11:00	hbeat	49186507+hbeat@users.noreply.github.com	refactor(firebase): simplify leaderboard ranking fields
+2de59ac700d138c876772652acc5b0d1d24d5f78	2026-10-08T04:33:14+11:00	hbeat	49186507+hbeat@users.noreply.github.com	chore: restore lockfiles to dev versions
+9a47046524020bd86a6982266afe95fa598718bc	2026-10-08T04:12:53+11:00	hbeat	49186507+hbeat@users.noreply.github.com	feat(firebase): load real user ratings for leaderboard
+983929ddeb97eaf5e4088905bc03fedf0fab702e	2026-10-05T13:50:01+11:00	hbeat	49186507+hbeat@users.noreply.github.com	chore: save local build setup and simulator work log
+e201af43b3f241370b04187c57852909033a40f1	2026-10-08T11:24:54+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: merge dev into clock calibration branch
+ee6af2f978c82cba548c98753de74cff0295c274	2026-10-08T11:13:45+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #95 from pix-l-crafters/MRDGH2821/bug/pre-duel-phone-position-differs-between-ios
+c377db8fa88facf1f8eca7bcff89feb76834c1fe	2026-10-08T11:13:01+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: merge branch 'dev' into MRDGH2821/bug/pre-duel-phone-position-differs-between-ios
+c56c59d24472b839b47245ce937e322e1183f61d	2026-10-08T11:07:38+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: merge branch 'dev' into MRDGH2821/fix/clock-offset-calibration-for-reaction-timing
+bebc310afa823e9504c81d7f273e3b34c8cc5a44	2026-10-08T09:31:45+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #93 from pix-l-crafters/MRDGH2821/draws-show-up-in-player-stats
+73cfb65ef71f71e78bac447ce32ac37ca021c487	2026-10-08T09:11:11+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	build(mise): update tools & lock files
+0ea1d2b6cfad004c39a281f3c974848b83efebdc	2026-10-08T09:07:21+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	build(mise): remove enter hook & add lock files
+06c5036da388ecb231d719e327eda9f19a6e899b	2026-10-08T09:02:55+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore(mise): streamline dependency and agent setup
+95de635b14e93f164c6351606703f6a1d8d669c2	2026-10-08T08:53:13+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	build(mise): configure local Android APK and AAB builds
+d097be53f4bad4e69be79a4c0661a39c7565bfac	2026-10-08T08:27:32+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: ignore worktrees
+aaf87b9b3a3afa2da8ead559f25ce03e738b17e3	2026-10-08T08:26:27+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: ignore nested dirs
+537e5c3f321d049418236b72a0e7dd91829ed4f7	2026-10-07T20:49:17+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: register Android CLI skill
+bcb2261d5b53e01db79002c4830455dcacd43a44	2026-10-07T20:47:10+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: record Android dev build test
+97c5ac82356ba3acb551352b6734b09c58b2d71d	2026-10-07T20:33:05+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	fix(duel): align pre-duel phone position across platforms
+cad5941a0cbca2997a5d96e7ea414b97209843dd	2026-10-07T20:05:09+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	fix(duel): calibrate reaction clocks
+014a9f9e8b77dfc43e34d1902de34d8c23931b68	2026-10-07T16:56:25+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	feat(profile): show draws in player stats
+2df0fbf1b2aa98b7cd9812481f68ccde5a0156ba	2026-10-07T15:07:12+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #85 from pix-l-crafters/tianze/feat/false-start-shot
+a8cc177658cc256c1894c31a4dd3546d1cd10c7e	2026-10-07T14:55:56+11:00	Tianze	tianze@users.noreply.github.com	chore: merge dev into false-start-shot
+53e194b725037b6344af46e9a81b6497ceee3f68	2026-10-07T14:50:24+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #91 from pix-l-crafters/tanachat/feature/save-result
+4377157de10cfa4286bb268a5ba15e688c1faea8	2026-10-07T14:49:49+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: merge branch 'dev' into tanachat/feature/save-result
+cf8a06828110007d85c3077519261abe658478a8	2026-10-06T09:03:47+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #92 from pix-l-crafters/mihir/chore/update-dev-env
+398f8ae6cd6bc3804ec55d8a19e239121ae66305	2026-10-06T09:03:03+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	ci: delete react native CI
+3720d30408233b792ef219c36fa72cfaea4f8f72	2026-10-06T08:57:27+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: add ai logs
+a0fbe045d1dca319f56a81675ef64b507458bcad	2026-10-06T08:57:16+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	fix: apply linter fixes
+b644e06d2c986a9307a00d3a7fb56baed21fc96a	2026-10-05T21:34:59+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: add oxlint
+0fe653fb7a9f586cebfb6d054528c65d0e968d2e	2026-10-05T21:23:32+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	fix(app): align match consumers with scoring contracts
+59b032311e91beb0c30b0ac9b0e6931fedf6180f	2026-10-05T21:06:03+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: add tsc linter
+cc8e71600560d6a2ff01f1a3e3d48acabba6e3cc	2026-10-05T21:04:42+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: add linter dependencies
+83a56e6a3e736b8c4d189cb26c589b6046f02d5c	2026-10-05T21:04:10+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	style: format files
+49dae62a9729a32c24f33c4159e1628e5778888c	2026-10-05T18:26:03+11:00	Mobark Bacran	Mobark.bacran@gmail.com	chore(version): v0.1.1
+e7f565b3958c8865410fd743e8c6f2a0dd3d4880	2026-10-05T18:02:20+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #89 from pix-l-crafters/release
+0cde9e37835d683bfb48d031242413e585d599e6	2026-10-05T17:58:10+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #88 from pix-l-crafters/main
+fc28ee4207143ff52e9b9b1e36c72bc0ea6052df	2026-10-05T17:57:32+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #87 from pix-l-crafters/mihir/chore/release-tag
+1a1406dc07c027ddabe030dbc23861d2a180ddca	2026-10-05T17:55:25+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #86 from pix-l-crafters/mihir/chore/release
+dae0be1fbd1d93a279ad63554e737b07361ec04c	2026-10-05T17:55:07+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	Merge branch 'dev' into mihir/chore/release
+41e514ab334b78d7b63173ec31e986480088bfd3	2026-10-05T17:53:03+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore(version): v0.1.0
+d02510488f4ec7fe3b2d08d27a70a63983f847f4	2026-10-05T17:52:57+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: create interim changelog
+6dbad6d4647b2175d865ea3726df4004b45830ad	2026-10-05T13:48:13+11:00	wutianze3	2436271041@qq.com	feat(duel): score non-offending shot on false starts
+b77a20dd0051bcfeee3fe13a43ad47403033e110	2026-10-05T11:39:53+11:00	tingyueh	tingyueh@student.unimelb.edu.au	fix(duel): harden the local connection lifecycle
+c2f1213ef2886c86d87039c278c3a84aadb725e4	2026-10-05T08:39:44+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #84 from pix-l-crafters/mihir/chore/update-work-list
+87f1d1253139f2d2eab2917f81f3a448b4457cb1	2026-10-05T08:33:30+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: record PR 84 metadata update
+0feefbf377a6e14b8f41113ebcbbf25771f4118a	2026-10-05T08:18:01+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	build(mise): update lock files
+a6edde9a847dd557f9a59f6e4cfce7fb04928a9e	2026-10-05T08:00:10+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: add Assignment 1 feedback
+8a3da92708a1e3da7b1733095a1db046331893dd	2026-10-05T07:52:54+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: record issue and project board reconciliation
+2d9d8f65d287c6335d258965e3d0586677cb4668	2026-10-05T03:22:24+11:00	hbeat	49186507+hbeat@users.noreply.github.com	feat: add save result and eloRating
+9297dc95b86d6484a5f1f51dd717c7da9f27a13d	2026-10-04T22:37:13+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: align roadmap with assignment requirements
+0036bf3b9bb6cf485eb8fdaacb2b3451ac1ea635	2026-10-04T21:23:28+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	style: format files
+898fec8c290317316031850ecfa72cb3e2cc112e	2026-10-04T21:23:00+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore(mise): update tools & lock files
+cffec7828a66562471fade9a0c8402359b378410	2026-10-04T21:20:36+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	style: format files
+3101c9b21f5420399d0c825f8cad8887a935f916	2026-10-04T21:20:07+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: use mattpocock's plugin
+497529c4a6eb12fa01698a6cbb93132162cdcc98	2026-10-04T21:13:17+11:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #79 from pix-l-crafters/mobark/build/fix-deps
+0a0da86dd46b8bcb3a163a4c7a84d97a3f7ba911	2026-10-04T21:12:33+11:00	MRDGH2821	ask.mrdgh2821@outlook.com	ci: delete eas ci workflow
+d679eb492ac8e08a13008f09d6cce1e19c457f78	2026-09-29T01:15:46+10:00	Mobark Bacran	Mobark.bacran@gmail.com	fix(expo): pin EAS iOS builds to the Xcode 26 image
+11fa904e3227524e24999cea19542486278b7285	2026-09-29T01:15:38+10:00	Mobark Bacran	Mobark.bacran@gmail.com	fix(expo): force minimum iOS deployment target on Pod resource bundles
+0e26b8dacf74a5b3e38897c5acc9db95597c9357	2026-09-28T19:28:30+10:00	Mobark Bacran	Mobark.bacran@gmail.com	build(mise): fix build commands
+fb63ecb134f49d328c53bb6422d61ed359716c84	2026-09-28T19:22:53+10:00	Mobark Bacran	Mobark.bacran@gmail.com	build(mise): add local build commands
+2ad2564289df9fb658c1dbd286551b99243958b4	2026-09-28T19:17:05+10:00	Mobark Bacran	Mobark.bacran@gmail.com	build: revert deps to last working version
+253aa254b0530890bf69bacbf7f44a2b6790de2f	2026-09-28T18:42:30+10:00	Mobark Bacran	Mobark.bacran@gmail.com	build(expo): align dependencies to sdk 54
+361afec871ceddcc2338c18dbc8e7e5d48ce258a	2026-09-28T18:22:09+10:00	Mobark Bacran	Mobark.bacran@gmail.com	build(mise): remove redundant stuff & update lock files
+fb853504a3f06babdc8a81fc90ca03ddc44fd6dd	2026-09-28T18:15:24+10:00	Mobark Bacran	Mobark.bacran@gmail.com	build: downgrade packages
+fecec8ee2246b58a1e1dc441ba2526f40beafe9d	2026-09-28T18:06:27+10:00	Mobark Bacran	Mobark.bacran@gmail.com	fix(expo): patch expo-camera to fix disabled barcode scanning on iOS
+6bcaab4d7d961f54eb7edc28fbdc4b3c3ff3469e	2026-09-28T17:30:25+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	build: add expo vector icons
+3f270dd84b4e7d7a2a9021acf3e4ce6f6fcfe337	2026-09-28T17:30:15+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: ignore android build artifacts
+e5db327857a151fd2a1812e36582eb90a63bff78	2026-09-28T17:29:21+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: ignore lock files from formatting
+c6ebc05f4d8bbaa756241ba245d4d0c66ba5a7b2	2026-09-28T17:15:39+10:00	Mobark Bacran	Mobark.bacran@gmail.com	build: update lock file
+84dff2078a300981dfb2dcf8745371855178417d	2026-09-28T17:15:16+10:00	Mobark Bacran	Mobark.bacran@gmail.com	style: format files
+6be12c7be8cbc901a69428c346a4bed21ba20507	2026-09-28T17:09:44+10:00	Mobark Bacran	Mobark.bacran@gmail.com	fix(expo): disable precompiled Expo modules to fix iOS build
+f36c78d7e9497e14ab3051b28c632b82813da9e1	2026-09-28T16:24:26+10:00	Mobark Bacran	Mobark.bacran@gmail.com	chore: ignore ios local build app files
+91b93c9658937373203bac7849d4a94d0d5730b1	2026-09-28T16:14:07+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	build(mise): update lock files
+8db2886b32a2f1d2b36dfdc741ffea3f1efb7c82	2026-09-28T16:11:42+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: merge branch 'dev' into mihir/build/update-deps
+62e02888e18008c4a683fedc7e901c08c1725ea4	2026-09-28T16:01:24+10:00	Mobark Bacran	Mobark.bacran@gmail.com	fix: enable iOS scene lifecycle support
+a5a05f75fd882d9d540e3991583fcef3de7c3da9	2026-09-28T15:52:34+10:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #78 from pix-l-crafters/mihir/chore/update-dev-env
+181c3c03c54d30f2f6b74213cce43de1811794d2	2026-09-28T15:50:00+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	style: format files
+bbc339aa1509cd51afd637535d3687615bfde635	2026-09-28T15:45:33+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore(copier): update template
+fa6937dc159df77745cf45df69baef71c5a93cd9	2026-09-28T14:56:06+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	build(mise): add gradle
+a60231d5c28c6ab91d17eae794d1c822c783547f	2026-09-28T14:00:51+10:00	Mobark Bacran	Mobark.bacran@gmail.com	build: regenerated package lock, ran locally and ran fine confirmed: -npm ci succeeded. - The iOS Metro bundle succeeded - Only package-lock.json is modified. - dist/ is ignored and wont be commited
+14b58e93702b181d4719be20d143800dc60944e3	2026-09-28T13:07:36+10:00	Mobark Bacran	Mobark.bacran@gmail.com	build: update mise.lock
+da65e079017734bafdbaa2e32b5087037b018937	2026-09-28T13:05:28+10:00	Mobark Bacran	Mobark.bacran@gmail.com	build: fix packages
+6e13426ab2a96a629aa9c9b9bbe87200f142afd9	2026-09-28T12:50:18+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	build: update lock file
+9788d9f6651eb49c6bce2b644ec5fe457979e990	2026-09-28T12:31:30+10:00	Mobark Bacran	Mobark.bacran@gmail.com	build: downgrade typescript to 6.0.3
+381d69e0691704b426f9f08e71d82038fff705f4	2026-09-28T11:58:37+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	build: reinstall all dependencies
+9f76a21568e117c9b1145a7ad11d80f5a54384e6	2026-09-28T11:40:41+10:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #77 from pix-l-crafters/mihir/fix/deps
+b9613b3ab5b59065242b3bcc7899e80db938b199	2026-09-28T11:38:32+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: fix linter errors
+3846fb9c7ce82554b252310fe2391a5c293bac27	2026-09-28T11:36:17+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: fix structure
+bfbd4bd5833796664108d95099f5982181200514	2026-09-28T11:35:14+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	style: format files
+ce33a08968a271dbc172163dbfc96630c503d5aa	2026-09-28T11:35:02+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	build: regenerate lock files
+1d06e00c4b5cd8aa1acb90fab0ead7c2e01b6c39	2026-09-26T22:42:35+10:00	Mobark Bacran	Mobark.bacran@gmail.com	Merge pull request #76 from pix-l-crafters/mobark/feature/expo-builds-ci-dev-branch
+d3115f65be3db70b4a9297ca7ff5b0882b54c5fa	2026-09-26T22:18:21+10:00	Mobark Bacran	Mobark.bacran@gmail.com	fix(ci): install eas-cli, fix cross-PR concurrency dedup, guard empty install url
+085487b0a3f4c264263f3fad15c8e8cfe2266c05	2026-09-26T22:07:34+10:00	Mobark Bacran	Mobark.bacran@gmail.com	fix(ci): skip notify job when build was skipped, not just on success/failure
+76f1ae89c1a288396b1976b7bf62ae8fc619e3c7	2026-09-26T21:59:27+10:00	Mobark Bacran	Mobark.bacran@gmail.com	feat(ci): notify PR with EAS preview build links
+a9ae3327b578a3bbe3a0951ce9aa957192923ef8	2026-09-26T21:56:42+10:00	Mobark Bacran	Mobark.bacran@gmail.com	fix(ci): degrade to empty url on unparseable eas build output
+6616f60a7773755817d27a1aaa468e7b14b1b713	2026-09-26T21:51:48+10:00	Mobark Bacran	Mobark.bacran@gmail.com	feat(ci): build EAS previews for ios and android on merge to dev
+f2d2466dce2b8fd0f961fcce9602eab82ad59851	2026-09-26T21:46:36+10:00	Mobark Bacran	Mobark.bacran@gmail.com	docs: add implementation plan for Expo builds via CI on dev branch
+6e9560fa776ab43eadb3ce0d8944b546efd03e1d	2026-09-26T21:31:40+10:00	Mobark Bacran	Mobark.bacran@gmail.com	docs: add design spec for Expo builds via CI on dev branch
+7ea5ebdf8b1dec63b35baebee79dc3dd0c47ae49	2026-09-26T19:39:52+10:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #74 from pix-l-crafters/tingyueh/fix/phone-connection
+a55131468fb47a1fa575dbfddffa8a873d5c7581	2026-09-26T19:38:20+10:00	tingyueh	tingyueh@student.unimelb.edu.au	fix(duel): keep guest connected when signaling closes
+4cab6541690c3fc8430138f94a94dc46246fe7f7	2026-09-26T17:33:21+10:00	Mobark Bacran	Mobark.bacran@gmail.com	chore(expo): move the bundle identifier off com.anonymous
+74b3e5609aeda172b1de041d97819687310d17ba	2026-09-26T17:32:48+10:00	Mobark Bacran	Mobark.bacran@gmail.com	fix(duel): finish the scan-to-draw flow across both platforms
+12963120546712e503323248b68804d25bfc987d	2026-09-26T16:29:44+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: merge branch 'mobark/chore/branch-integration' into mihir/fix/android-build
+5bcfd6d16c72e85fb28c20d51998a96ca0e86255	2026-09-26T16:24:48+10:00	Mobark Bacran	Mobark.bacran@gmail.com	docs: log the challengeRequests firestore rules deploy
+1fe0d8ac1c23dd9de144fbf9787649158583b418	2026-09-26T16:23:37+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	fix(map): keep Android launch alive without a Maps key
+c01b98231276fdcd5a2ff366166ffcfdbf8554ab	2026-09-26T16:21:03+10:00	Mobark Bacran	Mobark.bacran@gmail.com	fix(duel): stop the guest's duel channel closing before the countdown
+58fb73863793d246fb94057ed01a8444ca9eeafa	2026-09-26T15:52:31+10:00	Mobark Bacran	Mobark.bacran@gmail.com	chore: merge tingyueh/feat/webrtc-connectivity (#45-47) into branch-integration
+dc156ba7c02f416e4b8e1392689992bed62f8ac4	2026-09-26T15:33:20+10:00	tingyueh	tingyueh@student.unimelb.edu.au	feat(qr): add hotspot connection flow
+2927f5e064a73260220daefca8b4a8f06de1c7f0	2026-09-26T14:54:38+10:00	tingyueh	tingyueh@student.unimelb.edu.au	feat(qr): add shared Wi-Fi connection flow
+34c8b5e7a4bf1dcb4cdf3a27adaf8b4561420105	2026-09-26T14:45:55+10:00	tingyueh	tingyueh@student.unimelb.edu.au	feat(duel): add local WebRTC duel transport
+78d643c1f702be6cc4e3047926a622828ce273c2	2026-09-25T23:40:35+10:00	Mobark Bacran	Mobark.bacran@gmail.com	revert(duel): restore original countdown audio, trim broke playback
+bf3b97e4a7ffbca7fd6e079561e91fd6041ba014	2026-09-25T23:38:09+10:00	Mobark Bacran	Mobark.bacran@gmail.com	fix(duel): trim countdown audio to fit the tick gap
+db82a707e7f77d2b6f62d657ff9a070b86e84ad1	2026-09-25T23:34:25+10:00	Mobark Bacran	Mobark.bacran@gmail.com	feat(duel): swap placeholder countdown audio to mp3
+e1232147b735d1b4bbc2eecaa9e0ddb6a208ba21	2026-09-25T23:29:17+10:00	Mobark Bacran	Mobark.bacran@gmail.com	feat(duel): add placeholder countdown audio asset
+3b78aedacaea13b1ab0230a0cdede091af77153a	2026-09-25T23:25:37+10:00	Mobark Bacran	Mobark.bacran@gmail.com	feat(duel): audible/mutable buzz cue, tap-to-fire, instructions, reconnect state
+7d3d43e21e1f07df6203ed319a45db857d7d25e2	2026-09-25T22:43:17+10:00	Mobark Bacran	Mobark.bacran@gmail.com	feat(app): move navigation to a bottom bar and make Duel contextual
+0521dc45abefc8e5f7a8e39f4d385998905568a8	2026-09-25T21:49:32+10:00	Mobark Bacran	Mobark.bacran@gmail.com	chore: cleaned up conflict
+a91ca3067933f9855782d8d6bf6622f2b2834f5a	2026-09-25T21:49:05+10:00	Mobark Bacran	Mobark.bacran@gmail.com	chore: Merge remote-tracking branch 'origin/tianze/feat/match-structure' into mobark/chore/branch-integration
+df441dbe4c2c18c666f8cd73d57bfac08d38316e	2026-09-25T21:42:09+10:00	Mobark Bacran	Mobark.bacran@gmail.com	chore: Merge remote-tracking branch 'origin/sihengma/fix/android-map-key' into mobark/chore/branch-integration
+b1bd57712568c2963297b5eb899923aaffca38a8	2026-09-25T21:41:45+10:00	Mobark Bacran	Mobark.bacran@gmail.com	chore: Merge remote-tracking branch 'origin/MRDGH2821/feat/clock-offset-calibration-for-reaction-timing' into mobark/chore/branch-integration
+afe859b03b685bbf3e98512b332c6addb8f707d6	2026-09-25T21:41:29+10:00	Mobark Bacran	Mobark.bacran@gmail.com	chore: Merge remote-tracking branch 'origin/mihir/feat/zone-sensor-integration' into mobark/chore/branch-integration
+891a223624d34f5fd4c3fb969312dc32bc82a863	2026-09-25T13:16:29+10:00	Ethan	sihengm@student.unimelb.edu.au	chore(map): merge origin/dev into marker fix
+c7570513d008fa19bab23f77b8dae7e53d0a8fad	2026-09-24T22:27:34+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	feat(duel): capture pitch-angle calibration from DeviceMotion
+85b26e2e139c2d5a35fcd55e401764164bd718fc	2026-09-24T12:46:31+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	feat(duel): add ping-pong clock-offset calibration for reaction timing
+43b52d08ac9fa861ed3f9214ed519420d0570af0	2026-09-22T08:39:43+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	feat(duel): implement Gameplay v2 zone-based round scoring
+9344cd17c7b0244f24ac5475141870b4992f9b17	2026-09-21T18:35:34+10:00	Ethan	sihengm@student.unimelb.edu.au	fix(map): separate overlapping player markers
+7590fed2a5f3254e8070d08ca7b3985d8cac9a9c	2026-09-21T18:10:47+10:00	wutianze3	2436271041@qq.com	feat(duel): enforce three-round point-sum matches
+9b0f1119e262243d0f2a38b28d59efbcfe2d6fdb	2026-09-21T12:46:28+10:00	Mobark Bacran	Mobark.bacran@gmail.com	chore: merge pull request #57 from pix-l-crafters/mobark/feat/merge-test
+6558ee305d7195ad0c050220228f1ebe016b2850	2026-09-21T12:45:26+10:00	Mobark Bacran	Mobark.bacran@gmail.com	chore: merge branch 'dev' into mobark/feat/merge-test
+ea7c11947bd0f2a4a6d06568deadeb3093daaa3a	2026-09-21T12:24:32+10:00	Mobark Bacran	Mobark.bacran@gmail.com	chore: merge remote-tracking branch 'origin/sihengma/feat/user-profile' into mobark/feat/merge-test
+65aa8e016636cea1850a0b70f6afd1e1831d41cf	2026-09-21T12:19:49+10:00	Mobark Bacran	Mobark.bacran@gmail.com	chore: merge remote-tracking branch 'origin/mihir/chore/update-dev-env' into mobark/feat/merge-test
+0519de25d3380eea0e4bd1f0d7aece181967b838	2026-09-21T12:18:38+10:00	Mobark Bacran	Mobark.bacran@gmail.com	chore: merge remote-tracking branch 'origin/sihengma/fix/android-map-key' into mobark/feat/merge-test
+ae783773fb0863bc0366dea7d56f4a7f56f9cf33	2026-09-19T10:44:44+10:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #56 from pix-l-crafters/mihir/chore/update-dev-env
+520731051b255d2f9ab75f6d1a665b194783b5c6	2026-09-19T10:43:59+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	style: format files
+a2b27221bd14ec571ac3b5e9757a60361fae33f9	2026-09-19T10:43:37+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore(copier): update template
+d47d3bb98c934d10ccde16d8f71d5fa6e5fe6244	2026-09-19T01:31:34+10:00	Mobark Bacran	Mobark.bacran@gmail.com	feat(app): Added the app icon for ios and android
+2a09c5df1d1080b0fd460a1df5fd6c19b6263648	2026-09-19T01:04:59+10:00	Ethan	sihengm@student.unimelb.edu.au	fix(map): inject the Google Maps Android key from the environment
+32c34fdcb40e4a4f533b0182661a0212ad16b841	2026-09-18T23:16:15+10:00	Ethan	sihengm@student.unimelb.edu.au	docs: point the leaderboard at users/{uid} for player names
+784520a41c1f6e44f33bde08ab010cc0de394ae4	2026-09-18T23:04:52+10:00	Ethan	sihengm@student.unimelb.edu.au	feat(profile): add the profile and settings screen
+8172f5aa2160ee283da262f0a2dbfa1d9628481f	2026-09-18T23:02:57+10:00	Ethan	sihengm@student.unimelb.edu.au	refactor(app): rewire tabs around the profile screen
+e89eb32de9cdba06b7f295c5dbe160f710efe299	2026-09-18T23:02:14+10:00	Ethan	sihengm@student.unimelb.edu.au	feat(auth): require a username and mirror it to a public profile
+0490f046aff16c11a78a23a7c556f0b313cb3192	2026-09-18T23:01:47+10:00	Ethan	sihengm@student.unimelb.edu.au	chore(cocogitto): add profile commit scope
+65e2a13150922587a60a3a1030fde0790b3f8da4	2026-09-18T22:37:23+10:00	Mobark Bacran	Mobark.bacran@gmail.com	fix: add test-renderer as an explicit devDependency
+b552920db4c84f9bcff760e4b581a183f0e483f3	2026-09-18T22:25:34+10:00	Mobark Bacran	Mobark.bacran@gmail.com	fix(expo): pin EAS build node version to match the project's
+78ff1905eaed63d93dcc99d2903464473ecc4390	2026-09-18T22:13:00+10:00	Mobark Bacran	Mobark.bacran@gmail.com	fix: sync package-lock.json with package.json
+5c30a3415944f98e84b2f1157e09aed91ed5fe16	2026-09-18T22:12:51+10:00	Mobark Bacran	Mobark.bacran@gmail.com	feat(firebase): compute leaderboard rankings from matchResults
+f49f75c38c566e9bbee483b1d8314b1b5fe287b4	2026-09-18T22:12:39+10:00	Mobark Bacran	Mobark.bacran@gmail.com	feat(firebase): add users/{uid} profile directory for name lookups
+aca09e46ab08c62c835cec34a67bc41c88457a7a	2026-09-18T10:33:03+10:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #55 from pix-l-crafters/mihir/chore/docs-and-template
+259a1c36bd95a8db605affa3149784fb58595906	2026-09-18T10:32:05+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore(copier): update template & lock files
+7d1072bee8021f0abdbd7bb9137261600b82f7fc	2026-09-18T10:28:15+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: add ai log
+b1a340655eca150dfa5ee051b875765294739a4b	2026-09-18T08:48:39+10:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #33 from pix-l-crafters/mihir/docs/product-design
+b908ab3f51f8f2e1aacec32cb6e65bbad17bea44	2026-09-18T08:29:09+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	build(mise): update lock file
+fe8cb1e99997159b3aae5895158898415dfd871d	2026-09-18T08:28:20+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	build(mise): auto install skills
+a86e86576fc3fab83dba00dcaddc9d7abae8291d	2026-09-18T08:27:03+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	build: add expo mcp env var
+4ef03646052d48d896cd71961f52afa752c2b303	2026-09-18T08:26:38+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: add expo plugin
+572a5739a6249205e3053f9a4fc942f4db715c90	2026-09-18T08:19:23+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore(copier): update template
+9273b6b59a6e6baffa9c74466f5d0ab0df59064f	2026-09-18T08:11:19+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: add architecture review report for pocket-draw
+ed56bebf70afdce4ea2af3f6d3ca334e4105aea1	2026-09-18T07:59:15+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: move paad review reports into docs/paad
+03632c033efdc0c9b316103cc823a764bd6127fa	2026-09-18T07:42:25+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: ship aim/bearing check as a stretch goal, not core scope
+334ede7b175decad9ae19922ef3fbc135e14e108	2026-09-18T07:38:41+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: resolve two open risks with research instead of leaving them open
+0dc30d706b9b07858f2efaa1c9d068d816ad14b4	2026-09-18T07:35:58+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: add second alignment review report for roadmap
+2ac0a98cf45ea53626df43c1dcac15bfe228ad60	2026-09-18T07:34:34+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: sync roadmap's fire-mechanic subsection with false-start resolution
+871225c605cf3c6a6af0b3eaea27683aaf925677	2026-09-18T07:32:11+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: clarify expiresAt extension scope for reconnect auth
+bfa337d1e1ccebacf0065ef979690d6379e2dce0	2026-09-18T07:29:53+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: add second pushback review report for roadmap
+12073c1c8b5fdba8fc1b12abaef426c53238bb4e	2026-09-18T07:27:39+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: fix item 24's scope description after reading disconnectRecovery.ts
+4d8629597e71dcc56b69a28d359d22e20641c33b	2026-09-18T07:24:20+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: resolve false-start point value under sum-of-points scoring
+242c1d58769263e5f6142b0913053cb99dba45ce	2026-09-18T07:18:36+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: resolve reconnect-auth token freshness under deadline pressure
+444cb4117e9bbf06b17ee5d82c9c948896f9ac41	2026-09-18T07:09:57+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: add alignment review report for roadmap
+b1eefc63fbae07cc330ab0125a4ebd98a4561b08	2026-09-18T07:07:07+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: alignment pass - track reconnect state preservation, flag aim gap
+617f7d707e65067b609c7008dc5dfc0873dbfa63	2026-09-18T06:56:07+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: full consistency pass, resolve match-tally model ambiguity
+1ca804aaf3f7e4934e5375f8c5e0f5bd3d1d3d87	2026-09-18T06:45:27+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: resolve tie-window scoring and signaling-socket lifecycle
+e82c9a887c809283d25580e00fcfde8f58b78d07	2026-09-17T23:04:46+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: mark stale moby/chore/merge-2026-09-10 as merged, keep no content
+1e91600b1888f6e20df011859b00a4cdcb0878c4	2026-09-17T22:46:50+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: add connectivity rewrite design spec, link both specs from roadmap
+afc25a1cb020501495c81736398b48d38ccd29ca	2026-09-17T22:39:35+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: flag unresolved tie-window vs single-faster-shot ambiguity
+c87ce4ff680dd7e441b7a5663eb06c8372609e2f	2026-09-17T22:38:04+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: add fire mechanic & scoring design spec
+d176bf94dbcd33691c8cf9a7223de79a969dea82	2026-09-17T22:27:18+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: add pushback review report for roadmap
+8685dc88e1a2beae22173b99513dd35bda7fbf7b	2026-09-17T22:25:17+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: apply pushback review findings to roadmap
+2ad61dd45315af782cf926eda31b7446d6417d1a	2026-09-17T22:14:27+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: rebuild fire mechanic and scoring around Gameplay v2
+58a3f6216220aa9b7e8b88b3421caa74fff5ea34	2026-09-17T21:45:17+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: add android map fix and haptics/audio fairness gap to roadmap
+4ed689deb7a8951ae0cb65f9fa81c7e6d6467cac	2026-09-17T21:26:32+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: add remaining-work roadmap
+8474033b7c0e9b16e51d12e423afe030a9f397dd	2026-09-17T20:51:25+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: add challenge UI
+50521d9319921fcf17317dcf463b8634292ef327	2026-09-17T20:05:08+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: clarify statistics
+195979b170cc6e8c1d7f4e2f2f6851d0858e294d	2026-09-17T20:02:34+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: add connection description
+b28419def193727f2338af730a5a507c8213ccd0	2026-09-17T19:58:55+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: add leaderboards stats to display
+970c318cd565138b0ef8d0aca2f7a14092ac9fa4	2026-09-17T19:40:53+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: add leaderboards section
+f345edc594c169e10a9a6a7bf1d748ddf534dcb3	2026-09-17T19:34:17+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	build: pin hk version
+7490b14ee1bc0ade5fccbf6d3442d2589636b9e8	2026-09-17T19:34:06+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: add product design
+630a5d7c777c678e2cc4ba85a07d553d6c39e0a1	2026-09-17T19:32:03+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	style: format files
+4ef881e1d07461618ad34fc95f8f763244683b34	2026-09-15T01:58:04+10:00	Mobark Bacran	Mobark.bacran@gmail.com	Merge pull request #32 from pix-l-crafters/tingyue/feat/challenge-connect-flow
+c9069ae78554e357e904fb8f81d8fe3de63462f9	2026-09-15T01:52:07+10:00	Mobark Bacran	Mobark.bacran@gmail.com	chore: sort package.json
+f9c51cb6abbace7c1122ed5bd9ca1ea54cd11660	2026-09-15T01:05:36+10:00	Mobark Bacran	Mobark.bacran@gmail.com	fix(qr): match challenge-request test to widened ChallengeHandoff
+4c17d5e3e67c953a37c460365519ad93cea4fefd	2026-09-14T18:34:51+10:00	tingyueh	tingyueh@student.unimelb.edu.au	docs: add PR contribution summaries
+3a2cb86179e22053927a1f1794e93d437dcf9b30	2026-09-12T17:52:09+10:00	tingyueh	tingyueh@student.unimelb.edu.au	feat(app): add challenge request flow foundation
+903b38741a96e1d6cb94859fd63d3fd631ca2627	2026-09-12T16:21:17+10:00	tingyueh	tingyueh@student.unimelb.edu.au	test(qr): add round-count selector tests
+9c39670ed0e8764aa7a9d7044efa2d90ddd6a080	2026-09-10T23:16:17+10:00	tingyueh	tingyueh@student.unimelb.edu.au	feat(qr): add round-count selector
+5c2a9462ac19ce6fd6c13e3e7d6040ce31798708	2026-09-10T18:57:01+10:00	tingyueh	tingyueh@student.unimelb.edu.au	refactor(qr): stop pre-deciding roundCount in the scan handoff
+21daec0b1fd81dadd929bfce07d6607b4f50bc38	2026-09-15T00:40:23+10:00	Mobark Bacran	Mobark.bacran@gmail.com	Merge pull request #31 from pix-l-crafters/moby/chore/merge-2026-09-10-v2
+5a9054f5eb2ef047ae7145de3e65eb75cc39ca81	2026-09-14T12:41:19+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	fix: add maps fix
+fc4b7354feb428ba991942a00b5b9164f5500d3a	2026-09-11T13:40:20+10:00	Mobark Bacran	Mobark.bacran@gmail.com	docs: add task-splits-v2 status catch-up and integration plan
+9da0a087f748e35c81eeea2130ee00b3597b277d	2026-09-11T00:29:26+10:00	Mobark Bacran	Mobark.bacran@gmail.com	docs: consolidate agent work log from parallel integration branches
+b99590dbcb22938e21f1ac5362f906a72cdb49a5	2026-09-11T00:29:13+10:00	Mobark Bacran	Mobark.bacran@gmail.com	fix(duel): return RSSI reading directly instead of a nonexistent property
+5aadb9a6e82a07f28cbe38bb5daa18ade3cf0c39	2026-09-11T00:28:40+10:00	Mobark Bacran	Mobark.bacran@gmail.com	fix(expo): restore shared iOS bundle identifier
+8c72af12fceba26daf9471cce524e0ba71f645c9	2026-09-11T00:28:22+10:00	Mobark Bacran	Mobark.bacran@gmail.com	fix(duel): score ties for both players and require a strict lead to decide the match
+aa118f9f851237f25be4ae173fd761f8578ddf66	2026-09-10T20:46:09+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: fix skills path of expo
+6ead567eb5853c51968bc85de4addea1f583f578	2026-09-10T19:54:17+10:00	Mobark Bacran	Mobark.bacran@gmail.com	fix(duel): score ties for both players and require a strict lead to decide the match
+6c744d68e2c9d78fb60d56d40983d553ab3bbb11	2026-09-10T19:49:23+10:00	Mobark Bacran	Mobark.bacran@gmail.com	chore: merge tianze/feat/duel-fire-detection (#30) into moby/chore/merge-2026-09-10
+b53074a735ba0b2bf628208f8851a0feb80075ce	2026-09-10T19:48:22+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	fix: unique heading in merged agent work log
+f731164107db73615f85de9ee236d84fc24db076	2026-09-10T19:48:04+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: merge mobark/feat/postmatch-summary into integration branch
+2f5c18ead5b7c6533d36eef79533dfb8326c532c	2026-09-10T19:47:33+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: merge tianze/feat/duel-fire-detection into integration branch
+0ec25935fe8d6e201616018a5a1d97cd318d8ce9	2026-09-10T19:47:11+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: merge tanachat/feat/duel-pre-round-ritual into integration branch
+a1c03cb14e0893e45329ceef812e638b4579ce72	2026-09-10T19:45:07+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: merge sihengma/map into integration branch
+f7408bea34dd46afb1b6bdabdbd9a692e5c42f64	2026-09-10T19:44:39+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	fix: remove conflict markers from agent work log
+6c461486e3abbb4de00638ca9f2df193ebbd6f82	2026-09-10T19:44:16+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: merge mihir/feat/match-results-backend into integration branch
+ed0daad259e8d143dfbf43c0b032096c7c3536b6	2026-09-10T19:41:20+10:00	Mobark Bacran	Mobark.bacran@gmail.com	docs: reorder and normalize 2026-09-10 work log after integration merge
+23e5c393ab3c5220e2333510ed0c07ea3bfc0894	2026-09-10T19:39:00+10:00	Mobark Bacran	Mobark.bacran@gmail.com	chore: merge mobark/feat/postmatch-summary (#26) into moby/chore/merge-2026-09-10
+252deed6efdfb3e4e2d02b08c8bc1aa82c7fe421	2026-09-10T19:28:43+10:00	Mobark Bacran	Mobark.bacran@gmail.com	chore: merge sihengma/map (#28) into moby/chore/merge-2026-09-10
+f071c0b7c1fb7ca7e63ac2efc914f74d7b39ad9d	2026-09-10T19:27:36+10:00	Ethan	sihengm@student.unimelb.edu.au	feat(ble): duel session layer and connection UI
+580d858bd5e7547eb1d8203d8e0be956b4b53bb7	2026-09-10T19:20:45+10:00	wutianze3	2436271041@qq.com	chore(duel): merge latest dev for pull request
+7d19bc9a72ca4d6c50b65cd8cf95c1db60bb5147	2026-09-10T19:12:32+10:00	hbeat	49186507+hbeat@users.noreply.github.com	fix(expo): include asset native module
+b99c6bd6e6498d6b11e154da3f83c3e6b2252166	2026-09-10T19:03:58+10:00	wutianze3	2436271041@qq.com	feat(duel): retry dropped connections before abort
+926302c17ff7fd906df7af0fe6132c105e33f936	2026-09-10T19:01:28+10:00	hbeat	49186507+hbeat@users.noreply.github.com	build(expo): configure audio plugin
+9e26056337591f387578cb37126b0c6c9b4fb028	2026-09-10T19:01:00+10:00	Mobark Bacran	Mobark.bacran@gmail.com	chore: merge mihir/feat/match-results-backend into moby/chore/merge-2026-09-10
+34285d05c8b50baad87d101114f4876920f939d9	2026-09-10T18:58:24+10:00	wutianze3	2436271041@qq.com	feat(duel): score tied rounds within timing window
+2695255b66bfa2a13ff7bacfe6686c6aa10b4bdc	2026-09-10T18:57:11+10:00	hbeat	49186507+hbeat@users.noreply.github.com	feat(duel): add local countdown audio placeholder
+c225da68dabe27472673ccd0c0070e794846bab8	2026-09-10T18:54:47+10:00	wutianze3	2436271041@qq.com	feat(duel): capture reaction time in milliseconds
+c12bab148cafc4e7a3d0b458214b94a6c448ba59	2026-09-10T18:52:43+10:00	hbeat	49186507+hbeat@users.noreply.github.com	feat(duel): add haptic round feedback
+7add49d038d1b7a1c918947ab0355dbbef8360b6	2026-09-10T08:52:32Z	Claude (diagnostic)	claude-diagnostic@localhost	Merge remote-tracking branch 'origin/tanachat/feat/duel-pre-round-ritual' into moby/chore/merge-2026-09-10
+1d50d2dd0700e4ac2d951c4dce49a973ee409961	2026-09-10T18:52:09+10:00	wutianze3	2436271041@qq.com	feat(duel): resolve false starts as round losses
+a9594dafd4f023f76b6e573d884635e5fa75f8b5	2026-09-10T18:49:24+10:00	hbeat	49186507+hbeat@users.noreply.github.com	feat(duel): calculate ELO in player stats
+024f25670dbc60694144d8576f965517b6c9c9d3	2026-09-10T18:49:07+10:00	wutianze3	2436271041@qq.com	feat(duel): detect pre-fire movement
+8192cfd082823e96e3d346ac624b42ed252d4a4e	2026-09-10T18:48:28+10:00	Ethan	sihengm@student.unimelb.edu.au	chore: merge origin/dev into sihengma/map
+bba3c212826f4f568f40c9312a9b68a3ac3e2558	2026-09-10T18:22:51+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	feat(firebase): add match results write path and offline queue
+6fe1c311870b1eba5e0676537bba350b5bcdb90d	2026-09-10T18:45:46+10:00	wutianze3	2436271041@qq.com	feat(duel): add draw calibration step
+d508c4f195f34f8131379e377ccbeb871e768d2e	2026-09-10T18:45:23+10:00	Ethan	sihengm@student.unimelb.edu.au	docs(map): log continuous-publish / toggle / pin-popup iterations
+234897aaaf4994369e3a2eb18686ff1a9b1f4f90	2026-09-10T18:42:29+10:00	wutianze3	2436271041@qq.com	feat(duel): detect raise gesture with accelerometer
+280aa7eeb8e14436d0aa9ba13fb482f601b81d6f	2026-09-10T18:37:42+10:00	wutianze3	2436271041@qq.com	docs(duel): define raise gesture thresholds
+5615ac8709e174bab712a79f4c36c4d59ad1497c	2026-09-10T18:35:21+10:00	Mobark Bacran	Mobark.bacran@gmail.com	chore: Merge pull request #25 from pix-l-crafters/tingyue/feat/qr-challenge
+85e92f6db431b017ad510f39cde6f780ebee2e08	2026-09-10T18:34:04+10:00	hbeat	49186507+hbeat@users.noreply.github.com	feat(duel): add live RSSI reader boundary
+1f5c359ae5366b72360320659e1601879040bbe4	2026-09-10T18:26:52+10:00	Ethan	sihengm@student.unimelb.edu.au	feat(map): player stats popup on pin tap
+22a4933e21391d6f944f202913515d437fd7f3a3	2026-09-10T18:18:24+10:00	hbeat	49186507+hbeat@users.noreply.github.com	feat(app): integrate duel pre-round flow
+4cb514fe853d798165965d843b0208c0d3cc671a	2026-09-10T18:11:54+10:00	hbeat	49186507+hbeat@users.noreply.github.com	feat(duel): add pre-round ritual and ELO updates
+8d6e9dfa950a401afd5d6a1abd88c3299abfd027	2026-09-10T18:22:51+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	feat(firebase): add match results write path and offline queue
+c8cb729acfaa38caca92eed53ca83f153599fd5f	2026-09-10T18:19:34+10:00	Ethan	sihengm@student.unimelb.edu.au	feat(map): privacy toggle for location sharing
+d5defcdd4f6fc21ac9e52890845904eadebb5da8	2026-09-10T18:10:42+10:00	Ethan	sihengm@student.unimelb.edu.au	feat(map): publish location continuously with heartbeat and retry
+06c9e3f4873bf1764d1cfb83bd075ac8015d9b5d	2026-09-10T18:10:25+10:00	Ethan	sihengm@student.unimelb.edu.au	chore(expo): exclude apm_modules from tsc
+45afeb5ce2518e164101ab016bac7b569b8c85da	2026-09-10T18:09:48+10:00	wutianze3	2436271041@qq.com	chore(duel): merge latest dev
+4474d05244796828e1c38718ce99b29b8d29004d	2026-09-10T18:00:29+10:00	tingyueh	tingyueh@student.unimelb.edu.au	feat(qr): add QR display, scanner, and opponent popup screens
+ccda3e7cb26db44506cd153662ed5c6e32b40a2f	2026-09-10T17:53:04+10:00	tingyueh	tingyueh@student.unimelb.edu.au	feat(qr): rebase QR invite payload/validation onto design-system baseline
+34bcb0de46b7958d6035cfc7ffd945f94bc6c4c1	2026-09-10T17:59:25+10:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #24 from pix-l-crafters/mihir/fix-dev-env
+9c483b09aa5c821102fb59fb0bc3f6a4369d478f	2026-09-10T17:57:58+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	build: add all public keys of members
+de4f578a2d1f844263f361ac23df25693f038e63	2026-09-10T17:52:00+10:00	wutianze3	2436271041@qq.com	feat(duel): synchronize fire signal after countdown
+debee4d4b2e7970e08f7be0776bab3e5a887a970	2026-09-10T17:40:31+10:00	Ethan	sihengm@student.unimelb.edu.au	feat(map): show other players from Firestore presence
+5edeb37dd72d5803a40745cad531cb70f189c1b6	2026-09-10T17:40:13+10:00	Ethan	sihengm@student.unimelb.edu.au	chore(expo): use a real iOS bundle identifier
+9a11cbb17f33a1bf9625f44efc4232a29a6c2a4c	2026-09-10T17:19:46+10:00	Mobark Bacran	Mobark.bacran@gmail.com	feat(duel): add postmatch summary screen with rematch and return-to-map
+211ed26c6468ac1692d20ed2873cdb048412651a	2026-09-10T17:18:23+10:00	Mobark Bacran	Mobark.bacran@gmail.com	refactor(duel): extract scoreFromRounds for the match summary screen
+315d1df5b6f8ad8966032d0573c4e0ebc891e760	2026-09-10T17:13:23+10:00	Mobark Bacran	Mobark.bacran@gmail.com	feat(duel): add round-loop logic and per-round result screen
+0341114b764990e0420ab1970406022d74c57353	2026-09-10T16:48:43+10:00	Mobark Bacran	Mobark.bacran@gmail.com	Merge pull request #23 from pix-l-crafters/mobark/docs/shared-contracts
+f69dcf8b489325b065455d1670db3650f547c562	2026-09-10T16:46:19+10:00	Mobark Bacran	Mobark.bacran@gmail.com	feat: add shared contracts and mocks for cross-person dependencies
+e25510024dbba1fb8386394cbbdee5ed8dccb3a2	2026-09-10T16:46:10+10:00	Mobark Bacran	Mobark.bacran@gmail.com	docs: document shared-contracts pattern in task-splits
+4359414b3faefe007e2e251c830335e51a2f2cab	2026-09-10T16:31:50+10:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #22 from pix-l-crafters/mihir/fix-dev-env
+7433ab9dd864d419da5354af4b1cdf1f9643875e	2026-09-10T16:31:09+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	build: restrict treefmt to linux & macos
+f1ad4d8391d14f2154349a617f0697e76f250acb	2026-09-10T16:04:48+10:00	Mobark Bacran	Mobark.bacran@gmail.com	chore: merge pull request #21 from pix-l-crafters/moby/dex-fixes
+a1b69e0be8a0dbaedb5987c2f994a49df47a2a72	2026-09-10T16:03:53+10:00	Mobark Bacran	Mobark.bacran@gmail.com	build: regenerate lock file
+421718934db21ce015c77707ebe020bec5c44be0	2026-09-10T16:03:35+10:00	Mobark Bacran	Mobark.bacran@gmail.com	fix: fix commands
+13cafa7b63488b2777eb92f0a9d8c2fd8724cd29	2026-09-10T15:59:57+10:00	Mobark Bacran	Mobark.bacran@gmail.com	docs: add task splits
+acdb3f48b2fda05b64487c1ae1ff821155b1414a	2026-09-10T15:50:14+10:00	Mobark Bacran	Mobark.bacran@gmail.com	fix: remove apm watch
+238985da7e901b4e76b79edc6f14d6faa8c6be65	2026-09-10T15:32:20+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: remove apm.lock.yaml
+372bd376dc320907f823dd87bf1d5714a497dae4	2026-09-10T15:25:29+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	fix: update secrets
+156a2c33c5988112a5e00fd56fdde397feb594ab	2026-09-10T10:09:30+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore(cspell): ignore fnox
+96fb6d58f662140eaf75cdff2659504cf5eee657	2026-09-10T10:08:56+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	style: format files
+21af1b20a415685c5035725e48b42ff47f5d0fcc	2026-09-10T10:07:24+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: pin apm to v0.28
+ac3f5e6db1d451e2836397208a4f7911f3c15a71	2026-09-10T09:59:21+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	build: add secrets in fnox
+6a26fda0d98cf175af77692d86850aa8afca3c28	2026-09-08T20:29:52+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore(copier): update template
+76cf7515806474376cb22e4f81274bd6de36260f	2026-09-08T20:21:11+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: merge branch 'dev-fixed' into mihir/feat/secrets-setup-rebased
+aaefa4363b613bb5e230df8587f95f02a30ca5da	2026-09-08T20:17:02+10:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #19 from pix-l-crafters/mobark/receive-branches
+c7a33fef2598f00e6cec03f040721a4f2c8c540f	2026-09-08T20:05:15+10:00	Mobark Bacran	Mobark.bacran@gmail.com	Merge remote-tracking branch 'origin/mobark/chore/eas-project-init-rebased' into mobark/receive-branches
+5cbfd86f606e8913354cf35c2faf0137bafbf07c	2026-09-08T20:05:01+10:00	Mobark Bacran	Mobark.bacran@gmail.com	Merge remote-tracking branch 'origin/mobark/fix/app-shell-conflict-rebased' into mobark/receive-branches
+0bb582f6e1a9779b2f91a244afc5f35a22c1b2af	2026-09-08T19:18:49+10:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #17 from pix-l-crafters/mobark/docs/changelog-rebased
+299ce9365aad5e739ffe135ba545682663841755	2026-09-08T19:16:41+10:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge branch 'mobark/merge-branches' into mobark/docs/changelog-rebased
+4f828e9cf640be7a8f2930a1d97a30e750e410d7	2026-09-08T19:15:01+10:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #16 from pix-l-crafters/mobark/docs/map-duel-design-rebased
+0b23bbd739769e182b7f4ba4f1a5fcdfa04e9b09	2026-09-08T19:13:17+10:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #15 from pix-l-crafters/mobark/chore/cog-scopes-rebased
+cdf009caab4cfedef903e6881f2ed38c8f56ff03	2026-09-07T03:04:53+10:00	Mobark Bacran	Mobark.bacran@gmail.com	docs: mark design-system implementation plan complete
+baa47f93f50a9e1ad0c3f432da759e2f57bdefb5	2026-09-07T03:03:49+10:00	Mobark Bacran	Mobark.bacran@gmail.com	feat: switch MapScreen and BleScreen to the dark theme
+5698fd2450d7891b5f535b3ab4e4001ea66732c1	2026-09-07T03:02:56+10:00	Mobark Bacran	Mobark.bacran@gmail.com	feat: rebuild RegisterScreen on the shared design system
+8e94b549234df2fe83c30168deb614c61e2df924	2026-09-07T03:02:39+10:00	Mobark Bacran	Mobark.bacran@gmail.com	feat: rebuild LoginScreen on the shared design system
+9ede814774b931714576a2ca08d020af30d926e5	2026-09-07T03:02:20+10:00	Mobark Bacran	Mobark.bacran@gmail.com	feat: load design-system fonts, wrap every screen in PaperProvider
+9e8b563c812d981d3e9dba25fe4d331b3f36ed1a	2026-09-07T03:01:16+10:00	Mobark Bacran	Mobark.bacran@gmail.com	feat: rebuild appTheme as a dark theme from design tokens
+ea7d751009f4013d76dccc8e43b49bd3e960a8cf	2026-09-07T03:00:57+10:00	Mobark Bacran	Mobark.bacran@gmail.com	feat: add StatTile and StatusTag components
+c7d364d47caae0decb0efa1ef8f984e78e56f6ee	2026-09-07T03:00:35+10:00	Mobark Bacran	Mobark.bacran@gmail.com	feat: add KickerLabel, DisplayHeading, and ScreenHeader components
+2a1c8564e9ccacd82b3d3203a421af1776404699	2026-09-07T03:00:03+10:00	Mobark Bacran	Mobark.bacran@gmail.com	fix(mise): add missing expo-font plugin entry to app.json
+3c82b0bdcab6074ecabfe8b1b0a6618670c2ba94	2026-09-07T02:59:26+10:00	Mobark Bacran	Mobark.bacran@gmail.com	feat: add CutCornerSurface and CutCornerButton components
+b6b10942f947e2b8562a6ecf37cebcef13659c29	2026-09-07T02:58:54+10:00	Mobark Bacran	Mobark.bacran@gmail.com	feat(mise): add design-system dependencies and token file
+8820aadd184e430feba8d17cc152311ab5db52f7	2026-09-07T02:48:42+10:00	Mobark Bacran	Mobark.bacran@gmail.com	docs: add design-system implementation design
+f1a5c7bc1f03cbc79ca47ff34586227114262f5f	2026-09-06T23:49:25+10:00	Mobark Bacran	Mobark.bacran@gmail.com	docs: add Map + Duel implementation design
+d7f39ad78bd6d765dfbc457e9d3e15a84c65e88c	2026-09-07T02:30:05+10:00	Mobark Bacran	Mobark.bacran@gmail.com	chore(mise): set ITSAppUsesNonExemptEncryption to false
+a2ca11f145c739890128e4ff8ba8b17bff0ce3d2	2026-09-06T23:14:53+10:00	Mobark Bacran	Mobark.bacran@gmail.com	fix: resolve committed merge conflict markers in App.tsx
+73db88c721287a2ef735a8d3d7cf9212ce3bdcbc	2026-09-07T01:17:31+10:00	Mobark Bacran	Mobark.bacran@gmail.com	chore: link EAS project (pix-l-crafters/pocket-draw)
+54faeb62bdeafdd5bc9bc105fb79956f873b3f2c	2026-09-07T02:30:05+10:00	Mobark Bacran	Mobark.bacran@gmail.com	chore(mise): set ITSAppUsesNonExemptEncryption to false
+bcd1632c0d2bf0f3e7dee332f74ec72b22004e03	2026-09-06T23:14:53+10:00	Mobark Bacran	Mobark.bacran@gmail.com	fix: resolve committed merge conflict markers in App.tsx
+f6d2b07b63557d77de19ee959f60c3d65344657a	2026-09-07T01:17:31+10:00	Mobark Bacran	Mobark.bacran@gmail.com	chore: link EAS project (pix-l-crafters/pocket-draw)
+9ed821d4daa9c6cd59d3db9306a49d2ec7cb2c7d	2026-09-06T23:14:53+10:00	Mobark Bacran	Mobark.bacran@gmail.com	fix: resolve committed merge conflict markers in App.tsx
+949b0c9b981ed05774b2a4175735b88a4841f9a2	2026-09-03T18:56:13+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: regenrate apm.lock.yaml
+7500c68b50c0d485f1cabbf514569a9fde4566e1	2026-09-06T23:12:51+10:00	Mobark Bacran	Mobark.bacran@gmail.com	docs: add generated changelog
+4ddf635b83e0321df8fb01956c10af6c761aefa6	2026-09-06T23:49:25+10:00	Mobark Bacran	Mobark.bacran@gmail.com	docs: add Map + Duel implementation design
+00fc1bd939c5fb41621dd8871efaec4f3b8f39cf	2026-09-06T23:04:58+10:00	Mobark Bacran	Mobark.bacran@gmail.com	chore(cocogitto): fix broken release hooks and add feature scopes
+496f06e884dcff41cbb98ba53afc1e51ec6995a6	2026-09-03T18:55:46+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	build: add fnox
+cb12a62f29b7fcf7084aeacbe568f5c5b974e492	2026-09-02T13:02:44+10:00	Ethan	sihengm@student.unimelb.edu.au	chore: merge pull request #7 from pix-l-crafters/firebase-auth
+bfb19acb062a99c590ba222c9c98e0449bd3464c	2026-09-07T08:20:55+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: merge latest dev and integrate Firebase authentication
+7677bf3907942908f6ac41d8c0a815c35cdde725	2026-08-31T22:45:56+10:00	wutianze3	2436271041@qq.com	feat: improve Firebase authentication UI
+be924f0dcdf49afcbe45c68bac9904565dbe19c5	2026-08-30T01:09:29+10:00	wutianze3	139191358+wutianze3@users.noreply.github.com	feat: add login screen
+b8eb5e658bbec5ac10eee84efd37394db4866d07	2026-08-30T01:05:37+10:00	wutianze3	139191358+wutianze3@users.noreply.github.com	feat: implement user registration screen
+5b8d3dcc34d2e709f2782260391db2f9709bff5b	2026-08-30T01:05:06+10:00	wutianze3	139191358+wutianze3@users.noreply.github.com	feat: implement LoginScreen with email and password fields
+c22f724d3e8f6a08427344559be290bccb7ec667	2026-08-30T01:02:16+10:00	wutianze3	139191358+wutianze3@users.noreply.github.com	feat: add Firebase auth service
+581aca8007d7e75dc2253b900d8fcb9ae4253fd0	2026-08-31T21:07:43+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: add env sample
+c91b7ff3057eb7c6a2f2055c46799a6b9fc308e0	2026-08-31T19:34:13+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore(copier): update template
+e6a6f8e2616e55ffb6e66403907c19670c758074	2026-08-31T19:32:10+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: remove prettier-plugin-toml
+64bf50bfb25a0d4a85a0afad068f8d32a4140e85	2026-08-31T19:28:59+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	build: update package-lock.json
+4b750a8f0b99b4d6a26ac0007892567bc3990c10	2026-08-31T19:27:42+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	feat: add BLE scanner screen and view switcher
+7038947e7d51784cd6f07e1e4e042a327c10577f	2026-08-31T19:18:34+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	style: format file
+e451e85c802da38e02da39cfa9d34ae54b634c33	2026-08-31T19:17:23+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: merge branch 'mihir/fix/android-ble' into dev
+d7c86a1bfb22f9632c74c0a4109852676cd325f7	2026-08-31T12:49:40+10:00	Mobark Bacran	Mobark.bacran@gmail.com	chore: merge pull request #6 from pix-l-crafters/map
+46f98b379b4c8604b5b18e05489eb24961d41436	2026-08-30T10:04:46+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	build: update package-lock.json
+1e2b2be037b5d6ea257d2f34c5cbeb5544840582	2026-08-30T10:02:47+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: apply copilot suggestions
+11e5fde2fece4a29d0524a30b747f18031370f61	2026-08-30T10:01:13+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore(copier): update template
+af9e2ecc3a346e94d4014f967c2aa1f1cf0fbf63	2026-08-30T09:58:32+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: remove duplicates
+6686dac3969cc8a89df4321fb438d7ff2c89b521	2026-08-29T20:16:17+10:00	Ethan	sihengm@student.unimelb.edu.au	feat: publish authenticated player presence
+fd3161eaa390a130de835beda4def7dd978af1a4	2026-08-29T19:44:51+10:00	Ethan	sihengm@student.unimelb.edu.au	refactor(map): adopt React Native Paper UI components
+44a688263080b8e5b0229b6be18259e2cfa483c3	2026-08-29T19:10:58+10:00	Ethan	sihengm@student.unimelb.edu.au	feat(map): add foreground location and permission handling
+846eff6ce9ae55950e39bf2230024dddff77d097	2026-08-29T18:18:48+10:00	Ethan	sihengm@student.unimelb.edu.au	feat(map): add map screen with mock player markers
+12121e6ec9a47effff69c8f1a38d8d0bd25452de	2026-08-27T22:25:50+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	style: format file
+f840db45c12d578af0c9d2976ded569634f32d0b	2026-08-27T22:25:19+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore(cocogitto): bump app version together
+f2731483df6e06b53f259f4f4a522b61f8a7e84f	2026-08-27T22:24:52+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: remove duplicate keys
+0320ee1b9e54a599bf3e2b7c8a720b245f548cb2	2026-08-27T22:19:47+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: merge branch 'tingyue/feat/react-native-env' into mihir/fix/android-ble
+3741a87287695ea953b27940cdda44495227d63a	2026-08-27T22:13:46+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	build: update lock files
+e1a39745a802d24dadbf4ccdaa4edcae89004eed	2026-08-27T22:13:32+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore(cspell): update word list
+148f7c423c2f22530dd4cf172745223a8bc3f61f	2026-08-27T22:11:55+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: merge branch 'bluetooth-integration' into mihir/fix/android-ble
+99b7e5cfedaa477980f96713054fad7d95461b5c	2026-08-27T19:41:13+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	build: fix dependencies and add scripts
+443502cbfb9802d45602c07ee698677dd7928e51	2026-08-27T19:35:04+10:00	hbeat	49186507+hbeat@users.noreply.github.com	fix: packages version & readme development build
+eb008fd2b91d933a7661f41ef4e864c603ecfea6	2026-08-27T18:50:52+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore(copier): update template
+bb2f13dc50b459ddbde4e02d5ab756b4382e1d81	2026-08-27T18:21:39+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore(treefmt): exclude lock file from formatting
+a70cd2beeed28e9fc1559318efa1e1671e6667f1	2026-08-27T07:20:29+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: refresh apm.lock.yaml
+2fa9af6ce99f5936e6460eb5a3e0a07ba9b23930	2026-08-27T07:07:24+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	fix: pin java 21 and align react-native deps for android BLE build
+a194840a320ee9bba16b26aeb712417b67fa9dd9	2026-08-26T21:11:13+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	feat: add claude target
+25bcca25649707cecd2ae2766b1e8e42961a0de0	2026-08-25T23:17:16+10:00	tingyueh	tingyueh@student.unimelb.edu.au	chore: merge remote-tracking branch 'origin/main' into tingyue/feat/react-native-env
+fdfd4d172dcac4abc7540e1bdff0974c4a2b2742	2026-08-25T13:54:57+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	feat: add expo mcp & skills
+f26fdea4f2bdd5d1bf1f2b4ab25325ea2506175a	2026-08-25T13:49:02+10:00	tingyueh	tingyueh@student.unimelb.edu.au	fix(expo): downgrade to SDK 54 for Expo Go App Store compatibility
+45c999e0ab5c86d50074528294869b78aff5b528	2026-08-25T13:34:15+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	fix(prettier): ignore lockfiles and build caches to prevent formatting conflicts
+3d026c45c2b482f6894257fbc95c602d9c0cf528	2026-08-25T13:29:55+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: add apm.lock.yaml
+0b59486c737dcc4df3b97d327ea5958315eb1e11	2026-08-25T13:27:00+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: add repo config
+c6cb56ca463d31f25837e659b7f2ef23d25a4a8e	2026-08-25T13:04:59+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore(copier): update template
+494a47e8088ed3b77b194a66c7768d0bc11c51d7	2026-08-25T13:03:27+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	fix(megalinter): override postcss to resolve trivy vulnerability CVE-2026-73646
+da97ec7db9274d8def756b8fd523beb2d45f4842	2026-08-25T12:31:13+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore(copier): update template
+1fd484ee2db986cb991bcff419b91cad1a586f05	2026-08-25T12:28:01+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: update ignore list
+58efa4f769d79b63cc568c8168218c8aaef511da	2026-08-25T12:16:23+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	style: format files
+353f1467fc317cc32777f020e6d86f2fa4a90105	2026-08-25T12:16:13+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore(copier): update template
+f1eb99435e27c86f1a00d9c05c5177dc4fc4cbc1	2026-08-25T12:03:43+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore(megalinter): apply fixes
+6851544e4a023cae61dd24fe2f26c07ea515c4a1	2026-08-25T10:11:15+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	fix(mise): fix prepare task
+17fc9e1d6ac00a869035398501398c1eafd29481	2026-08-25T10:10:16+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	build: fix scripts & dependencies
+fd797e0644cd8660eda452b9a6daf3f30b1c2053	2026-08-25T09:58:33+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore(copier): update template
+2347529988129397455f939c839ea149a59bd530	2026-08-25T09:51:28+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: merge branch 'dev' into bluetooth-integration
+c41a74a9072eee5ad5684f76acd89a99e9217f91	2026-08-25T09:27:29+10:00	Mihir Rabade	ask.mrdgh2821@outlook.com	chore: merge pull request #2 from pix-l-crafters/sihengma/firebase-setup
+c5b747a61f3f6a1b3a8696b9428471e7271011cd	2026-08-25T09:24:56+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: merge remote-tracking branch 'origin/tingyue/feat/react-native-env' into dev
+7846f72473b2d5ed90e070d756de5be7bafb501a	2026-08-25T02:52:40+10:00	wutianze3	139191358+wutianze3@users.noreply.github.com	ci: add react ci
+f278c3d470b1a9a027d1a7c1eacfb5bf5d881b52	2026-08-24T19:21:00+10:00	Ethan	sihengm@student.unimelb.edu.au	feat: set up Firebase services
+35394ed97616c55620c53f64f64c92ddc9a3a503	2026-08-24T17:24:22+10:00	Mobark Walid	Mobark.bacran@gmail.com	fix: cache Trivy vulnerability database to avoid rate limits in CI
+86eba34ff720c9b4c6d848c54ae733c7f87da270	2026-08-24T16:54:28+10:00	Mobark Walid	Mobark.bacran@gmail.com	fix: update cspell dictionary and improve README instructions for Expo Go compatibility
+cb924d5a7655c97dc238241e1ac381dbcafb7d44	2026-08-24T16:31:38+10:00	Mobark Walid	Mobark.bacran@gmail.com	fix: update vulnerability ignore lists in .trivyignore, osv-scanner.toml, and .grype.yaml
+79965bc2413b629f245804fcfda48907eaae901b	2026-08-24T15:49:45+10:00	Mobark Walid	Mobark.bacran@gmail.com	fix: downgrade to Expo SDK 54 and switch to plain Expo Go
+9571af1dc5295d08aa48547481b8de5643caddd0	2026-08-24T12:46:25+10:00	hbeat	49186507+hbeat@users.noreply.github.com	build: add missing tools
+0f4e241cfbcbc52928202b0d96920377cc8218e7	2026-08-24T12:37:37+10:00	hbeat	49186507+hbeat@users.noreply.github.com	feat: add bluetooth demo
+321195f350425b572a160356166f8d0382721caa	2026-08-22T12:30:54Z	tingyueh	223200771+tingyueh@users.noreply.github.com	chore(megalinter): apply linters fixes
+472db1095ed2080e4909c5f265dd5c98d607dac5	2026-08-22T22:20:29+10:00	tingyueh	tingyueh@student.unimelb.edu.au	fix(ci): use commit mode for auto-fixes instead of opening a PR
+deffb91379d41a1241b9d58d372436e40f8149ca	2026-08-22T22:08:09+10:00	tingyueh	tingyueh@student.unimelb.edu.au	fix(ci): check out PR head branch instead of detached merge commit
+8cc605e98d4f4b4318f13fa48ac1524131e2603c	2026-08-22T21:54:57+10:00	tingyueh	tingyueh@student.unimelb.edu.au	fix(ci): suppress known transitive uuid vulnerability in expo/xcode
+2b6d6975b8c761a71e5a7253bfc16f6596067057	2026-08-22T21:41:54+10:00	tingyueh	tingyueh@student.unimelb.edu.au	fix(ci): resolve MegaLinter failures from new npm dependencies
+172817aac1d0c982a8647b0419678323f1454c89	2026-08-22T21:31:58+10:00	tingyueh	tingyueh@student.unimelb.edu.au	feat: add expo-dev-client for custom native module support
+f09d0755566cf42cb72287d4ea2bd342f89e7f23	2026-08-22T21:17:40+10:00	tingyueh	tingyueh@student.unimelb.edu.au	feat: init Expo React Native app
+b1bc32e5975b74bd8e6a61c2da2530bbc6065375	2026-08-21T22:05:56+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: add Quickdraw Showdown implementation design
+18edf010776105fb3e40009e4badb6c3eaba9a5e	2026-08-21T21:15:20+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	docs: add plan
+83b1edd9232830ef658de228f343eeb056a60526	2026-08-21T20:42:30+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore(cspell): add words
+820de99a6d71c470f24041fd25da35402166d42d	2026-08-21T20:42:17+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	style: format files
+35fc2b42f00ecad431e4ae4c0d1358672305383a	2026-08-21T20:42:05+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore: migrate to node
+61813576414e9fe5fd046a8790348aae2fa8f42f	2026-08-21T20:38:17+10:00	MRDGH2821	ask.mrdgh2821@outlook.com	chore(copier): initialise template
